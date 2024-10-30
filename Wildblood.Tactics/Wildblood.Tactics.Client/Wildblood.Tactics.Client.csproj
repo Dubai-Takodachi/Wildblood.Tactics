@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+﻿<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -9,8 +9,111 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Blazor.Extensions.Canvas" Version="1.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" Version="8.0.10" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="Pages\TacticsCanvas.razor">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\ConquerorsBladeData\Artillery\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\ConquerorsBladeData\Maps\allenburg.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\Anadolou-3D.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\Anadolou-Fort.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\Anadolou-Village-3D.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\Anadolou.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\anliand-02.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\anliang-2d.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\anliang.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\Augolia-Siege.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\augolia.jpg" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\border-fort-new.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\border-fort.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\Borderlands-Village.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\conquerorsCity.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\dasuo-2d.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\Grassland.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\Great-Wall.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\Harbour-City.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\heilung-fjord-competition.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\Hidden-City-Tw.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\hidden-city.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\kurak-castle.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\la-grande-gloire.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\Ostaria-Village-2.jpg" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\ostaria-village-3d.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\Ostaria-Village.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\reginopolis-3d.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\reginopolis.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\Shield-Of-The-Capital.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\sun city.PNG" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\turulvaros.jpg" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\TW-City-1-3D.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\TW-City-1.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\TW-Valley-Fortress.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\TW-West-Fort-3D.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\TW-West-Fort.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\Valley-Fortress-3D.jpg" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\wall-fort.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Maps\white-elk-fort.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Azaps.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Blue-Shields.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Camel-Lancers.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Claymores.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Cocos.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Dagger-Axe-Lancers.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Demense-Spearmen.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Falconetti.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Fortes.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Halberdier-Sergeant.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Halberdiers.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Hussars.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Imperial-Arquebusiers.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Imperial-Pike-Men.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Imperial-Spear-Guard.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Iron-Reaper.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Ironcap-Scouts.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Jav-Sergeants.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Kriegsbruders.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Lionroar-crew.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Mace-Sergeants.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Martes.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Men-At-Arms.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Modao.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Monastics.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Myrmillos.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Namkahn.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Onna-Musha.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Orochi-Samurai.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Outrider.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Palace-Guards.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Percevals.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Prefecture-Guards.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Prefecture-Pikemen.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Queens-Knights.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Rattan-Archers.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Rattan-Marksmen.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Rattan-Pikemen.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Selemchids.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Shenji.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Siladars.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Siphonarioi.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\sons-of-fenrir.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Sunward-Phalanx.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Wuwei-Pikes.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Wuxing-Pikemen.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Xuanjia.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Yanyuedao-Cavalry.png" />
+    <None Include="wwwroot\ConquerorsBladeData\Units\Zweihander.png" />
   </ItemGroup>
 
 </Project>

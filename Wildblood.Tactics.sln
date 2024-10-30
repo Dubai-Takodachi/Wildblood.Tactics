@@ -3,9 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.11.35327.3
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wildblood.Tactics", "Wildblood.Tactics\Wildblood.Tactics\Wildblood.Tactics.csproj", "{C0188DA0-76D6-4F91-A97A-66E337F59E41}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wildblood.Tactics", "Wildblood.Tactics\Wildblood.Tactics\Wildblood.Tactics.csproj", "{A9625BC2-1732-4DD8-836A-08554ACBF5C4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Wildblood.Tactics.Client", "Wildblood.Tactics\Wildblood.Tactics.Client\Wildblood.Tactics.Client.csproj", "{A6967714-2D7A-4042-9414-162811B28ADF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wildblood.Tactics.Client", "Wildblood.Tactics\Wildblood.Tactics.Client\Wildblood.Tactics.Client.csproj", "{8D8C0981-EDB2-4BD8-B935-7B2CCFDFAD37}"
+EndProject
+Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{36F5324F-4197-4DAA-8B22-C37C3424141F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,14 +15,18 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{C0188DA0-76D6-4F91-A97A-66E337F59E41}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C0188DA0-76D6-4F91-A97A-66E337F59E41}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C0188DA0-76D6-4F91-A97A-66E337F59E41}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C0188DA0-76D6-4F91-A97A-66E337F59E41}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A6967714-2D7A-4042-9414-162811B28ADF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A6967714-2D7A-4042-9414-162811B28ADF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A6967714-2D7A-4042-9414-162811B28ADF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A6967714-2D7A-4042-9414-162811B28ADF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A9625BC2-1732-4DD8-836A-08554ACBF5C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9625BC2-1732-4DD8-836A-08554ACBF5C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9625BC2-1732-4DD8-836A-08554ACBF5C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9625BC2-1732-4DD8-836A-08554ACBF5C4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8D8C0981-EDB2-4BD8-B935-7B2CCFDFAD37}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D8C0981-EDB2-4BD8-B935-7B2CCFDFAD37}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D8C0981-EDB2-4BD8-B935-7B2CCFDFAD37}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D8C0981-EDB2-4BD8-B935-7B2CCFDFAD37}.Release|Any CPU.Build.0 = Release|Any CPU
+		{36F5324F-4197-4DAA-8B22-C37C3424141F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{36F5324F-4197-4DAA-8B22-C37C3424141F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{36F5324F-4197-4DAA-8B22-C37C3424141F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{36F5324F-4197-4DAA-8B22-C37C3424141F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

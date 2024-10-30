@@ -1,0 +1,87 @@
+﻿@page "/Tactics"
+@using Blazor.Extensions;
+@using Blazor.Extensions.Canvas;
+@using Blazor.Extensions.Canvas.Canvas2D;
+@inject IJSRuntime JS;
+
+<h3>Interaktives Canvas</h3>
+<canvas id="tacticsCanvas" width="1600" height="1200" style="border:1px solid #000000;"></canvas>
+<img src="/ConquerorsBladeData/Units/Azaps.png"/>
+<button @onclick="AddIcon">Icon hinzufügen</button>
+<button @onclick="ClearCanvas">Leeren</button>
+<select @bind="Map" @bind:after="MapChanged">
+    @foreach (var dir in getDirectories())
+    {
+        <option>@dir</option>
+    }
+</select>
+
+@code {
+    private static string baseMapPath = "../Wildblood.Tactics.Client/wwwroot/ConquerorsBladeData/Maps";
+
+    private string Map;
+    private async Task MapChanged()
+    {
+        await JS.InvokeVoidAsync("setBackground", Map);
+    }
+
+    public class Icon
+    {
+        public int X { get; set; }
+        public int Y { get; set; }
+        public string filePath { get; set; }
+    }
+
+    private List<Icon> icons = new List<Icon>();
+
+    private async Task AddIcon()
+    {
+        // Füge ein neues Icon zur Liste hinzu
+        icons.Add(new Icon { X = new Random().Next(0, 800), Y = new Random().Next(0, 600), filePath = "/ConquerorsBladeData/Units/Azaps.png" });
+        await RedrawCanvas();
+    }
+
+    private async Task ClearCanvas()
+    {
+        icons.Clear();
+        await RedrawCanvas();
+    }
+
+    private async Task RedrawCanvas()
+    {
+        await JS.InvokeVoidAsync("drawCanvas", icons);
+    }
+
+    private IEnumerable<string> getDirectories()
+    {
+        var attempt = 0;
+        var maxRetries = 20;
+        IEnumerable<string>? directories = null;
+        while (attempt < maxRetries)
+        {
+            try
+            {
+                if (Directory.Exists(baseMapPath))
+                {
+                    directories = Directory.EnumerateFiles(baseMapPath, "*", SearchOption.AllDirectories).Select(f => Path.GetFileName(f).Split('.')[0]);
+                    break;
+                }
+                else
+                {
+                    throw new Exception("Not Found");
+                }
+            }
+            catch (Exception ex)
+            {
+                attempt++;
+                Thread.Sleep(200);
+            }
+        }
+
+        if (directories?.Any() != true)
+        {
+            return new List<string>();
+        }
+        return directories;
+    }
+}

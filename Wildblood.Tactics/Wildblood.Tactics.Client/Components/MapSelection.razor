@@ -1,0 +1,15 @@
+﻿@inject IJSRuntime JS;
+
+
+<select @bind="Map" @bind:after="MapSelectionChange">
+    <option></option>
+</select>
+
+@code {
+    private string Map;
+
+    private void MapSelectionChange()
+    {
+        
+    }
+}

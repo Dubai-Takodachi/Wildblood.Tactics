@@ -1,0 +1,27 @@
+﻿window.drawCanvas = function (icons) {
+    const canvas = document.getElementById('tacticsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Canvas leeren
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Icons zeichnen
+    icons.forEach(icon => {
+        ctx.fillStyle = 'blue'; // Beispielfarbe
+        let image = new Image();
+        image.src = icon.filePath;
+        ctx.drawImage(image, icon.x, icon.y, 136, 136);
+    });
+}
+
+window.setBackground = function (background) {
+    if (background == null || background == undefined) {
+        return;
+    }
+    const canvas = document.getElementById('tacticsCanvas');
+    let url = "url('/ConquerorsBladeData/Maps/" + background + ".png')";
+    canvas.style.backgroundImage = url;
+    canvas.style.backgroundSize = "cover";
+}
+
+

@@ -1,0 +1,6 @@
+services:
+  wildblood.tactics:
+    image: ${DOCKER_REGISTRY-}wildbloodtactics
+    build:
+      context: .
+      dockerfile: Wildblood.Tactics/Wildblood.Tactics/Dockerfile
