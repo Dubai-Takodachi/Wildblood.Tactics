@@ -49,3 +49,10 @@ h1:focus {
 .darker-border-checkbox.form-check-input {
     border-color: #929292;
 }
+
+#UnitSelection {
+    height: 300px;
+    width: 300px;
+    display: flex;
+    flex-wrap: wrap;
+}

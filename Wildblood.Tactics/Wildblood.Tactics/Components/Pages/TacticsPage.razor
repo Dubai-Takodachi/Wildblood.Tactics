@@ -1,0 +1,51 @@
+﻿@page "/Tactics"
+@namespace Wildblood.Tactics.Components.Pages
+@using Wildblood.Tactics.Entities
+@inject IJSRuntime JS;
+@rendermode InteractiveServer
+
+
+<canvas id="tacticsCanvas" width="1600" height="1200" style="border:1px solid #000000;" @onclick="placeIcon"></canvas>
+<select @bind="Map" @bind:after="MapChanged">
+    @foreach (var dir in Directory.EnumerateFiles(baseMapPath, "*", SearchOption.AllDirectories).Select(f => Path.GetFileName(f).Split('.')[0]))
+    {
+        <option value="@dir">@dir</option>
+    }
+</select>
+<div id="UnitSelection">
+    @foreach (var dir in Directory.EnumerateFiles(baseUnitPath, "*", SearchOption.AllDirectories).Select(f => Path.GetFileName(f)))
+    {
+        <div @onclick="@(async (args) => await selectedUnitChanged(dir))">
+            <img src="/ConquerorsBladeData/Units/@dir" height="40" width="40"/>
+        </div>
+    
+    }
+
+</div>
+
+
+
+@code {
+    private static string baseMapPath = "../Wildblood.Tactics/wwwroot/ConquerorsBladeData/Maps";
+    private static string baseUnitPath = "../Wildblood.Tactics/wwwroot/ConquerorsBladeData/Units";
+    private string Map;
+    private string selectedUnit;
+
+    public async Task selectedUnitChanged(string unit)
+    {
+        selectedUnit = unit;
+    }
+
+    public async Task MapChanged()
+    {
+        await JS.InvokeVoidAsync("setBackground", Map);
+    }
+
+    private List<Unit> icons = new List<Unit>();
+
+    private async Task placeIcon(MouseEventArgs eventArgs)
+    {
+        var unit = new Unit(eventArgs.OffsetX, eventArgs.OffsetY, "/ConquerorsBladeData/Units/" + selectedUnit);
+        await JS.InvokeVoidAsync("placeIcon", unit);
+    }
+}

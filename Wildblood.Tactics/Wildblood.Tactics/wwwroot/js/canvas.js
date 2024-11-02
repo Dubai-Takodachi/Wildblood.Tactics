@@ -24,4 +24,12 @@ window.setBackground = function (background) {
     canvas.style.backgroundSize = "cover";
 }
 
+window.placeIcon = function (unit) {
+    const canvas = document.getElementById('tacticsCanvas');
+    const ctx = canvas.getContext('2d');
+    let image = new Image();
+    image.src = unit.filePath;
+    ctx.drawImage(image, unit.x, unit.y, 136, 136);
+}
+
 

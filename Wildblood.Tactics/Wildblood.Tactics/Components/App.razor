@@ -6,25 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
     <link rel="stylesheet" href="bootstrap/bootstrap.min.css" />
-    <link rel="stylesheet" href="app.css" />
+    <link rel="stylesheet" href="app.css?v=@DateTime.Now.Ticks" />
     <link rel="stylesheet" href="Wildblood.Tactics.styles.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
-    <HeadOutlet @rendermode="RenderModeForPage" />
+    <HeadOutlet />
 </head>
 
 <body>
-    <Routes @rendermode="RenderModeForPage" />
+    <Routes />
     <script src="_framework/blazor.web.js"></script>
-    <script src="/js/canvas.js"></script>
-    <script src="_content/Blazor.Extensions.Canvas/blazor.extensions.canvas.js"></script>
+    <script src="JS/Canvas.js?v=@DateTime.Now.Ticks"></script>
 </body>
+
 </html>
-
-@code {
-    [CascadingParameter]
-    private HttpContext HttpContext { get; set; } = default!;
-
-    private IComponentRenderMode? RenderModeForPage => HttpContext.Request.Path.StartsWithSegments("/Account")
-        ? null
-        : InteractiveAuto;
-}
