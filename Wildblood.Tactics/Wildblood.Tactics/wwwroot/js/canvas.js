@@ -1,19 +1,4 @@
-﻿window.drawCanvas = function (icons) {
-    const canvas = document.getElementById('tacticsCanvas');
-    const ctx = canvas.getContext('2d');
-
-    // Canvas leeren
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Icons zeichnen
-    icons.forEach(icon => {
-        ctx.fillStyle = 'blue'; // Beispielfarbe
-        let image = new Image();
-        image.src = icon.filePath;
-        ctx.drawImage(image, icon.x, icon.y, 136, 136);
-    });
-}
-
+﻿
 window.setBackground = function (background) {
     if (background == null || background == undefined) {
         return;
@@ -29,7 +14,17 @@ window.placeIcon = function (unit) {
     const ctx = canvas.getContext('2d');
     let image = new Image();
     image.src = unit.filePath;
-    ctx.drawImage(image, unit.x, unit.y, 136, 136);
+    ctx.drawImage(image, unit.x, unit.y, unit.height, unit.width);
 }
 
+window.draw = function (icons) {
+    const canvas = document.getElementById('tacticsCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    icons.forEach(unit => {
+        let image = new Image();
+        image.src = unit.filePath;
+        ctx.drawImage(image, unit.x, unit.y, unit.height, unit.width)
+    })
+}
 

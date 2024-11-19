@@ -4,23 +4,30 @@
 @inject IJSRuntime JS;
 @rendermode InteractiveServer
 
-
-<canvas id="tacticsCanvas" width="1600" height="1200" style="border:1px solid #000000;" @onclick="placeIcon"></canvas>
-<select @bind="Map" @bind:after="MapChanged">
-    @foreach (var dir in Directory.EnumerateFiles(baseMapPath, "*", SearchOption.AllDirectories).Select(f => Path.GetFileName(f).Split('.')[0]))
-    {
-        <option value="@dir">@dir</option>
-    }
-</select>
-<div id="UnitSelection">
-    @foreach (var dir in Directory.EnumerateFiles(baseUnitPath, "*", SearchOption.AllDirectories).Select(f => Path.GetFileName(f)))
-    {
-        <div @onclick="@(async (args) => await selectedUnitChanged(dir))">
-            <img src="/ConquerorsBladeData/Units/@dir" height="40" width="40"/>
-        </div>
+<div class="parent">
+    <div style="grid-area: 1/1/6/2;">
+        <canvas id="tacticsCanvas" width="1200px" height="700px" style="border:1px solid #000000;" @onmousedown="drag" @onmouseup="dragStop" @onmousemove="dragMove"></canvas>
+    </div>
+    <div style="grid-area: 1/2/2/3;" id="MapSelectionDiv">
+        <select @bind="Map" @bind:after="MapChanged" class="select">
+            @foreach (var dir in Directory.EnumerateFiles(baseMapPath, "*", SearchOption.AllDirectories).Select(f => Path.GetFileName(f).Split('.')[0]))
+            {
+                <option value="@dir">@dir</option>
+            }
+        </select>
+    </div>
+    <div style="grid-area: 2/2/3/3;">
+        <div id="UnitSelection" class="border-1 border border-primary">
+            @foreach (var dir in Directory.EnumerateFiles(baseUnitPath, "*", SearchOption.AllDirectories).Select(f => Path.GetFileName(f)))
+            {
+                <div @onclick="@(async (args) => await selectedUnitChanged(dir))">
+                    <img src="/ConquerorsBladeData/Units/@dir" height="40" width="40"/>
+                </div>
     
-    }
+            }
+        </div>
 
+    </div>
 </div>
 
 
@@ -30,6 +37,9 @@
     private static string baseUnitPath = "../Wildblood.Tactics/wwwroot/ConquerorsBladeData/Units";
     private string Map;
     private string selectedUnit;
+
+    private Unit draggingIcon;
+    private bool isDragging = false;
 
     public async Task selectedUnitChanged(string unit)
     {
@@ -46,6 +56,53 @@
     private async Task placeIcon(MouseEventArgs eventArgs)
     {
         var unit = new Unit(eventArgs.OffsetX, eventArgs.OffsetY, "/ConquerorsBladeData/Units/" + selectedUnit);
+
         await JS.InvokeVoidAsync("placeIcon", unit);
+
+        icons.Add(unit);
+    }
+
+    private async Task drag(MouseEventArgs eventArgs)
+    {
+        var mouseX = eventArgs.OffsetX;
+        var mouseY = eventArgs.OffsetY;
+
+        foreach (var icon in icons)
+        {
+            if (mouseX > icon.X && mouseX < icon.X + icon.Width && mouseY > icon.Y && mouseY < icon.Y + icon.Height)
+            {
+                draggingIcon = new Unit(icon.X, icon.Y, icon.FilePath, icon.Height, icon.Width);
+                isDragging = true;
+                icons.Remove(icon);
+                return;
+            }
+        }
+
+        await placeIcon(eventArgs);
+
+    }
+
+    private async Task dragMove(MouseEventArgs args)
+    {
+        if (!isDragging || draggingIcon == null)
+        {
+            return;
+        }
+        draggingIcon.X = args.OffsetX;
+        draggingIcon.Y = args.OffsetY;
+        icons.Add(draggingIcon);
+        await JS.InvokeVoidAsync("draw", icons);
+        icons.Remove(draggingIcon);
+    }
+
+    private async Task dragStop()
+    {
+        if (!isDragging)
+        {
+            return;
+        }
+        isDragging = false;
+        icons.Add(draggingIcon);
+        await JS.InvokeVoidAsync("draw", icons);
     }
 }
