@@ -1,5 +1,4 @@
-﻿
-window.setBackground = function (background) {
+﻿window.setBackground = function (background) {
     if (background == null || background == undefined) {
         return;
     }

@@ -1,5 +1,6 @@
 ﻿namespace Wildblood.Tactics.Entities
 {
+    // Should have all the attributes that icons need. This will land in the DB.    
     public interface IIcon
     {
         public double X { get; set; }

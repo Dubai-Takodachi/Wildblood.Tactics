@@ -1,0 +1,11 @@
+{
+    "configurations": [
+        {
+            "name": "C#: Wildblood.Tactics [https]",
+            "type": "dotnet",
+            "request": "launch",
+            "projectPath": "${workspaceFolder}/Wildblood.Tactics/Wildblood.Tactics/Wildblood.Tactics.csproj",
+            "launchConfigurationId": "TargetFramework=;https"
+        }
+    ]
+}
