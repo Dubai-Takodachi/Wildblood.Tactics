@@ -4,7 +4,7 @@
     <ProjectVersion>2.1</ProjectVersion>
     <DockerTargetOS>Linux</DockerTargetOS>
     <DockerPublishLocally>False</DockerPublishLocally>
-    <ProjectGuid>36f5324f-4197-4daa-8b22-c37c3424141f</ProjectGuid>
+    <ProjectGuid>70f994d2-f7b2-48ad-8991-8df32e4e6567</ProjectGuid>
     <DockerLaunchAction>LaunchBrowser</DockerLaunchAction>
     <DockerServiceUrl>{Scheme}://localhost:{ServicePort}</DockerServiceUrl>
     <DockerServiceName>wildblood.tactics</DockerServiceName>

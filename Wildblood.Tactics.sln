@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wildblood.Tactics", "Wildbl
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Wildblood.Tactics.Client", "Wildblood.Tactics\Wildblood.Tactics.Client\Wildblood.Tactics.Client.csproj", "{3E5A7A3D-439F-4887-8960-508423BF6D3C}"
 EndProject
+Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-compose.dcproj", "{70F994D2-F7B2-48AD-8991-8DF32E4E6567}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{3E5A7A3D-439F-4887-8960-508423BF6D3C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3E5A7A3D-439F-4887-8960-508423BF6D3C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3E5A7A3D-439F-4887-8960-508423BF6D3C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{70F994D2-F7B2-48AD-8991-8DF32E4E6567}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{70F994D2-F7B2-48AD-8991-8DF32E4E6567}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{70F994D2-F7B2-48AD-8991-8DF32E4E6567}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{70F994D2-F7B2-48AD-8991-8DF32E4E6567}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
