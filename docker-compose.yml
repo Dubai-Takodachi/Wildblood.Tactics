@@ -14,6 +14,16 @@ services:
       ACCEPT_EULA: "Y"
     volumes:
       - mssql_data:/var/opt/mssql
-
+  mongodb:
+    image: mongo:6.0
+    container_name: mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - mongodb_data:/data/db
 volumes:
   mssql_data:
