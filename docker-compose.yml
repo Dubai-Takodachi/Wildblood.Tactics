@@ -4,3 +4,16 @@ services:
     build:
       context: .
       dockerfile: Wildblood.Tactics/Wildblood.Tactics/Dockerfile
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: mssql_container
+    ports:
+      - "1433:1433"
+    environment:
+      SA_PASSWORD: "DeinStarkesPasswort123!"
+      ACCEPT_EULA: "Y"
+    volumes:
+      - mssql_data:/var/opt/mssql
+
+volumes:
+  mssql_data:
