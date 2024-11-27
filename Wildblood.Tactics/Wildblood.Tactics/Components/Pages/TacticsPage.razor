@@ -1,7 +1,9 @@
-﻿@page "/Tactics"
+﻿@page "/Tactics/{ID}"
 @namespace Wildblood.Tactics.Components.Pages
 @using Wildblood.Tactics.Entities
+@using MongoDB.Driver;
 @inject IJSRuntime JS;
+@inject IMongoDatabase Database;
 @rendermode InteractiveServer
 
 <div class="parent">
@@ -33,6 +35,10 @@
 
 
 @code {
+
+    [Parameter]
+    private string ID { get; set; }
+
     private static string baseMapPath = "../Wildblood.Tactics/wwwroot/ConquerorsBladeData/Maps";
     private static string baseUnitPath = "../Wildblood.Tactics/wwwroot/ConquerorsBladeData/Units";
     private string Map;

@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using MongoDB.Driver;
 using Wildblood.Tactics.Client.Pages;
 using Wildblood.Tactics.Components;
 using Wildblood.Tactics.Components.Account;
@@ -14,6 +16,22 @@ namespace Wildblood.Tactics
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            // MongoDB stuff
+            builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("MongoDbSettings"));
+
+            builder.Services.AddSingleton<IMongoClient, MongoClient>(sp =>
+            {
+                var settings = sp.GetRequiredService<IOptions<MongoDbSettings>>().Value;
+                return new MongoClient(settings.ConnectionString);
+            });
+
+            builder.Services.AddScoped(sp =>
+            {
+                var settings = sp.GetRequiredService<IOptions<MongoDbSettings>>().Value;
+                var client = sp.GetRequiredService<IMongoClient>();
+                return client.GetDatabase(settings.DatabaseName);
+            });
+            
             // Add services to the container.
             builder.Services.AddRazorComponents()
                 .AddInteractiveServerComponents()
@@ -79,5 +97,11 @@ namespace Wildblood.Tactics
 
             app.Run();
         }
+    }
+
+    internal class MongoDbSettings
+    {
+        public string ConnectionString { get; set; }
+        public string DatabaseName { get; set; }
     }
 }
