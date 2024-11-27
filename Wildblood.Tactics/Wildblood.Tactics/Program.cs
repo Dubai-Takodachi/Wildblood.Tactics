@@ -17,21 +17,12 @@ namespace Wildblood.Tactics
             var builder = WebApplication.CreateBuilder(args);
 
             // MongoDB stuff
-            builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("MongoDbSettings"));
+            var mongoConnectionString = Environment.GetEnvironmentVariable("MONGO_CONNECTION_STRING");
 
-            builder.Services.AddSingleton<IMongoClient, MongoClient>(sp =>
-            {
-                var settings = sp.GetRequiredService<IOptions<MongoDbSettings>>().Value;
-                return new MongoClient(settings.ConnectionString);
-            });
+            builder.Services.AddSingleton<IMongoClient, MongoClient>(sp => new MongoClient(mongoConnectionString));
 
-            builder.Services.AddScoped(sp =>
-            {
-                var settings = sp.GetRequiredService<IOptions<MongoDbSettings>>().Value;
-                var client = sp.GetRequiredService<IMongoClient>();
-                return client.GetDatabase(settings.DatabaseName);
-            });
-            
+
+
             // Add services to the container.
             builder.Services.AddRazorComponents()
                 .AddInteractiveServerComponents()

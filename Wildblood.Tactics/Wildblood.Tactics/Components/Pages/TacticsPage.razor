@@ -32,24 +32,23 @@
     </div>
 </div>
 
-
-
 @code {
 
     [Parameter]
-    private string ID { get; set; }
+    public string? ID { get; set; }
 
     private static string baseMapPath = "../Wildblood.Tactics/wwwroot/ConquerorsBladeData/Maps";
     private static string baseUnitPath = "../Wildblood.Tactics/wwwroot/ConquerorsBladeData/Units";
-    private string Map;
-    private string selectedUnit;
+    private string? Map;
+    private string? selectedUnit;
 
-    private Unit draggingIcon;
+    private Unit? draggingIcon;
     private bool isDragging = false;
 
-    public async Task selectedUnitChanged(string unit)
+    public Task selectedUnitChanged(string unit)
     {
         selectedUnit = unit;
+        return Task.CompletedTask;
     }
 
     public async Task MapChanged()
