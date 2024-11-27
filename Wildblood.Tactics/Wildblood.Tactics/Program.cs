@@ -21,7 +21,20 @@ namespace Wildblood.Tactics
 
             builder.Services.AddSingleton<IMongoClient, MongoClient>(sp => new MongoClient(mongoConnectionString));
 
+            builder.Services.Configure<MongoDbSettings>(options =>
+            {
+                options.ConnectionString = mongoConnectionString;
+                options.DatabaseName = "MongoDB"; // Setzen Sie hier den Namen Ihrer Datenbank
+            });
 
+            builder.Services.AddSingleton(sp =>
+            {
+                var settings = sp.GetRequiredService<IOptions<MongoDbSettings>>().Value;
+                var client = sp.GetRequiredService<IMongoClient>();
+                return client.GetDatabase(settings.DatabaseName);
+            });
+
+            builder.Services.AddSingleton<MongoDbInitializer>();
 
             // Add services to the container.
             builder.Services.AddRazorComponents()
@@ -35,8 +48,8 @@ namespace Wildblood.Tactics
 
             builder.Services.AddAuthentication().AddGoogle(googleOptions =>
             {
-                googleOptions.ClientId = builder.Configuration["Google:ClientId"];
-                googleOptions.ClientSecret = builder.Configuration["Google:ClientSecret"];
+                googleOptions.ClientId = builder.Configuration["Google:ClientId"] ?? throw new InvalidOperationException("Google ClientId not found.");
+                googleOptions.ClientSecret = builder.Configuration["Google:ClientSecret"] ?? throw new InvalidOperationException("Google ClientSecret not found.");
             });
 
             builder.Services.AddAuthentication(options =>
@@ -59,6 +72,12 @@ namespace Wildblood.Tactics
             builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
             var app = builder.Build();
+
+            using (var scope = app.Services.CreateScope())
+            {
+                var mongoDbInitializer = scope.ServiceProvider.GetRequiredService<MongoDbInitializer>();
+                mongoDbInitializer.Initialize();
+            }
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
@@ -88,11 +107,5 @@ namespace Wildblood.Tactics
 
             app.Run();
         }
-    }
-
-    internal class MongoDbSettings
-    {
-        public string ConnectionString { get; set; }
-        public string DatabaseName { get; set; }
     }
 }

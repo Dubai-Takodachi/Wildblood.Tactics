@@ -1,7 +1,47 @@
 ﻿@page "/"
-
+@inject NavigationManager NavigationManager
+@using MongoDB.Driver;
+@using MongoDB.Bson;
+@using Wildblood.Tactics.Entities
+@using Wildblood.Tactics.Models
+@inject IMongoDatabase  Database;
+@rendermode InteractiveServer
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<div>
+    <h1>Welcome To Wildblood.Tactics!</h1>
+    <input type="button" class="btn btn-primary" value="Create New Tactic" @onclick="CreateNewTactic" />
+</div>
 
-Welcome to your new app.
+@code {
+
+    private void CreateNewTactic()
+    {
+        var tactic = CreateTacticDocument();
+        var collection = Database.GetCollection<Tactic>("Tactics");
+        collection.InsertOne(tactic);
+        NavigationManager.NavigateTo("/tactics/" + tactic.Id);
+    }
+
+    private Tactic CreateTacticDocument() {
+        return new Tactic
+            {
+                Id = ObjectId.GenerateNewId().ToString(),
+                Name = "New Tactic",
+                Folders = new List<Folder> {
+                    new Folder {
+                        Id = ObjectId.GenerateNewId().ToString(),
+                        Name = "Folder 1",
+                        Slides = new List<Slide> {
+                            new Slide {
+                                Id = ObjectId.GenerateNewId().ToString(),
+                                Name = "Slide 1",
+                                Icons = new List<IIcon>(),
+                            }
+                        }
+                    }
+                }
+            };
+
+    }
+}

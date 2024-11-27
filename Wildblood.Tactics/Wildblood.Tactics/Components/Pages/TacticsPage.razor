@@ -1,7 +1,9 @@
 ﻿@page "/Tactics/{ID}"
 @namespace Wildblood.Tactics.Components.Pages
+@using MongoDB.Bson
 @using Wildblood.Tactics.Entities
 @using MongoDB.Driver;
+@using Wildblood.Tactics.Models
 @inject IJSRuntime JS;
 @inject IMongoDatabase Database;
 @rendermode InteractiveServer
@@ -25,7 +27,7 @@
                 <div @onclick="@(async (args) => await selectedUnitChanged(dir))">
                     <img src="/ConquerorsBladeData/Units/@dir" height="40" width="40"/>
                 </div>
-    
+
             }
         </div>
 
@@ -36,6 +38,17 @@
 
     [Parameter]
     public string? ID { get; set; }
+
+    private Tactic? tactic;
+
+    protected override async void OnParametersSet()
+    {
+        if (ID != null)
+        {
+            var collection = Database.GetCollection<Tactic>("Tactics");
+            tactic = await collection.Find(t => t.Id == ID).FirstOrDefaultAsync();
+        }
+    }
 
     private static string baseMapPath = "../Wildblood.Tactics/wwwroot/ConquerorsBladeData/Maps";
     private static string baseUnitPath = "../Wildblood.Tactics/wwwroot/ConquerorsBladeData/Units";
