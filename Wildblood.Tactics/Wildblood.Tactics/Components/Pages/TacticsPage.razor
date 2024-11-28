@@ -14,7 +14,7 @@
     </div>
     <div style="grid-area: 1/2/2/3;" id="MapSelectionDiv">
         <select @bind="Map" @bind:after="MapChanged" class="select">
-            @foreach (var dir in mapFiles)
+            @foreach (var dir in Directory.EnumerateFiles(baseMapPath, "*", SearchOption.AllDirectories).Select(f => Path.GetFileName(f).Split('.')[0]))
             {
                 <option value="@dir">@dir</option>
             }
@@ -22,7 +22,7 @@
     </div>
     <div style="grid-area: 2/2/3/3;">
         <div id="UnitSelection" class="border-1 border border-primary">
-            @foreach (var dir in unitFiles)
+            @foreach (var dir in Directory.EnumerateFiles(baseUnitPath, "*", SearchOption.AllDirectories).Select(f => Path.GetFileName(f)))
             {
                 <div @onclick="@(async (args) => await selectedUnitChanged(dir))">
                     <img src="/ConquerorsBladeData/Units/@dir" height="40" width="40"/>
@@ -41,17 +41,6 @@
 
     private Tactic? tactic;
 
-    private List<string> mapFiles = new();
-    private List<string> unitFiles = new();
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            mapFiles = await JS.InvokeAsync<List<string>>("getFilesFromDirectory", "ConquerorsBladeData/Maps");
-            unitFiles = await JS.InvokeAsync<List<string>>("getFilesFromDirectory", "ConquerorsBladeData/Units");
-        }
-    }
 
     protected override async void OnParametersSet()
     {
@@ -63,8 +52,8 @@
         
     }
 
-    private static string baseMapPath = "../Wildblood.Tactics/wwwroot/ConquerorsBladeData/Maps";
-    private static string baseUnitPath = "../Wildblood.Tactics/wwwroot/ConquerorsBladeData/Units";
+    private static string baseMapPath = "wwwroot/ConquerorsBladeData/Maps";
+    private static string baseUnitPath = "wwwroot/ConquerorsBladeData/Units";
     private string? Map;
     private string? selectedUnit;
 
