@@ -12,6 +12,9 @@ namespace Wildblood.Tactics.Models
         [BsonElement("name")]
         public string Name { get; set; }
 
+        [BsonElement("MapPath")]
+        public string MapPath { get; set; }
+
         [BsonElement("Icon")]
         public List<IIcon> Icons { get; set; }
     }

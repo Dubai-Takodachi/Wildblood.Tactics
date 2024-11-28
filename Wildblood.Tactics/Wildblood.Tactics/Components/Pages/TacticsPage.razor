@@ -14,7 +14,7 @@
     </div>
     <div style="grid-area: 1/2/2/3;" id="MapSelectionDiv">
         <select @bind="Map" @bind:after="MapChanged" class="select">
-            @foreach (var dir in Directory.EnumerateFiles(baseMapPath, "*", SearchOption.AllDirectories).Select(f => Path.GetFileName(f).Split('.')[0]))
+            @foreach (var dir in mapFiles)
             {
                 <option value="@dir">@dir</option>
             }
@@ -22,7 +22,7 @@
     </div>
     <div style="grid-area: 2/2/3/3;">
         <div id="UnitSelection" class="border-1 border border-primary">
-            @foreach (var dir in Directory.EnumerateFiles(baseUnitPath, "*", SearchOption.AllDirectories).Select(f => Path.GetFileName(f)))
+            @foreach (var dir in unitFiles)
             {
                 <div @onclick="@(async (args) => await selectedUnitChanged(dir))">
                     <img src="/ConquerorsBladeData/Units/@dir" height="40" width="40"/>
@@ -41,6 +41,18 @@
 
     private Tactic? tactic;
 
+    private List<string> mapFiles = new();
+    private List<string> unitFiles = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            mapFiles = await JS.InvokeAsync<List<string>>("getFilesFromDirectory", "ConquerorsBladeData/Maps");
+            unitFiles = await JS.InvokeAsync<List<string>>("getFilesFromDirectory", "ConquerorsBladeData/Units");
+        }
+    }
+
     protected override async void OnParametersSet()
     {
         if (ID != null)
@@ -48,6 +60,7 @@
             var collection = Database.GetCollection<Tactic>("Tactics");
             tactic = await collection.Find(t => t.Id == ID).FirstOrDefaultAsync();
         }
+        
     }
 
     private static string baseMapPath = "../Wildblood.Tactics/wwwroot/ConquerorsBladeData/Maps";

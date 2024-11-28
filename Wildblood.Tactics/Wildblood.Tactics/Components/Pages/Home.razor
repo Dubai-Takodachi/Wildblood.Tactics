@@ -1,33 +1,50 @@
 ﻿@page "/"
 @inject NavigationManager NavigationManager
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Authorization
 @using MongoDB.Driver;
 @using MongoDB.Bson;
 @using Wildblood.Tactics.Entities
 @using Wildblood.Tactics.Models
+@attribute [Authorize]
 @inject IMongoDatabase  Database;
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @rendermode InteractiveServer
 <PageTitle>Home</PageTitle>
 
-<div>
-    <h1>Welcome To Wildblood.Tactics!</h1>
-    <input type="button" class="btn btn-primary" value="Create New Tactic" @onclick="CreateNewTactic" />
-</div>
+<AuthorizeView>
+    <Authorized>
+        <div>
+            <h1>Welcome To Wildblood.Tactics!</h1>
+            <input type="button" class="btn btn-primary" value="Create New Tactic" @onclick="CreateNewTactic" />
+        </div>
+    </Authorized>
+</AuthorizeView>
 
 @code {
 
-    private void CreateNewTactic()
+    private async Task CreateNewTactic()
     {
-        var tactic = CreateTacticDocument();
-        var collection = Database.GetCollection<Tactic>("Tactics");
-        collection.InsertOne(tactic);
-        NavigationManager.NavigateTo("/tactics/" + tactic.Id);
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true) 
+        {
+            var userId = user.FindFirst(c => c.Type == "sub")?.Value ?? user.FindFirst(c => c.Type == "nameidentifier")?.Value ?? user.Identity.Name;
+            var tactic = CreateTacticDocument(userId);
+            var collection = Database.GetCollection<Tactic>("Tactics");
+            collection.InsertOne(tactic);
+            NavigationManager.NavigateTo("/tactics/" + tactic.Id);
+        }
     }
 
-    private Tactic CreateTacticDocument() {
+    private Tactic CreateTacticDocument(string user) {
         return new Tactic
             {
                 Id = ObjectId.GenerateNewId().ToString(),
                 Name = "New Tactic",
+                UserId = user,
                 Folders = new List<Folder> {
                     new Folder {
                         Id = ObjectId.GenerateNewId().ToString(),

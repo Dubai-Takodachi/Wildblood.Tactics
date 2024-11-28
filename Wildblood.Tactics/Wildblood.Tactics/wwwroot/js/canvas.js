@@ -27,3 +27,12 @@ window.draw = function (icons) {
     })
 }
 
+window.getFilesFromDirectory = async function (directory) {
+    const response = await fetch(directory);
+    const text = await response.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(text, 'text/html');
+    const links = Array.from(doc.querySelectorAll('a'));
+    return links.map(link => link.href).filter(href => href.endsWith('.png') || href.endsWith('.jpg') || href.endsWith('.jpeg'));
+};
+

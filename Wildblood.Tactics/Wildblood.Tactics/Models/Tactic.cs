@@ -12,6 +12,9 @@ namespace Wildblood.Tactics.Models
         [BsonElement("name")]
         public string Name { get; set; }
 
+        [BsonElement("userId")]
+        public string UserId { get; set; }
+
         [BsonElement("folder")]
         public List<Folder> Folders { get; set; }
     }
