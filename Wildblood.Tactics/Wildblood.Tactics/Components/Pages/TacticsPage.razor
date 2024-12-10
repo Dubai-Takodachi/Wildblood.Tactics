@@ -30,7 +30,26 @@
 
             }
         </div>
+    </div>
+    <div style="grid-area: 5/2/6/4">
+        <div>
+            @foreach (var folder in tactic.Folders)
+            {
 
+                <div>
+                    <div>
+                        <h3>@folder.Name</h3>
+                        <button class="btn btn-info" @onclick="async () => await onClickFolderRename(folder.Id)">Rename</button>
+                    </div>
+                    @foreach (var slide in folder.Slides)
+                    {
+                        <ul>
+                            <li>@slide.Name</li>
+                        </ul>
+                    }
+                </div>
+            }
+        </div>
     </div>
 </div>
 
@@ -41,24 +60,27 @@
 
     private Tactic? tactic;
 
-
-    protected override async void OnParametersSet()
-    {
-        if (ID != null)
-        {
-            var collection = Database.GetCollection<Tactic>("Tactics");
-            tactic = await collection.Find(t => t.Id == ID).FirstOrDefaultAsync();
-        }
-        
-    }
+    private List<IIcon> currentIcons = new List<IIcon>();
 
     private static string baseMapPath = "wwwroot/ConquerorsBladeData/Maps";
     private static string baseUnitPath = "wwwroot/ConquerorsBladeData/Units";
     private string? Map;
     private string? selectedUnit;
+    private IMongoCollection<Tactic>? collection;
 
     private Unit? draggingIcon;
     private bool isDragging = false;
+
+    protected override void OnParametersSet()
+    {
+        if (ID != null)
+        {
+            collection = Database.GetCollection<Tactic>("Tactics");
+            tactic = collection.Find(t => t.Id == ID).FirstOrDefault();
+            // tactic.Folders.ForEach(folder => folder.Slides.ForEach(slide => slide.Icons.ForEach(icon => currentIcons.Add(icon))));
+        }
+
+    }
 
     public Task selectedUnitChanged(string unit)
     {
@@ -71,7 +93,6 @@
         await JS.InvokeVoidAsync("setBackground", Map);
     }
 
-    private List<IIcon> icons = new List<IIcon>();
 
     private async Task placeIcon(MouseEventArgs eventArgs)
     {
@@ -79,7 +100,7 @@
 
         await JS.InvokeVoidAsync("placeIcon", unit);
 
-        icons.Add(unit);
+        currentIcons.Add(unit);
     }
 
     private async Task drag(MouseEventArgs eventArgs)
@@ -87,13 +108,13 @@
         var mouseX = eventArgs.OffsetX;
         var mouseY = eventArgs.OffsetY;
 
-        foreach (var icon in icons)
+        foreach (var icon in currentIcons)
         {
             if (mouseX > icon.X && mouseX < icon.X + icon.Width && mouseY > icon.Y && mouseY < icon.Y + icon.Height)
             {
                 draggingIcon = new Unit(icon.X, icon.Y, icon.FilePath, icon.Height, icon.Width);
                 isDragging = true;
-                icons.Remove(icon);
+                currentIcons.Remove(icon);
                 return;
             }
         }
@@ -110,9 +131,9 @@
         }
         draggingIcon.X = args.OffsetX;
         draggingIcon.Y = args.OffsetY;
-        icons.Add(draggingIcon);
-        await JS.InvokeVoidAsync("draw", icons);
-        icons.Remove(draggingIcon);
+        currentIcons.Add(draggingIcon);
+        await JS.InvokeVoidAsync("draw", currentIcons);
+        currentIcons.Remove(draggingIcon);
     }
 
     private async Task dragStop()
@@ -122,7 +143,19 @@
             return;
         }
         isDragging = false;
-        icons.Add(draggingIcon);
-        await JS.InvokeVoidAsync("draw", icons);
+        currentIcons.Add(draggingIcon);
+        await JS.InvokeVoidAsync("draw", currentIcons);
+    }
+
+    private async Task onClickFolderRename(string folderId)
+    {
+        var folder = tactic.Folders.First(f => f.Id == folderId);
+        var newName = await JS.InvokeAsync<string>("prompt", "Enter new name", folder.Name);
+        if (newName != null)
+        {
+            // it is infact a referece! 
+            folder.Name = newName;
+            
+        }
     }
 }
