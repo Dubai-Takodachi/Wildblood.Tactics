@@ -4,6 +4,7 @@
 @using Wildblood.Tactics.Entities
 @using MongoDB.Driver;
 @using Wildblood.Tactics.Models
+@using Unit = Wildblood.Tactics.Entities.Unit
 @inject IJSRuntime JS;
 @inject IMongoDatabase Database;
 @rendermode InteractiveServer
@@ -37,9 +38,9 @@
             {
 
                 <div>
-                    <div>
+                    <div style="display:flex">
                         <h3>@folder.Name</h3>
-                        <button class="btn btn-info" @onclick="async () => await onClickFolderRename(folder.Id)">Rename</button>
+                        <Button Color="ButtonColor.Info" @onclick="async () => await onClickFolderRename(folder.Id)"> <Icon Name="IconName.PencilFill"/></Button>
                     </div>
                     @foreach (var slide in folder.Slides)
                     {
@@ -155,7 +156,10 @@
         {
             // it is infact a referece! 
             folder.Name = newName;
-            
+            // Update The Folder Name in the Database
+            var filter = Builders<Tactic>.Filter.Eq(t => t.Id, tactic.Id) & Builders<Tactic>.Filter.ElemMatch(t => t.Folders, f => f.Id == folderId);
+            var update = Builders<Tactic>.Update.Set(t => t.Folders[0].Name, newName);
+            await collection.UpdateOneAsync(filter, update);
         }
     }
 }

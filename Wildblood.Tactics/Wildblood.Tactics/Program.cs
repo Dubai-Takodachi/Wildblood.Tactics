@@ -45,6 +45,7 @@ namespace Wildblood.Tactics
             builder.Services.AddScoped<IdentityUserAccessor>();
             builder.Services.AddScoped<IdentityRedirectManager>();
             builder.Services.AddScoped<AuthenticationStateProvider, PersistingRevalidatingAuthenticationStateProvider>();
+            builder.Services.AddBlazorBootstrap();
 
             builder.Services.AddAuthentication().AddGoogle(googleOptions =>
             {
@@ -94,7 +95,7 @@ namespace Wildblood.Tactics
 
             app.UseHttpsRedirection();
 
-            app.UseStaticFiles();
+            app.MapStaticAssets();
             app.UseAntiforgery();
 
             app.MapRazorComponents<App>()
