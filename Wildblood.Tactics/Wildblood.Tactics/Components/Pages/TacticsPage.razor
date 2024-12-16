@@ -33,24 +33,35 @@
         </div>
     </div>
     <div style="grid-area: 5/2/6/4">
-        <div>
+        <Grid TItem="Folder"
+            Class="table table-hover border-top"
+            Data="tactic.Folders"
+            AllowDetailView="true"
+            AllowSorting="true">
+            
             @foreach (var folder in tactic.Folders)
             {
+                <GridColumns>
+                    <GridColumn TItem="Folder" HeaderText="Name" PropertyName="Name" SortKeySelector="item => item.Name">
+                        @context.Name
+                        <Button @onclick="async () => await onClickFolderRename(folder.Id)"><Icon Name="IconName.PencilFill"></Icon> </Button>
+                    </GridColumn>
+                </GridColumns>
+                <GridDetailView TItem="Folder">
+                    <Grid TItem="Slide"
+                        Class="table table-hover border-top"
+                        Data="folder.Slides">
+                        <GridColumns>
+                            <GridColumn TItem="Slide" Context="slide" HeaderText="Name" PropertyName="Name">
+                                @slide.Name
+                            </GridColumn>
+                        </GridColumns>
+                    </Grid>
+                </GridDetailView>
+        
 
-                <div>
-                    <div style="display:flex">
-                        <h3>@folder.Name</h3>
-                        <Button Color="ButtonColor.Info" @onclick="async () => await onClickFolderRename(folder.Id)"> <Icon Name="IconName.PencilFill"/></Button>
-                    </div>
-                    @foreach (var slide in folder.Slides)
-                    {
-                        <ul>
-                            <li>@slide.Name</li>
-                        </ul>
-                    }
-                </div>
             }
-        </div>
+        </Grid>
     </div>
 </div>
 
@@ -62,6 +73,7 @@
     private Tactic? tactic;
 
     private List<IIcon> currentIcons = new List<IIcon>();
+    private Slide currentSlide;
 
     private static string baseMapPath = "wwwroot/ConquerorsBladeData/Maps";
     private static string baseUnitPath = "wwwroot/ConquerorsBladeData/Units";
@@ -78,7 +90,7 @@
         {
             collection = Database.GetCollection<Tactic>("Tactics");
             tactic = collection.Find(t => t.Id == ID).FirstOrDefault();
-            // tactic.Folders.ForEach(folder => folder.Slides.ForEach(slide => slide.Icons.ForEach(icon => currentIcons.Add(icon))));
+            currentSlide = tactic.Folders[0].Slides[0];
         }
 
     }
@@ -161,5 +173,11 @@
             var update = Builders<Tactic>.Update.Set(t => t.Folders[0].Name, newName);
             await collection.UpdateOneAsync(filter, update);
         }
+    }
+
+    private async Task OnSelectedSlideChange(Slide slide) 
+    {
+        currentSlide = slide;
+        currentIcons = slide.Icons;
     }
 }
