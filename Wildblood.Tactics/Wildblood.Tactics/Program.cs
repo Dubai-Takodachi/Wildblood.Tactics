@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
+using MudBlazor.Services;
 using Wildblood.Tactics.Client.Pages;
 using Wildblood.Tactics.Components;
 using Wildblood.Tactics.Components.Account;
@@ -45,7 +46,7 @@ namespace Wildblood.Tactics
             builder.Services.AddScoped<IdentityUserAccessor>();
             builder.Services.AddScoped<IdentityRedirectManager>();
             builder.Services.AddScoped<AuthenticationStateProvider, PersistingRevalidatingAuthenticationStateProvider>();
-            builder.Services.AddBlazorBootstrap();
+            builder.Services.AddMudServices();
 
             builder.Services.AddAuthentication().AddGoogle(googleOptions =>
             {

@@ -8,33 +8,16 @@
 @inject NavigationManager NavigationManager
 @rendermode InteractiveServer
 
-<Grid TItem="Tactic"
-Class="table table-hover table-bordered table-striped"
-DataProvider="TacticsGridDataProvider"
-AllowFiltering="true"
-AllowPaging="true"
-PageSize="15"
-AllowSorting="false"
-AllowSelection="true"
-SelectionMode="GridSelectionMode.Single"
-SelectedItemsChanged="OnRowSelected"
-Responsive="true">
-    <GridColumns>
-        <GridColumn TItem="Tactic"  HeaderText="Tactic Name" PropertyName="Name" SortKeySelector="item => item.Name">
-            @context.Name
-        </GridColumn>
-        <GridColumn TItem="Tactic" HeaderText="Tactic Creator" PropertyName="UserId" SortKeySelector="item => item.UserId">
-            @context.UserId
-        </GridColumn>
-    </GridColumns>
-</Grid>
+<MudDataGrid Items="Tactics" RowClick="OnRowClicked" T="Tactic">
+    <Columns>
+        <PropertyColumn Property="item => item.Name" Title="Name" />
+        <PropertyColumn Property="item => item.UserId" Title="Creator" />
+    </Columns>
+</MudDataGrid>
 
-@if(selectedTactic != null)
-{
-    <Button Color="ButtonColor.Primary" @onclick="OpenTactic">Open Tactic</Button>
-}
 
 @code {
+    // TODO: MAKE IT MORE BEAUTIFUL
     private List<Tactic> Tactics { get; set; } = new List<Tactic>();
     private Tactic selectedTactic;
 
@@ -45,29 +28,9 @@ Responsive="true">
         Tactics = await Database.GetCollection<Tactic>("Tactics").Find(t => t.UserId == user).ToListAsync();
     }
 
-    private async Task<GridDataProviderResult<Tactic>> TacticsGridDataProvider(GridDataProviderRequest<Tactic> request)
+    private void OnRowClicked(DataGridRowClickEventArgs<Tactic> args)
     {
-        if (Tactics?.Count() > 0) 
-        {
-            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-            var user = authState.User.FindFirst(c => c.Type == "sub")?.Value ?? authState.User.FindFirst(c => c.Type == "nameidentifier")?.Value ?? authState.User.Identity.Name;
-            Tactics = Database.GetCollection<Tactic>("Tactics").Find(t => t.UserId == user).ToList();
-        }
-        return await Task.FromResult(request.ApplyTo(Tactics));
-    }
-
-    private Task OnRowSelected(HashSet<Tactic> selectedItems)
-    {
-        selectedTactic = selectedItems.FirstOrDefault();
-        return Task.CompletedTask;
-    }
-
-    private void OpenTactic() 
-    {
-        if (selectedTactic != null)
-        {
-            NavigationManager.NavigateTo($"/tactics/{selectedTactic.Id}");
-        }
+        NavigationManager.NavigateTo($"/tactics/{args.Item.Id}");
     }
 
 

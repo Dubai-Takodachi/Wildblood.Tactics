@@ -26,42 +26,45 @@
             @foreach (var dir in Directory.EnumerateFiles(baseUnitPath, "*", SearchOption.AllDirectories).Select(f => Path.GetFileName(f)))
             {
                 <div @onclick="@(async (args) => await selectedUnitChanged(dir))">
-                    <img src="/ConquerorsBladeData/Units/@dir" height="40" width="40"/>
+                    <img src="/ConquerorsBladeData/Units/@dir" height="40" width="40" />
                 </div>
 
             }
         </div>
     </div>
     <div style="grid-area: 5/2/6/4">
-        <Grid TItem="Folder"
-            Class="table table-hover border-top"
-            Data="tactic.Folders"
-            AllowDetailView="true"
-            AllowSorting="true">
-            
-            @foreach (var folder in tactic.Folders)
-            {
-                <GridColumns>
-                    <GridColumn TItem="Folder" HeaderText="Name" PropertyName="Name" SortKeySelector="item => item.Name">
-                        @context.Name
-                        <Button @onclick="async () => await onClickFolderRename(folder.Id)"><Icon Name="IconName.PencilFill"></Icon> </Button>
-                    </GridColumn>
-                </GridColumns>
-                <GridDetailView TItem="Folder">
-                    <Grid TItem="Slide"
-                        Class="table table-hover border-top"
-                        Data="folder.Slides">
-                        <GridColumns>
-                            <GridColumn TItem="Slide" Context="slide" HeaderText="Name" PropertyName="Name">
-                                @slide.Name
-                            </GridColumn>
-                        </GridColumns>
-                    </Grid>
-                </GridDetailView>
-        
-
-            }
-        </Grid>
+        <MudPaper>
+            <MudTreeView T="Tactic" Hover="true" Dense="true" ExpandOnClick="true"> 
+                @foreach(var folder in tactic.Folders)
+                {
+                    <MudTreeViewItem Icon="@Icons.Material.Filled.Folder">
+                        <BodyContent>
+                            <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
+                            <MudText>@folder.Name</MudText>
+                                <div style="justify-self: end;">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" @onclick="@(async (args) => await onClickFolderRename(folder.Id))" />
+                                </div>
+                            </div>
+                        </BodyContent>
+                        <ChildContent>
+                        @foreach (var slide in folder.Slides)
+                        {
+                            <MudTreeViewItem  Icon="@Icons.Material.Filled.Notes" @onclick="@(async (args) => await OnSelectedSlideChange(slide))">
+                                <BodyContent>
+                                    <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
+                                        <MudText >@slide.Name</MudText>
+                                        <div style="justify-self: end;">
+                                            <MudIconButton Icon="@Icons.Material.Filled.Edit" @onclick="@(async (args) => await onclickSlideRename(slide.Id, folder.Id))"/>
+                                        </div>
+                                    </div>
+                                </BodyContent>
+                            </MudTreeViewItem>
+                        }
+                        </ChildContent>
+                    </MudTreeViewItem>
+                }
+            </MudTreeView>
+        </MudPaper>
     </div>
 </div>
 
@@ -166,7 +169,7 @@
         var newName = await JS.InvokeAsync<string>("prompt", "Enter new name", folder.Name);
         if (newName != null)
         {
-            // it is infact a referece! 
+            // it is infact a referece!
             folder.Name = newName;
             // Update The Folder Name in the Database
             var filter = Builders<Tactic>.Filter.Eq(t => t.Id, tactic.Id) & Builders<Tactic>.Filter.ElemMatch(t => t.Folders, f => f.Id == folderId);
@@ -175,9 +178,28 @@
         }
     }
 
-    private async Task OnSelectedSlideChange(Slide slide) 
+    private async Task OnSelectedSlideChange(Slide slide)
     {
         currentSlide = slide;
         currentIcons = slide.Icons;
+    }
+
+    private async Task onclickSlideRename(string slideID, string folderID) 
+    {
+        var slide = tactic.Folders.Single(f => f.Id == folderID).Slides.Single(s => s.Id == slideID);
+        var newName = await JS.InvokeAsync<string>("prompt", "Enter new name", slide.Name);
+        if (newName != null) 
+        {
+            slide.Name = newName;
+
+            var filter = Builders<Tactic>.Filter.And(
+            Builders<Tactic>.Filter.Eq(t => t.Id, tactic.Id),
+            Builders<Tactic>.Filter.ElemMatch(t => t.Folders, f => f.Id == folderID),
+            Builders<Tactic>.Filter.ElemMatch(t => t.Folders[0].Slides, s => s.Id == slideID));
+            
+            var update = Builders<Tactic>.Update.Set(t => t.Folders[0].Slides[0].Name, newName);
+
+            await collection.UpdateOneAsync(filter, update);
+        }
     }
 }
