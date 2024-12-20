@@ -10,45 +10,24 @@
 
 <input type="checkbox" title="Navigation menu" class="navbar-toggler" />
 
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
+<MudNavMenu Color="Color.Error">
+            <MudNavLink href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">
+                Home
+            </MudNavLink>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="auth">
-                <span class="bi bi-lock-nav-menu" aria-hidden="true"></span> Auth Required
-            </NavLink>
-        </div>
+            <MudNavLink href="/auth">
+                Auth Required
+            </MudNavLink>
 
         <AuthorizeView>
             <Authorized>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="Account/Manage">
-                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @context.User.Identity?.Name
-                    </NavLink>
-                </div>
-                <div>
-                    <NavLink class="nav-link" href="SavedTactics">
-                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"><MudIcon Icon="@Icons.Material.Filled.Map"></MudIcon></span> Saved Tactics
-                    </NavLink>
-                </div>
-                <div class="nav-item px-3">
+                <MudNavLink href="/Account/Manage">
+                    @context.User.Identity?.Name
+                </MudNavLink>
+                <MudNavLink href="/SavedTactics" Icon="@Icons.Material.Filled.Map">
+                        Saved Tactics
+                </MudNavLink>
+                <MudNavLink >
                     <form action="Account/Logout" method="post">
                         <AntiforgeryToken />
                         <input type="hidden" name="ReturnUrl" value="@currentUrl" />
@@ -56,23 +35,18 @@
                             <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
                         </button>
                     </form>
-                </div>
+                </MudNavLink>
             </Authorized>
             <NotAuthorized>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="Account/Register">
-                        <span class="bi bi-person-nav-menu" aria-hidden="true"></span> Register
-                    </NavLink>
-                </div>
-                <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="Account/Login">
-                        <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Login
-                    </NavLink>
-                </div>
+                <MudNavLink  href="/Account/Register">
+                    Register
+                </MudNavLink>
+                <MudNavLink  href="/Account/Login">
+                    Login
+                </MudNavLink>
             </NotAuthorized>
         </AuthorizeView>
-    </nav>
-</div>
+</MudNavMenu>
 
 @code {
     private string? currentUrl;

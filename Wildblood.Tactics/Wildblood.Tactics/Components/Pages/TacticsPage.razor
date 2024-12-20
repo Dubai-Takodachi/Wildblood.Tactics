@@ -5,8 +5,10 @@
 @using MongoDB.Driver;
 @using Wildblood.Tactics.Models
 @using Unit = Wildblood.Tactics.Entities.Unit
+@using Wildblood.Tactics.Components.Layout
 @inject IJSRuntime JS;
 @inject IMongoDatabase Database;
+@inject IDialogService DialogService
 @rendermode InteractiveServer
 
 <div class="parent">
@@ -35,34 +37,48 @@
     <div style="grid-area: 5/2/6/4">
         <MudPaper>
             <MudTreeView T="Tactic" Hover="true" Dense="true" ExpandOnClick="true"> 
-                @foreach(var folder in tactic.Folders)
-                {
-                    <MudTreeViewItem Icon="@Icons.Material.Filled.Folder">
-                        <BodyContent>
-                            <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
-                            <MudText>@folder.Name</MudText>
-                                <div style="justify-self: end;">
-                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" @onclick="@(async (args) => await onClickFolderRename(folder.Id))" />
-                                </div>
+                <MudTreeViewItem Icon="@Icons.Material.Outlined.Map">
+                    <BodyContent>
+                        <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
+                            <MudText>@tactic.Name</MudText>
+                            <div style="justify-self: end;">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" @onclick="@(async (args) => await onClickTacticRename())" />
+                                <MudIconButton Icon="@Icons.Material.Filled.AddBox" @onclick="@(async (args) => await OnAddFolder())" />
                             </div>
-                        </BodyContent>
-                        <ChildContent>
-                        @foreach (var slide in folder.Slides)
+                        </div>
+                    </BodyContent>
+                    <ChildContent>
+                        @foreach(var folder in tactic.Folders)
                         {
-                            <MudTreeViewItem  Icon="@Icons.Material.Filled.Notes" @onclick="@(async (args) => await OnSelectedSlideChange(slide))">
+                            <MudTreeViewItem Icon="@Icons.Material.Filled.Folder">
                                 <BodyContent>
                                     <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
-                                        <MudText >@slide.Name</MudText>
+                                        <MudText>@folder.Name</MudText>
                                         <div style="justify-self: end;">
-                                            <MudIconButton Icon="@Icons.Material.Filled.Edit" @onclick="@(async (args) => await onclickSlideRename(slide.Id, folder.Id))"/>
+                                            <MudIconButton Icon="@Icons.Material.Filled.Edit" @onclick="@(async (args) => await OnClickFolderRename(folder.Id))" />
+                                            <MudIconButton Icon="@Icons.Material.Filled.AddBox" @onclick="@(async (args) => await OnAddSlide(folder.Id))" />
                                         </div>
                                     </div>
                                 </BodyContent>
+                                <ChildContent>
+                                    @foreach (var slide in folder.Slides)
+                                    {
+                                        <MudTreeViewItem  Icon="@Icons.Material.Filled.Notes" @onclick="@(async (args) => await OnSelectedSlideChange(slide))">
+                                            <BodyContent>
+                                                <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
+                                                    <MudText >@slide.Name</MudText>
+                                                    <div style="justify-self: end;">
+                                                        <MudIconButton Icon="@Icons.Material.Filled.Edit" @onclick="@(async (args) => await onclickSlideRename(slide.Id, folder.Id))"/>
+                                                    </div>
+                                                </div>
+                                            </BodyContent>
+                                        </MudTreeViewItem>
+                                    }
+                                </ChildContent>
                             </MudTreeViewItem>
                         }
-                        </ChildContent>
-                    </MudTreeViewItem>
-                }
+                    </ChildContent>
+                </MudTreeViewItem>
             </MudTreeView>
         </MudPaper>
     </div>
@@ -163,17 +179,25 @@
         await JS.InvokeVoidAsync("draw", currentIcons);
     }
 
-    private async Task onClickFolderRename(string folderId)
+    private async Task OnClickFolderRename(string folderID)
     {
-        var folder = tactic.Folders.First(f => f.Id == folderId);
-        var newName = await JS.InvokeAsync<string>("prompt", "Enter new name", folder.Name);
+        var folder = tactic.Folders.First(f => f.Id == folderID);
+        var parameters = new DialogParameters<RenameDialog>
+        {
+            { "Name", folder.Name }
+        };
+
+        var dialog = await DialogService.ShowAsync<RenameDialog>("Rename", parameters);
+        var newName = (await dialog.Result).Data.ToString();
         if (newName != null)
         {
             // it is infact a referece!
             folder.Name = newName;
-            // Update The Folder Name in the Database
-            var filter = Builders<Tactic>.Filter.Eq(t => t.Id, tactic.Id) & Builders<Tactic>.Filter.ElemMatch(t => t.Folders, f => f.Id == folderId);
-            var update = Builders<Tactic>.Update.Set(t => t.Folders[0].Name, newName);
+            var filter = Builders<Tactic>.Filter.Eq(t => t.Id, tactic.Id);
+
+            var folderIndex = tactic.Folders.FindIndex(f => f.Id == folderID);
+
+            var update = Builders<Tactic>.Update.Set(t => t.Folders[folderIndex].Name, newName);
             await collection.UpdateOneAsync(filter, update);
         }
     }
@@ -187,19 +211,73 @@
     private async Task onclickSlideRename(string slideID, string folderID) 
     {
         var slide = tactic.Folders.Single(f => f.Id == folderID).Slides.Single(s => s.Id == slideID);
-        var newName = await JS.InvokeAsync<string>("prompt", "Enter new name", slide.Name);
+        var parameters = new DialogParameters<RenameDialog>
+        {
+            { "Name", slide.Name }
+        };
+
+        var dialog = await DialogService.ShowAsync<RenameDialog>("Rename", parameters);
+        var newName = (await dialog.Result).Data.ToString();
         if (newName != null) 
         {
             slide.Name = newName;
+            var filter = Builders<Tactic>.Filter.Eq(t => t.Id, tactic.Id);
 
-            var filter = Builders<Tactic>.Filter.And(
-            Builders<Tactic>.Filter.Eq(t => t.Id, tactic.Id),
-            Builders<Tactic>.Filter.ElemMatch(t => t.Folders, f => f.Id == folderID),
-            Builders<Tactic>.Filter.ElemMatch(t => t.Folders[0].Slides, s => s.Id == slideID));
-            
-            var update = Builders<Tactic>.Update.Set(t => t.Folders[0].Slides[0].Name, newName);
+            var folderIndex = tactic.Folders.FindIndex(f => f.Id == folderID);
+            var slideIndex = tactic.Folders[folderIndex].Slides.FindIndex(s => s.Id == slideID);
 
+            var update = Builders<Tactic>.Update.Set(t => t.Folders[folderIndex].Slides[slideIndex].Name, newName);
             await collection.UpdateOneAsync(filter, update);
         }
+    }
+
+    private async Task OnAddSlide(string folderID)
+    {
+        var newSlide = new Slide
+        {
+            Id = ObjectId.GenerateNewId().ToString(),
+            Name = "New Slide",
+            MapPath = null,
+            Icons = new List<IIcon>()
+        };
+        var filter = Builders<Tactic>.Filter.Eq(t => t.Id, tactic.Id) & Builders<Tactic>.Filter.ElemMatch(t => t.Folders, f => f.Id == folderID);
+        var folderIndex = tactic.Folders.FindIndex(f => f.Id == folderID);
+        var update = Builders<Tactic>.Update.Push(t => t.Folders[folderIndex].Slides, newSlide);
+        await collection.UpdateOneAsync(filter, update);
+        tactic.Folders.Single(f => f.Id == folderID).Slides.Add(newSlide);
+
+    }
+
+    private async Task onClickTacticRename() 
+    {
+        var parameters = new DialogParameters<RenameDialog>
+        {
+            { "Name", tactic.Name }
+        };
+
+        var dialog = await DialogService.ShowAsync<RenameDialog>("Rename", parameters);
+        var newName = (await dialog.Result).Data.ToString();
+        if (newName != null)
+        {
+            tactic.Name = newName;
+            //TODO currently im always replacing the entire document. Not good.
+            var filter = Builders<Tactic>.Filter.Eq(t => t.Id, tactic.Id);
+            var update = Builders<Tactic>.Update.Set(t => t.Name, newName);
+            await collection.UpdateOneAsync(filter, update);
+        }
+    }
+
+    private async Task OnAddFolder() 
+    {
+        var newFolder = new Folder
+            {
+                Id = ObjectId.GenerateNewId().ToString(),
+                Name = "New Folder",
+                Slides = new List<Slide>(),
+            };
+        var filter = Builders<Tactic>.Filter.Eq(t => t.Id, tactic.Id);
+        var update = Builders<Tactic>.Update.Push(t => t.Folders, newFolder);
+        await collection.UpdateOneAsync(filter, update);
+        tactic.Folders.Add(newFolder);
     }
 }
