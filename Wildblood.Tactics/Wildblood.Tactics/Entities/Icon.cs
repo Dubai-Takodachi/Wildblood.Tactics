@@ -1,6 +1,6 @@
 ﻿namespace Wildblood.Tactics.Entities
 {
-    public class Unit(double x, double y, string filePath, int height = 40, int width = 40) : IIcon
+    public class Icon(double x, double y, string filePath, int height = 40, int width = 40)
     {
         public double X { get; set; } = x;
 

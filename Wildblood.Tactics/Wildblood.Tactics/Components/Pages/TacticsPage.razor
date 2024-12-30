@@ -4,7 +4,7 @@
 @using Wildblood.Tactics.Entities
 @using MongoDB.Driver;
 @using Wildblood.Tactics.Models
-@using Unit = Wildblood.Tactics.Entities.Unit
+@using Icon = Wildblood.Tactics.Entities.Icon
 @using Wildblood.Tactics.Components.Layout
 @inject IJSRuntime JS;
 @inject IMongoDatabase Database;
@@ -16,23 +16,23 @@
         <canvas id="tacticsCanvas" width="1200px" height="700px" style="border:1px solid #000000;" @onmousedown="drag" @onmouseup="dragStop" @onmousemove="dragMove"></canvas>
     </div>
     <div style="grid-area: 1/2/2/3;" id="MapSelectionDiv">
-        <select @bind="Map" @bind:after="MapChanged" class="select">
+        <MudSelect T="string" Label="Maps" ValueChanged="MapChanged">
             @foreach (var dir in Directory.EnumerateFiles(baseMapPath, "*", SearchOption.AllDirectories).Select(f => Path.GetFileName(f).Split('.')[0]))
             {
-                <option value="@dir">@dir</option>
+                <MudSelectItem Value="@dir">@dir</MudSelectItem>
             }
-        </select>
+        </MudSelect>
     </div>
     <div style="grid-area: 2/2/3/3;">
-        <div id="UnitSelection" class="border-1 border border-primary">
+        <MudPaper Class="flex-wrap d-flex" Width="300px">
             @foreach (var dir in Directory.EnumerateFiles(baseUnitPath, "*", SearchOption.AllDirectories).Select(f => Path.GetFileName(f)))
             {
-                <div @onclick="@(async (args) => await selectedUnitChanged(dir))">
+                <MudPaper Class="ma-1" @onclick="@(async (args) => await selectedUnitChanged(dir))">
                     <img src="/ConquerorsBladeData/Units/@dir" height="40" width="40" />
-                </div>
+                </MudPaper>
 
             }
-        </div>
+        </MudPaper>
     </div>
     <div style="grid-area: 5/2/6/4">
         <MudPaper>
@@ -63,7 +63,7 @@
                                 <ChildContent>
                                     @foreach (var slide in folder.Slides)
                                     {
-                                        <MudTreeViewItem  Icon="@Icons.Material.Filled.Notes" @onclick="@(async (args) => await OnSelectedSlideChange(slide))">
+                                        <MudTreeViewItem  Icon="@Icons.Material.Filled.Notes" @onclick="@(async (args) => await OnSelectedSlideChange(slide, folder))">
                                             <BodyContent>
                                                 <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
                                                     <MudText >@slide.Name</MudText>
@@ -91,27 +91,46 @@
 
     private Tactic? tactic;
 
-    private List<IIcon> currentIcons = new List<IIcon>();
     private Slide currentSlide;
+    private Folder currentFolder;
 
     private static string baseMapPath = "wwwroot/ConquerorsBladeData/Maps";
     private static string baseUnitPath = "wwwroot/ConquerorsBladeData/Units";
-    private string? Map;
     private string? selectedUnit;
     private IMongoCollection<Tactic>? collection;
 
-    private Unit? draggingIcon;
+    private Icon? draggingIcon;
     private bool isDragging = false;
+    private int draggingIconIndex;
 
-    protected override void OnParametersSet()
+    protected override async void OnParametersSet()
     {
         if (ID != null)
         {
             collection = Database.GetCollection<Tactic>("Tactics");
             tactic = collection.Find(t => t.Id == ID).FirstOrDefault();
-            currentSlide = tactic.Folders[0].Slides[0];
+            currentFolder = tactic.Folders[0];
+            currentSlide = currentFolder.Slides[0];
+
+            
         }
 
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) 
+        {
+            if (currentSlide.MapPath != null)
+            {
+                await JS.InvokeVoidAsync("setBackground", currentSlide.MapPath);
+            }
+
+            if (currentSlide.Icons.Any())
+            {
+                await JS.InvokeVoidAsync("draw", currentSlide.Icons);
+            }
+        }
     }
 
     public Task selectedUnitChanged(string unit)
@@ -120,19 +139,31 @@
         return Task.CompletedTask;
     }
 
-    public async Task MapChanged()
+    public async Task MapChanged(string map)
     {
-        await JS.InvokeVoidAsync("setBackground", Map);
+        currentSlide.MapPath = map;
+        await JS.InvokeVoidAsync("setBackground", map);
+        var filter = Builders<Tactic>.Filter.Eq(t => t.Id, tactic.Id);
+        var folderIndex = tactic.Folders.FindIndex(f => f.Id == currentFolder.Id);
+        var slideIndex = tactic.Folders[folderIndex].Slides.FindIndex(s => s.Id == currentSlide.Id);
+        var update = Builders<Tactic>.Update.Set(t => t.Folders[folderIndex].Slides[slideIndex].MapPath, map);
+        await collection.UpdateOneAsync(filter, update);
     }
 
 
     private async Task placeIcon(MouseEventArgs eventArgs)
     {
-        var unit = new Unit(eventArgs.OffsetX, eventArgs.OffsetY, "/ConquerorsBladeData/Units/" + selectedUnit);
+        var unit = new Icon(eventArgs.OffsetX, eventArgs.OffsetY, "/ConquerorsBladeData/Units/" + selectedUnit);
 
         await JS.InvokeVoidAsync("placeIcon", unit);
 
-        currentIcons.Add(unit);
+        currentSlide.Icons.Add(unit);
+        var folderIndex = tactic.Folders.FindIndex(f => f.Id == currentFolder.Id);
+        var slideIndex = tactic.Folders[folderIndex].Slides.FindIndex(s => s.Id == currentSlide.Id);
+        var filter = Builders<Tactic>.Filter.Eq(t => t.Id, tactic.Id);
+        var update = Builders<Tactic>.Update.Push(t => t.Folders[folderIndex].Slides[slideIndex].Icons, unit);
+        await collection.UpdateOneAsync(filter, update);
+
     }
 
     private async Task drag(MouseEventArgs eventArgs)
@@ -140,13 +171,14 @@
         var mouseX = eventArgs.OffsetX;
         var mouseY = eventArgs.OffsetY;
 
-        foreach (var icon in currentIcons)
+        foreach (var icon in currentSlide.Icons)
         {
             if (mouseX > icon.X && mouseX < icon.X + icon.Width && mouseY > icon.Y && mouseY < icon.Y + icon.Height)
             {
-                draggingIcon = new Unit(icon.X, icon.Y, icon.FilePath, icon.Height, icon.Width);
+                draggingIcon = new Icon(icon.X, icon.Y, icon.FilePath, icon.Height, icon.Width);
+                draggingIconIndex = currentSlide.Icons.IndexOf(icon);
                 isDragging = true;
-                currentIcons.Remove(icon);
+                currentSlide.Icons.Remove(icon);
                 return;
             }
         }
@@ -163,9 +195,9 @@
         }
         draggingIcon.X = args.OffsetX;
         draggingIcon.Y = args.OffsetY;
-        currentIcons.Add(draggingIcon);
-        await JS.InvokeVoidAsync("draw", currentIcons);
-        currentIcons.Remove(draggingIcon);
+        currentSlide.Icons.Add(draggingIcon);
+        await JS.InvokeVoidAsync("draw", currentSlide.Icons);
+        currentSlide.Icons.Remove(draggingIcon);
     }
 
     private async Task dragStop()
@@ -175,8 +207,14 @@
             return;
         }
         isDragging = false;
-        currentIcons.Add(draggingIcon);
-        await JS.InvokeVoidAsync("draw", currentIcons);
+        currentSlide.Icons.Add(draggingIcon);
+        await JS.InvokeVoidAsync("draw", currentSlide.Icons);
+        var folderIndex = tactic.Folders.FindIndex(f => f.Id == currentFolder.Id);
+        var slideIndex = tactic.Folders[folderIndex].Slides.FindIndex(s => s.Id == currentSlide.Id);
+        var filter = Builders<Tactic>.Filter.Eq(t => t.Id, tactic.Id);
+        var update = Builders<Tactic>.Update.Set(t => t.Folders[folderIndex].Slides[slideIndex].Icons[draggingIconIndex], draggingIcon);
+        await collection.UpdateOneAsync(filter, update);
+
     }
 
     private async Task OnClickFolderRename(string folderID)
@@ -202,10 +240,16 @@
         }
     }
 
-    private async Task OnSelectedSlideChange(Slide slide)
+    private async Task OnSelectedSlideChange(Slide slide, Folder folder)
     {
+        if (currentFolder != folder)
+        {
+            currentFolder = folder;
+        }
+
         currentSlide = slide;
-        currentIcons = slide.Icons;
+        await ReDrawCanvas();
+
     }
 
     private async Task onclickSlideRename(string slideID, string folderID) 
@@ -238,7 +282,7 @@
             Id = ObjectId.GenerateNewId().ToString(),
             Name = "New Slide",
             MapPath = null,
-            Icons = new List<IIcon>()
+            Icons = new List<Icon>()
         };
         var filter = Builders<Tactic>.Filter.Eq(t => t.Id, tactic.Id) & Builders<Tactic>.Filter.ElemMatch(t => t.Folders, f => f.Id == folderID);
         var folderIndex = tactic.Folders.FindIndex(f => f.Id == folderID);
@@ -279,5 +323,11 @@
         var update = Builders<Tactic>.Update.Push(t => t.Folders, newFolder);
         await collection.UpdateOneAsync(filter, update);
         tactic.Folders.Add(newFolder);
+    }
+
+    private async Task ReDrawCanvas() 
+    {
+        await JS.InvokeVoidAsync("draw", currentSlide.Icons);
+        await JS.InvokeVoidAsync("setBackground", currentSlide.MapPath);
     }
 }
