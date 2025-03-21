@@ -12,92 +12,90 @@
 @rendermode InteractiveServer
 
 <div class="parent">
-    <div style="grid-area: 1/1/6/2;">
+    <div style="grid-area: 1/1/7/2;" id="tacticsCanvasContainer">
         @*This Cant use Height and Width.*@
-        <canvas id="tacticsCanvas" width="1200px" height="700px" style="border:1px solid #000000;" @onmousedown="drag" @onmouseup="dragStop" @onmousemove="dragMove"></canvas>
+        <canvas id="tacticsCanvas" width="100%" height="100%" style="border:1px solid #000000;" @onmousedown="drag" @onmouseup="dragStop" @onmousemove="dragMove"></canvas>
     </div>
-    <div style="width:30%; display:flex; flex-direction:column">
-        <div id="MapSelectionDiv">
-            <MudSelect T="string" Label="Maps" ValueChanged="MapChanged">
-                @foreach (var map in maps)
-                {
-                    <MudSelectItem Value="@map">@map</MudSelectItem>
-                }
-            </MudSelect>
-        </div>
-        <MudPaper>
-            <MudTabs>
-                <MudTabPanel Icon="@swordsIcon" @onclick="() => ChangeTool(Tool.Unit)">
-                    <div>
-                        @*Unit*@
-                        <MudPaper Class="flex-wrap d-flex" Width="300px">
-                            @foreach (var unit in units)
-                            {
-                                <MudPaper Class="ma-1" @onclick="@(async (args) => await selectedUnitChanged(unit))">
-                                    <img src="/ConquerorsBladeData/Units/@unit" height="40" width="40" />
-                                </MudPaper>
+    <div id="MapSelectionDiv" style="grid-area:1/2/1/2">
+        <MudSelect T="string" Label="Maps" ValueChanged="MapChanged">
+            @foreach (var map in maps)
+            {
+                <MudSelectItem Value="@map">@map</MudSelectItem>
+            }
+        </MudSelect>
+    </div>
+    <MudPaper style="grid-area:2/2/3/2">
+        <MudTabs>
+            <MudTabPanel Icon="@swordsIcon" @onclick="() => ChangeTool(Tool.Unit)">
+                <div>
+                    @*Unit*@
+                    <MudPaper Class="flex-wrap d-flex" Width="300px">
+                        @foreach (var unit in units)
+                        {
+                            <MudPaper Class="ma-1" @onclick="@(async (args) => await selectedUnitChanged(unit))">
+                                <img src="/ConquerorsBladeData/Units/@unit" height="40" width="40" />
+                            </MudPaper>
 
-                            }
-                        </MudPaper>
-                    </div>
-                </MudTabPanel>
-                <MudTabPanel Icon="@vectorLineIcon" @onclick="() => ChangeTool(Tool.StraightLine)">
-                    <MudPaper>
-                        <MudColorPicker Label="Line Color" @bind-Text="colorValue" />
+                        }
                     </MudPaper>
-                </MudTabPanel>
-            </MudTabs>
-        </MudPaper>
+                </div>
+            </MudTabPanel>
+            <MudTabPanel Icon="@vectorLineIcon" @onclick="() => ChangeTool(Tool.StraightLine)">
+                <MudPaper>
+                    <MudColorPicker Label="Line Color" @bind-Text="colorValue" />
+                </MudPaper>
+            </MudTabPanel>
+        </MudTabs>
+    </MudPaper>
 
 
-        <div>
-            <MudPaper>
-                <MudTreeView T="Tactic" Hover="true" Dense="true" ExpandOnClick="true"> 
-                    <MudTreeViewItem Icon="@Icons.Material.Outlined.Map">
-                        <BodyContent>
-                            <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
-                                <MudText>@tactic.Name</MudText>
-                                <div style="justify-self: end;">
-                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" @onclick="@(async (args) => await onClickTacticRename())" />
-                                    <MudIconButton Icon="@Icons.Material.Filled.AddBox" @onclick="@(async (args) => await OnAddFolder())" />
-                                </div>
+    <div>
+        <MudPaper>
+            <MudTreeView T="Tactic" Hover="true" Dense="true" ExpandOnClick="true"> 
+                <MudTreeViewItem Icon="@Icons.Material.Outlined.Map">
+                    <BodyContent>
+                        <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
+                            <MudText>@tactic.Name</MudText>
+                            <div style="justify-self: end;">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" @onclick="@(async (args) => await onClickTacticRename())" />
+                                <MudIconButton Icon="@Icons.Material.Filled.AddBox" @onclick="@(async (args) => await OnAddFolder())" />
                             </div>
-                        </BodyContent>
-                        <ChildContent>
-                            @foreach(var folder in tactic.Folders)
-                            {
-                                <MudTreeViewItem Icon="@Icons.Material.Filled.Folder">
-                                    <BodyContent>
-                                        <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
-                                            <MudText>@folder.Name</MudText>
-                                            <div style="justify-self: end;">
-                                                <MudIconButton Icon="@Icons.Material.Filled.Edit" @onclick="@(async (args) => await OnClickFolderRename(folder.Id))" />
-                                                <MudIconButton Icon="@Icons.Material.Filled.AddBox" @onclick="@(async (args) => await OnAddSlide(folder.Id))" />
-                                            </div>
+                        </div>
+                    </BodyContent>
+                    <ChildContent>
+                        @foreach(var folder in tactic.Folders)
+                        {
+                            <MudTreeViewItem Icon="@Icons.Material.Filled.Folder">
+                                <BodyContent>
+                                    <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
+                                        <MudText>@folder.Name</MudText>
+                                        <div style="justify-self: end;">
+                                            <MudIconButton Icon="@Icons.Material.Filled.Edit" @onclick="@(async (args) => await OnClickFolderRename(folder.Id))" />
+                                            <MudIconButton Icon="@Icons.Material.Filled.AddBox" @onclick="@(async (args) => await OnAddSlide(folder.Id))" />
                                         </div>
-                                    </BodyContent>
-                                    <ChildContent>
-                                        @foreach (var slide in folder.Slides)
-                                        {
-                                            <MudTreeViewItem  Icon="@Icons.Material.Filled.Notes" @onclick="@(async (args) => await OnSelectedSlideChange(slide, folder))">
-                                                <BodyContent>
-                                                    <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
-                                                        <MudText >@slide.Name</MudText>
-                                                        <div style="justify-self: end;">
-                                                            <MudIconButton Icon="@Icons.Material.Filled.Edit" @onclick="@(async (args) => await onclickSlideRename(slide.Id, folder.Id))"/>
-                                                        </div>
+                                    </div>
+                                </BodyContent>
+                                <ChildContent>
+                                    @foreach (var slide in folder.Slides)
+                                    {
+                                        <MudTreeViewItem  Icon="@Icons.Material.Filled.Notes" @onclick="@(async (args) => await OnSelectedSlideChange(slide, folder))">
+                                            <BodyContent>
+                                                <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
+                                                    <MudText >@slide.Name</MudText>
+                                                    <div style="justify-self: end;">
+                                                        <MudIconButton Icon="@Icons.Material.Filled.Edit" @onclick="@(async (args) => await onclickSlideRename(slide.Id, folder.Id))"/>
                                                     </div>
-                                                </BodyContent>
-                                            </MudTreeViewItem>
-                                        }
-                                    </ChildContent>
-                                </MudTreeViewItem>
-                            }
-                        </ChildContent>
-                    </MudTreeViewItem>
-                </MudTreeView>
-            </MudPaper>
-        </div>
+                                                </div>
+                                            </BodyContent>
+                                        </MudTreeViewItem>
+                                    }
+                                </ChildContent>
+                            </MudTreeViewItem>
+                        }
+                    </ChildContent>
+                </MudTreeViewItem>
+            </MudTreeView>
+        </MudPaper>
     </div>
 </div>
 
@@ -152,6 +150,7 @@
     {
         if (firstRender) 
         {
+            await JS.InvokeVoidAsync("setCanvasSize", "tacticsCanvas");
             if (currentSlide.MapPath != null)
             {
                 await JS.InvokeVoidAsync("setBackground", currentSlide.MapPath);

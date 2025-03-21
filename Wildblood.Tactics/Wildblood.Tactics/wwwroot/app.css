@@ -59,8 +59,10 @@ h1:focus {
 
 .parent {
     display: grid;
-    grid-template-columns: 80% 10%;
+    grid-template-columns: 80% 20%;
     grid-template-rows: repeat(3, 20%);
     grid-column-gap: 0px;
     grid-row-gap: 0px;
+    width: 97%;
+    height: 95%;
 } 

@@ -9,6 +9,17 @@
     canvas.style.backgroundSize = "cover";
 }
 
+window.setCanvasSize = function (canvasId) {
+    const canvas = document.getElementById(canvasId);
+    const context = canvas.getContext('2d');
+    let parent = document.getElementById('tacticsCanvasContainer');
+    const width = parent.clientWidth;
+    const height = parent.clientHeight;
+
+    canvas.width = width;
+    canvas.height = height;
+};
+
 window.placeIcon = function (unit) {
     const canvas = document.getElementById('tacticsCanvas');
     const ctx = canvas.getContext('2d');
