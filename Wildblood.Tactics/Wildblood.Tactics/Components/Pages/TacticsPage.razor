@@ -12,9 +12,9 @@
 @rendermode InteractiveServer
 
 <div class="parent">
-    <div style="grid-area: 1/1/7/2;" id="tacticsCanvasContainer">
-        @*This Cant use Height and Width.*@
-        <canvas id="tacticsCanvas" width="100%" height="100%" style="border:1px solid #000000;" @onmousedown="drag" @onmouseup="dragStop" @onmousemove="dragMove"></canvas>
+    <div style="grid-area: 1/1/span 7/2;" id="tacticsCanvasContainer">
+        @*Width and Height is set via JS (=> 100% of size of parent container)*@
+        <canvas id="tacticsCanvas" width="100%" height="100%" style="border:1px solid #000000;" @onmousedown="MouseDown" @onmouseup="dragStop"  @onmousemove="dragMove"></canvas>
     </div>
     <div id="MapSelectionDiv" style="grid-area:1/2/1/2">
         <MudSelect T="string" Label="Maps" ValueChanged="MapChanged">
@@ -24,9 +24,9 @@
             }
         </MudSelect>
     </div>
-    <MudPaper style="grid-area:2/2/3/2">
+    <MudPaper style="grid-area:2/2/span 3/2">
         <MudTabs>
-            <MudTabPanel Icon="@swordsIcon" @onclick="() => ChangeTool(Tool.Unit)">
+            <MudTabPanel Icon="@swordsIcon" @onclick="() => ChangeTool(IconType.Unit)">
                 <div>
                     @*Unit*@
                     <MudPaper Class="flex-wrap d-flex" Width="300px">
@@ -40,7 +40,7 @@
                     </MudPaper>
                 </div>
             </MudTabPanel>
-            <MudTabPanel Icon="@vectorLineIcon" @onclick="() => ChangeTool(Tool.StraightLine)">
+            <MudTabPanel Icon="@vectorLineIcon" @onclick="() => ChangeTool(IconType.StraightLine)">
                 <MudPaper>
                     <MudColorPicker Label="Line Color" @bind-Text="colorValue" />
                 </MudPaper>
@@ -49,7 +49,7 @@
     </MudPaper>
 
 
-    <div>
+    <div style="grid-area: 5/2/span 3/2; overflow-y: scroll; min-height:200px">
         <MudPaper>
             <MudTreeView T="Tactic" Hover="true" Dense="true" ExpandOnClick="true"> 
                 <MudTreeViewItem Icon="@Icons.Material.Outlined.Map">
@@ -108,7 +108,7 @@
     private string colorValue;
     private Slide currentSlide;
     private Folder currentFolder;
-    private Tool currentTool = Tool.Unit;
+    private IconType currentTool = IconType.Unit;
     private static string baseMapPath = "wwwroot/ConquerorsBladeData/Maps";
     private static string baseUnitPath = "wwwroot/ConquerorsBladeData/Units";
     private string selectedUnit;
@@ -117,6 +117,8 @@
     private List<string> maps = new List<string>();
     private List<string> units = new List<string>();
     private Icon draggingIcon;
+    private Icon drawableIcon;
+    private bool drawingShape = false;
     private bool isDragging = false;
     private int draggingIconIndex;
     private double startX;
@@ -182,8 +184,9 @@
 
 
     private async Task placeIcon(MouseEventArgs eventArgs)
-    {
-        var unit = new Icon(eventArgs.OffsetX, eventArgs.OffsetY, "/ConquerorsBladeData/Units/" + selectedUnit);
+    { 
+        // End X and End Y will be OFfset X + 40 so the base unit is 40x40
+        var unit = new Icon(eventArgs.OffsetX, eventArgs.OffsetY, eventArgs.OffsetX + 40, eventArgs.OffsetY + 40, "/ConquerorsBladeData/Units/" + selectedUnit, IconType.Unit);
 
         await JS.InvokeVoidAsync("placeIcon", unit);
 
@@ -196,82 +199,86 @@
 
     }
 
-    private async Task drag(MouseEventArgs eventArgs)
+    private async Task MouseDown(MouseEventArgs eventArgs)
     {
         var mouseX = eventArgs.OffsetX;
         var mouseY = eventArgs.OffsetY;
 
+        foreach (var icon in currentSlide.Icons)
+        {
+            if (mouseX > icon.StartX && mouseX < icon.EndX && mouseY > icon.StartY && mouseY < icon.EndY)
+            {
+                draggingIcon = new Icon(icon.StartX, icon.StartY, icon.EndX, icon.EndY, icon.FilePath, icon.Type);
+                draggingIconIndex = currentSlide.Icons.IndexOf(icon);
+                isDragging = true;
+                currentSlide.Icons.Remove(icon);
+                return;
+            }
+        }
         switch (currentTool)
         {
-            case Tool.Unit:
-                foreach (var icon in currentSlide.Icons)
-                {
-                    if (mouseX > icon.X && mouseX < icon.X + icon.Width && mouseY > icon.Y && mouseY < icon.Y + icon.Height)
-                    {
-                        draggingIcon = new Icon(icon.X, icon.Y, icon.FilePath, icon.Height, icon.Width);
-                        draggingIconIndex = currentSlide.Icons.IndexOf(icon);
-                        isDragging = true;
-                        currentSlide.Icons.Remove(icon);
-                        return;
-                    }
-                }
-                break;
-            case Tool.StraightLine:
+            case IconType.Unit:
+                await placeIcon(eventArgs);
+                return;
+            case IconType.StraightLine:
                 await setStartPointForArrow(eventArgs);
-                break;
+                drawingShape = true;
+                return;
         }
-
-
-        await placeIcon(eventArgs);
-
     }
 
     private async Task dragMove(MouseEventArgs args)
     {
-        if (!isDragging || draggingIcon == null)
+        if ((!isDragging || draggingIcon == null) && !drawingShape)
         {
             return;
         }
 
-        switch(currentTool) 
+        if (currentTool == IconType.StraightLine && drawingShape)
         {
-            case Tool.Unit:
-                draggingIcon.X = args.OffsetX;
-                draggingIcon.Y = args.OffsetY;
-                currentSlide.Icons.Add(draggingIcon);
-                await JS.InvokeVoidAsync("draw", currentSlide.Icons);
-                currentSlide.Icons.Remove(draggingIcon);
-                break;
-            case Tool.StraightLine:
-                var endX = args.OffsetX;
-                var endY = args.OffsetY;
-                await JS.InvokeVoidAsync("drawArrow", startX, startY, endX, endY, colorValue);
-                break;
+            drawableIcon.EndX = args.OffsetX;
+            drawableIcon.EndY = args.OffsetY;
+            currentSlide.Icons.Add(drawableIcon);
+            await JS.InvokeVoidAsync("draw", currentSlide.Icons);
+            currentSlide.Icons.Remove(drawableIcon);
+            return;
         }
+
+        draggingIcon.StartX = args.OffsetX;
+        draggingIcon.StartY = args.OffsetY;
+        draggingIcon.EndX = args.OffsetX + 40;
+        draggingIcon.EndY = args.OffsetY + 40;
+        currentSlide.Icons.Add(draggingIcon);
+        await JS.InvokeVoidAsync("draw", currentSlide.Icons);
+        currentSlide.Icons.Remove(draggingIcon);
     }
 
     private async Task dragStop()
     {
-        if (!isDragging)
+        if (!isDragging && !drawingShape)
         {
             return;
         }
-        switch(currentTool) 
+        var folderIndex = tactic.Folders.FindIndex(f => f.Id == currentFolder.Id);
+        var slideIndex = tactic.Folders[folderIndex].Slides.FindIndex(s => s.Id == currentSlide.Id);
+        var filter = Builders<Tactic>.Filter.Eq(t => t.Id, tactic.Id);
+
+        if (currentTool == IconType.StraightLine && drawingShape)
         {
-            case Tool.Unit:
-                isDragging = false;
-                currentSlide.Icons.Add(draggingIcon);
-                await JS.InvokeVoidAsync("draw", currentSlide.Icons);
-                var folderIndex = tactic.Folders.FindIndex(f => f.Id == currentFolder.Id);
-                var slideIndex = tactic.Folders[folderIndex].Slides.FindIndex(s => s.Id == currentSlide.Id);
-                var filter = Builders<Tactic>.Filter.Eq(t => t.Id, tactic.Id);
-                var update = Builders<Tactic>.Update.Set(t => t.Folders[folderIndex].Slides[slideIndex].Icons[draggingIconIndex], draggingIcon);
-                await collection.UpdateOneAsync(filter, update);
-                break;
-            case Tool.StraightLine:
-                break;
+            //TODO: Color is not set properly
+            drawingShape = false;
+            currentSlide.Icons.Add(drawableIcon);
+            await JS.InvokeVoidAsync("draw", currentSlide.Icons);
+            var insert = Builders<Tactic>.Update.Push(t => t.Folders[folderIndex].Slides[slideIndex].Icons, drawableIcon);
+            await collection.UpdateOneAsync(filter, insert);
+            return;
         }
-        
+
+        isDragging = false;
+        await JS.InvokeVoidAsync("draw", currentSlide.Icons);
+        currentSlide.Icons.Add(draggingIcon);
+        var update = Builders<Tactic>.Update.Set(t => t.Folders[folderIndex].Slides[slideIndex].Icons[draggingIconIndex], draggingIcon);
+        await collection.UpdateOneAsync(filter, update);
 
     }
 
@@ -389,15 +396,14 @@
         await JS.InvokeVoidAsync("setBackground", currentSlide.MapPath);
     }
 
-    private void ChangeTool(Tool selectedTool) 
+    private void ChangeTool(IconType selectedTool) 
     {
         currentTool = selectedTool;
     }
 
     private async Task setStartPointForArrow(MouseEventArgs eventArgs)
     {
-        startX = eventArgs.OffsetX;
-        startY = eventArgs.OffsetY;
+        drawableIcon = new Icon(eventArgs.OffsetX, eventArgs.OffsetY, eventArgs.OffsetX, eventArgs.OffsetY, colorValue, IconType.StraightLine);
     }
 
 
