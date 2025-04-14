@@ -186,7 +186,7 @@
     private async Task placeIcon(MouseEventArgs eventArgs)
     { 
         // End X and End Y will be OFfset X + 40 so the base unit is 40x40
-        var unit = new Icon(eventArgs.OffsetX, eventArgs.OffsetY, eventArgs.OffsetX + 40, eventArgs.OffsetY + 40, "/ConquerorsBladeData/Units/" + selectedUnit, IconType.Unit);
+        var unit = new Icon(eventArgs.OffsetX, eventArgs.OffsetY, eventArgs.OffsetX + 40, eventArgs.OffsetY + 40, "/ConquerorsBladeData/Units/" + selectedUnit, IconType.Unit, colorValue);
 
         await JS.InvokeVoidAsync("placeIcon", unit);
 
@@ -208,7 +208,7 @@
         {
             if (mouseX > icon.StartX && mouseX < icon.EndX && mouseY > icon.StartY && mouseY < icon.EndY)
             {
-                draggingIcon = new Icon(icon.StartX, icon.StartY, icon.EndX, icon.EndY, icon.FilePath, icon.Type);
+                draggingIcon = new Icon(icon.StartX, icon.StartY, icon.EndX, icon.EndY, icon.FilePath, icon.Type, icon.Color);
                 draggingIconIndex = currentSlide.Icons.IndexOf(icon);
                 isDragging = true;
                 currentSlide.Icons.Remove(icon);
@@ -403,7 +403,7 @@
 
     private async Task setStartPointForArrow(MouseEventArgs eventArgs)
     {
-        drawableIcon = new Icon(eventArgs.OffsetX, eventArgs.OffsetY, eventArgs.OffsetX, eventArgs.OffsetY, colorValue, IconType.StraightLine);
+        drawableIcon = new Icon(eventArgs.OffsetX, eventArgs.OffsetY, eventArgs.OffsetX, eventArgs.OffsetY, string.Empty, IconType.StraightLine, colorValue);
     }
 
 

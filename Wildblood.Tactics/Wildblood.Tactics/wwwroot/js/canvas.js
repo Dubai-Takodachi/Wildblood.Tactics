@@ -25,7 +25,7 @@ window.placeIcon = function (unit) {
     const ctx = canvas.getContext('2d');
     let image = new Image();
     image.src = unit.filePath;
-    ctx.drawImage(image, unit.x, unit.endX - unit.startX, unit.endY - unit.startY);
+    ctx.drawImage(image, unit.startX, unit.startY, unit.endX - unit.startX, unit.endY - unit.startY);
 }
 
 window.draw = function (icons) {
