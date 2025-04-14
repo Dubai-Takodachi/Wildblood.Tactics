@@ -1,5 +1,5 @@
 ﻿let draggingIcon = null;
-let offsetX, offsetY;
+let offsetX, offsetY, lastX, lastY;
 
 window.setBackground = function (background) {
 
@@ -80,6 +80,8 @@ window.startDrag = function (icon, x, y) {
     draggingIcon = icon;
     offsetX = x - icon.startX;
     offsetY = y - icon.startY;
+    lastX = x;
+    lastY = y;
     const dragImage = document.getElementById('dragImage');
     dragImage.src = icon.filePath;
     dragImage.style.display = 'block';
@@ -91,10 +93,14 @@ window.startDrag = function (icon, x, y) {
 };
 
 window.dragIcon = function (x, y) {
-    if (draggingIcon) {
-        const dragImage = document.getElementById('dragImage');
-        dragImage.style.left = `${x - offsetX}px`;
-        dragImage.style.top = `${y - offsetY}px`;
+    if (draggingIcon && (x !== lastX || y !== lastY)) {
+        lastX = x;
+        lastY = y;
+        requestAnimationFrame(() => {
+            const dragImage = document.getElementById('dragImage');
+            dragImage.style.left = `${x - offsetX}px`;
+            dragImage.style.top = `${y - offsetY}px`;
+        });
     }
 };
 

@@ -15,7 +15,7 @@
     <div style="grid-area: 1/1/span 7/2;" id="tacticsCanvasContainer">
         @*Width and Height is set via JS (=> 100% of size of parent container)*@
         <canvas id="tacticsCanvas" width="100%" height="100%" style="border:1px solid #000000;" @onmousedown="MouseDown" @onmouseup="dragStop"  @onmousemove="dragMove"></canvas>
-        <img id="dragImage" src="" style="display:none"/>
+        <img id="dragImage" src="" style="display:none" @onmouseup="dragStop"/>
     </div>
     <div id="MapSelectionDiv" style="grid-area:1/2/1/2">
         <MudSelect T="string" Label="Maps" ValueChanged="MapChanged">
@@ -250,7 +250,7 @@
         draggingIcon.StartY = args.OffsetY;
         draggingIcon.EndX = args.OffsetX + 40;
         draggingIcon.EndY = args.OffsetY + 40;
-        await JS.InvokeVoidAsync("dragIcon", draggingIcon.StartX, draggingIcon.StartY);
+        await JS.InvokeVoidAsync("dragIcon", args.ClientX, args.ClientY);
     }
 
     private async Task dragStop()
