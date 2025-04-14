@@ -12,4 +12,3 @@
         public string Color { get; set; } = color;
     }
 }
-

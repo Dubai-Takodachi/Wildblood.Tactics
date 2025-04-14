@@ -1,4 +1,7 @@
-﻿window.setBackground = function (background) {
+﻿let draggingIcon = null;
+let offsetX, offsetY;
+
+window.setBackground = function (background) {
 
     if (background == null || background == undefined) {
         return;
@@ -47,15 +50,6 @@ window.draw = function (icons) {
     })
 }
 
-window.getFilesFromDirectory = async function (directory) {
-    const response = await fetch(directory);
-    const text = await response.text();
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(text, 'text/html');
-    const links = Array.from(doc.querySelectorAll('a'));
-    return links.map(link => link.href).filter(href => href.endsWith('.png') || href.endsWith('.jpg') || href.endsWith('.jpeg'));
-};
-
 window.drawArrow = function (fromX, fromY, toX, toY, color) {
     const canvas = document.getElementById('tacticsCanvas');
     const context = canvas.getContext('2d');
@@ -81,4 +75,32 @@ window.drawArrow = function (fromX, fromY, toX, toY, color) {
     context.fillStyle = color;
     context.fill();
 }
+
+window.startDrag = function (icon, x, y) {
+    draggingIcon = icon;
+    offsetX = x - icon.startX;
+    offsetY = y - icon.startY;
+    const dragImage = document.getElementById('dragImage');
+    dragImage.src = icon.filePath;
+    dragImage.style.display = 'block';
+    dragImage.style.position = 'absolute';
+    dragImage.style.width = '40px';
+    dragImage.style.height = '40px';
+    dragImage.style.left = `${x - offsetX}px`;
+    dragImage.style.top = `${y - offsetY}px`;
+};
+
+window.dragIcon = function (x, y) {
+    if (draggingIcon) {
+        const dragImage = document.getElementById('dragImage');
+        dragImage.style.left = `${x - offsetX}px`;
+        dragImage.style.top = `${y - offsetY}px`;
+    }
+};
+
+window.stopDrag = function () {
+    draggingIcon = null;
+    const dragImage = document.getElementById('dragImage');
+    dragImage.style.display = 'none';
+};
 
