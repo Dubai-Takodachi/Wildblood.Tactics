@@ -1,6 +1,6 @@
 ﻿namespace Wildblood.Tactics
 {
-    public enum Tool
+    public enum IconType
     {
         Unit,
         StraightLine,

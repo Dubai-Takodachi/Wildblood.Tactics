@@ -17,6 +17,6 @@ namespace Wildblood.Tactics.Models
 
         [BsonElement("Icon")]
         public List<Icon> Icons { get; set; }
-        
+
     }
 }

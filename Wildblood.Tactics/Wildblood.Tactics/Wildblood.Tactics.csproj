@@ -13,6 +13,10 @@
   <ItemGroup>
     <PackageReference Include="MongoDB.Driver" Version="3.1.0" />
     <PackageReference Include="MudBlazor" Version="7.15.0" />
+    <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.556">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <ProjectReference Include="..\Wildblood.Tactics.Client\Wildblood.Tactics.Client.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="9.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.0.0" />
