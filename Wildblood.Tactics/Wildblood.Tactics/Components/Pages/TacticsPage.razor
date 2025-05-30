@@ -43,7 +43,7 @@
             </MudTabPanel>
             <MudTabPanel Icon="@vectorLineIcon" @onclick="() => ChangeTool(IconType.StraightLine)">
                 <MudPaper>
-                    <MudColorPicker Label="Line Color" @bind-Text="colorValue" />
+                    <MudColorPicker Label="Line Color" @bind-Text="colorValue"/>
                 </MudPaper>
             </MudTabPanel>
         </MudTabs>
@@ -145,6 +145,7 @@
             tactic = collection.Find(t => t.Id == ID).FirstOrDefault();
             currentFolder = tactic.Folders[0];
             currentSlide = currentFolder.Slides[0];
+            colorValue = "#000000";
         }
 
     }

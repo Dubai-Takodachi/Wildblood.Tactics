@@ -1,4 +1,6 @@
 ﻿let draggingIcon = null;
+let draggingArrow = null;
+let dragMode = null;
 let offsetX, offsetY, lastX, lastY;
 
 window.setBackground = function (background) {
@@ -77,21 +79,28 @@ window.drawArrow = function (fromX, fromY, toX, toY, color) {
 }
 
 window.startDrag = function (icon, x, y) {
-    draggingIcon = icon;
-    offsetX = x - icon.startX;
-    offsetY = y - icon.startY;
-    lastX = x;
-    lastY = y;
-    const dragImage = document.getElementById('dragImage');
-    dragImage.src = icon.filePath;
-    dragImage.style.display = 'block';
-    dragImage.style.position = 'absolute';
-    dragImage.style.width = '40px';
-    dragImage.style.height = '40px';
-    dragImage.style.left = `${x - offsetX}px`;
-    dragImage.style.top = `${y - offsetY}px`;
+    if (icon.type === 0) {
+        draggingIcon = icon;
+        offsetX = x - icon.startX;
+        offsetY = y - icon.startY;
+        lastX = x;
+        lastY = y;
+        const dragImage = document.getElementById('dragImage');
+        dragImage.src = icon.filePath;
+        dragImage.style.display = 'block';
+        dragImage.style.position = 'absolute';
+        dragImage.style.width = '40px';
+        dragImage.style.height = '40px';
+        dragImage.style.left = `${x - offsetX}px`;
+        dragImage.style.top = `${y - offsetY}px`;
+    }
+    else if (icon.type === 1) {
+        draggingArrow = arrow;
+        offsetX = x;
+        offsetY = y;
+    }
 };
-
+// TODO implement Spefic deltion so the canvas does not need to be redrawn
 window.dragIcon = function (x, y) {
     if (draggingIcon && (x !== lastX || y !== lastY)) {
         lastX = x;
@@ -101,6 +110,20 @@ window.dragIcon = function (x, y) {
             dragImage.style.left = `${x - offsetX}px`;
             dragImage.style.top = `${y - offsetY}px`;
         });
+    }
+    else if (draggingArrow) {
+        const deltaX = x - offsetX;
+        const deltaY = y - offsetY;
+
+        // Update both start and end points of the arrow
+        draggingArrow.startX += deltaX;
+        draggingArrow.startY += deltaY;
+        draggingArrow.endX += deltaX;
+        draggingArrow.endY += deltaY;
+
+        // Update offset for next movement
+        offsetX = x;
+        offsetY = y;
     }
 };
 
