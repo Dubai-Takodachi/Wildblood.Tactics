@@ -110,6 +110,7 @@
     private Slide currentSlide;
     private Folder currentFolder;
     private IconType currentTool = IconType.Unit;
+    private IconType currentDraggingType = IconType.Unit;
     private static string baseMapPath = "wwwroot/ConquerorsBladeData/Maps";
     private static string baseUnitPath = "wwwroot/ConquerorsBladeData/Units";
     private string selectedUnit;
@@ -213,8 +214,11 @@
                 draggingIcon = new Icon(icon.StartX, icon.StartY, icon.EndX, icon.EndY, icon.FilePath, icon.Type, icon.Color);
                 draggingIconIndex = currentSlide.Icons.IndexOf(icon);
                 isDragging = true;
+                startX = mouseX;
+                startY = mouseY;
                 await JS.InvokeVoidAsync("startDrag", draggingIcon, mouseX, mouseY);
                 currentSlide.Icons.Remove(icon);
+                currentDraggingType = icon.Type;
                 return;
             }
         }
@@ -247,10 +251,26 @@
             return;
         }
 
-        draggingIcon.StartX = args.OffsetX;
-        draggingIcon.StartY = args.OffsetY;
-        draggingIcon.EndX = args.OffsetX + 40;
-        draggingIcon.EndY = args.OffsetY + 40;
+        if( currentDraggingType == IconType.Unit)
+        {
+            draggingIcon.StartX = args.OffsetX;
+            draggingIcon.StartY = args.OffsetY;
+            draggingIcon.EndX = args.OffsetX + 40;
+            draggingIcon.EndY = args.OffsetY + 40;
+        } 
+        else if (currentDraggingType == IconType.StraightLine && !drawingShape)
+        {
+            var deltaX = args.OffsetX - startX;
+            var deltaY = args.OffsetY - startY;
+            draggingIcon.EndX += deltaX;
+            draggingIcon.EndY += deltaY;
+            draggingIcon.StartX += deltaX;
+            draggingIcon.StartY += deltaY;
+
+            startX = args.OffsetX;
+            startY = args.OffsetY;
+        }
+
         await JS.InvokeVoidAsync("dragIcon", args.ClientX, args.ClientY);
     }
 

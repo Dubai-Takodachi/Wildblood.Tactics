@@ -95,7 +95,7 @@ window.startDrag = function (icon, x, y) {
         dragImage.style.top = `${y - offsetY}px`;
     }
     else if (icon.type === 1) {
-        draggingArrow = arrow;
+        draggingArrow = icon;
         offsetX = x;
         offsetY = y;
     }
@@ -124,11 +124,13 @@ window.dragIcon = function (x, y) {
         // Update offset for next movement
         offsetX = x;
         offsetY = y;
+        //TODO DRAWIN THE ARROW WHILE DRAGGING
     }
 };
 
 window.stopDrag = function () {
     draggingIcon = null;
+    draggingArrow = null;
     const dragImage = document.getElementById('dragImage');
     dragImage.style.display = 'none';
 };
