@@ -2,118 +2,124 @@
 let draggingArrow = null;
 let dragMode = null;
 let offsetX, offsetY, lastX, lastY;
+let offscreenCanvas = document.createElement('canvas');
+let offscreenContext = offscreenCanvas.getContext('2d');
+let imageCache = {}; // Cache für Bilder
 
 window.setBackground = function (background) {
 
     if (background == null || background == undefined) {
         return;
     }
-    const canvas = document.getElementById('tacticsCanvas');
+    let canvas = document.getElementById('tacticsCanvas');
     let url = "url('/ConquerorsBladeData/Maps/" + background + ".png')";
     canvas.style.backgroundImage = url;
     canvas.style.backgroundSize = "cover";
 }
 
 window.setCanvasSize = function (canvasId) {
-    const canvas = document.getElementById(canvasId);
-    const context = canvas.getContext('2d');
+    let canvas = document.getElementById(canvasId);
+    let context = canvas.getContext('2d');
     let parent = document.getElementById('tacticsCanvasContainer');
-    const width = parent.clientWidth;
-    const height = parent.clientHeight;
+    let width = parent.clientWidth;
+    let height = parent.clientHeight;
 
     canvas.width = width;
     canvas.height = height;
+
+    offscreenCanvas.width = width;
+    offscreenCanvas.height = height;
 };
 
 window.placeIcon = function (unit) {
-    const canvas = document.getElementById('tacticsCanvas');
-    const ctx = canvas.getContext('2d');
     let image = new Image();
     image.src = unit.filePath;
-    ctx.drawImage(image, unit.startX, unit.startY, unit.endX - unit.startX, unit.endY - unit.startY);
+    offscreenContext.drawImage(image, unit.startX, unit.startY, unit.endX - unit.startX, unit.endY - unit.startY);
 }
 
 window.draw = function (icons) {
-    const canvas = document.getElementById('tacticsCanvas');
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    offscreenContext.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
     // ENUMS ARE ACCESSIBLE VIA THEIRE RESPECTIVE NUMBER UNIT = 0
-    icons.forEach(unit => {
-        if (unit.type === 1) {
-            window.drawArrow(unit.startX, unit.startY, unit.endX, unit.endY, unit.color);
-        }
-        else if (unit.type === 0) {
-            let image = new Image();
-            image.src = unit.filePath;
-            image.onload = () => {
-                ctx.drawImage(image, unit.startX, unit.startY, unit.endX - unit.startX, unit.endY - unit.startY)
+    let promises = icons.map(unit => {
+        return new Promise(resolve => {
+            if (unit.type === 0) {
+                // Prüfe, ob das Bild bereits im Cache ist
+                if (imageCache[unit.filePath]) {
+                    // Verwende das gecachte Bild
+                    offscreenContext.drawImage(imageCache[unit.filePath], unit.startX, unit.startY, unit.endX - unit.startX, unit.endY - unit.startY);
+                    resolve();
+                } else {
+                    // Lade das Bild und speichere es im Cache
+                    let image = new Image();
+                    image.src = unit.filePath;
+                    image.onload = () => {
+                        imageCache[unit.filePath] = image; // Speichere das Bild im Cache
+                        offscreenContext.drawImage(image, unit.startX, unit.startY, unit.endX - unit.startX, unit.endY - unit.startY);
+                        resolve();
+                    };
+                    image.onerror = () => {
+                        console.error(`Failed to load image: ${unit.filePath}`);
+                        resolve(); // Fehler beim Laden, aber Promise wird erfüllt
+                    };
+                }
+            } else if (unit.type === 1) {
+                window.drawArrow(unit.startX, unit.startY, unit.endX, unit.endY, unit.color);
+                resolve();
             }
-        }
-    })
+        });
+    });
+
+    // Warte, bis alle Bilder geladen und gezeichnet sind
+    Promise.all(promises).then(() => {
+        let canvas = document.getElementById('tacticsCanvas');
+        let ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(offscreenCanvas, 0, 0); // Offscreen-Canvas auf Onscreen-Canvas kopieren
+    });
+
 }
 
 window.drawArrow = function (fromX, fromY, toX, toY, color) {
-    const canvas = document.getElementById('tacticsCanvas');
-    const context = canvas.getContext('2d');
+
     var headlen = 10; // Length of arrow head
     var angle = Math.atan2(toY - fromY, toX - fromX);
 
-    context.beginPath();
-    context.moveTo(fromX, fromY);
-    context.lineTo(toX, toY);
-    context.strokeStyle = color;
-    context.lineWidth = 2;
-    context.stroke();
 
-    context.beginPath();
-    context.moveTo(toX, toY);
-    context.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
-    context.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
-    context.lineTo(toX, toY);
-    context.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
-    context.strokeStyle = color;
-    context.lineWidth = 2;
-    context.stroke();
-    context.fillStyle = color;
-    context.fill();
-}
+    // Draw the arrow line
+    offscreenContext.beginPath();
+    offscreenContext.moveTo(fromX, fromY);
+    offscreenContext.lineTo(toX, toY);
+    offscreenContext.strokeStyle = color;
+    offscreenContext.lineWidth = 2;
+    offscreenContext.stroke();
 
-window.startDrag = function (icon, x, y) {
-    if (icon.type === 0) {
-        draggingIcon = icon;
-        offsetX = x - icon.startX;
-        offsetY = y - icon.startY;
-        lastX = x;
-        lastY = y;
-        const dragImage = document.getElementById('dragImage');
-        dragImage.src = icon.filePath;
-        dragImage.style.display = 'block';
-        dragImage.style.position = 'absolute';
-        dragImage.style.width = '40px';
-        dragImage.style.height = '40px';
-        dragImage.style.left = `${x - offsetX}px`;
-        dragImage.style.top = `${y - offsetY}px`;
-    }
-    else if (icon.type === 1) {
-        draggingArrow = icon;
-        offsetX = x;
-        offsetY = y;
-    }
+    // Draw the arrowhead
+    offscreenContext.beginPath();
+    offscreenContext.moveTo(toX, toY);
+    offscreenContext.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+    offscreenContext.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+    offscreenContext.lineTo(toX, toY);
+    offscreenContext.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+    offscreenContext.strokeStyle = color;
+    offscreenContext.lineWidth = 2;
+    offscreenContext.stroke();
+    offscreenContext.fillStyle = color;
+    offscreenContext.fill();
+
 };
-// TODO implement Spefic deltion so the canvas does not need to be redrawn
-window.dragIcon = function (x, y) {
+
+window.dragIcon = function (x, y, icons) {
     if (draggingIcon && (x !== lastX || y !== lastY)) {
         lastX = x;
         lastY = y;
         requestAnimationFrame(() => {
-            const dragImage = document.getElementById('dragImage');
+            let dragImage = document.getElementById('dragImage');
             dragImage.style.left = `${x - offsetX}px`;
             dragImage.style.top = `${y - offsetY}px`;
         });
-    }
-    else if (draggingArrow) {
-        const deltaX = x - offsetX;
-        const deltaY = y - offsetY;
+    } else if (draggingArrow) {
+        let deltaX = x - offsetX;
+        let deltaY = y - offsetY;
 
         // Update both start and end points of the arrow
         draggingArrow.startX += deltaX;
@@ -124,14 +130,49 @@ window.dragIcon = function (x, y) {
         // Update offset for next movement
         offsetX = x;
         offsetY = y;
-        //TODO DRAWIN THE ARROW WHILE DRAGGING
+
+        // Redraw the arrow dynamically
+        window.drawArrow(
+            draggingArrow.startX,
+            draggingArrow.startY,
+            draggingArrow.endX,
+            draggingArrow.endY,
+            draggingArrow.color,
+            true,
+            x,
+            y
+        );
+        window.draw(icons);
+    }
+};
+
+window.startDrag = function (icon, x, y) {
+    if (icon.type === 0) {
+        draggingIcon = icon;
+        offsetX = x - icon.startX;
+        offsetY = y - icon.startY;
+        lastX = x;
+        lastY = y;
+        let dragImage = document.getElementById('dragImage');
+        dragImage.src = icon.filePath;
+        dragImage.style.display = 'block';
+        dragImage.style.position = 'absolute';
+        dragImage.style.width = '40px';
+        dragImage.style.height = '40px';
+        dragImage.style.left = `${x}px`;
+        dragImage.style.top = `${y}px`;
+    }
+    else if (icon.type === 1) {
+        draggingArrow = icon;
+        offsetX = x;
+        offsetY = y;
     }
 };
 
 window.stopDrag = function () {
     draggingIcon = null;
     draggingArrow = null;
-    const dragImage = document.getElementById('dragImage');
+    let dragImage = document.getElementById('dragImage');
     dragImage.style.display = 'none';
 };
 

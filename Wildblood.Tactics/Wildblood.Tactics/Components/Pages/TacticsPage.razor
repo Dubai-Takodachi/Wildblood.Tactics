@@ -14,7 +14,7 @@
 <div class="parent">
     <div style="grid-area: 1/1/span 7/2;" id="tacticsCanvasContainer">
         @*Width and Height is set via JS (=> 100% of size of parent container)*@
-        <canvas id="tacticsCanvas" width="100%" height="100%" style="border:1px solid #000000;" @onmousedown="MouseDown" @onmouseup="dragStop"  @onmousemove="dragMove"></canvas>
+        <canvas id="tacticsCanvas" width="100%" height="100%" style="border:1px solid #000000;" @onmousedown="MouseDown" @onmouseup="dragStop" @onmousemove="dragMove"></canvas>
         <img id="dragImage" src="" style="display:none" @onmouseup="dragStop"/>
     </div>
     <div id="MapSelectionDiv" style="grid-area:1/2/1/2">
@@ -43,7 +43,7 @@
             </MudTabPanel>
             <MudTabPanel Icon="@vectorLineIcon" @onclick="() => ChangeTool(IconType.StraightLine)">
                 <MudPaper>
-                    <MudColorPicker Label="Line Color" @bind-Text="colorValue"/>
+                    <MudColorPicker Label="Line Color" @bind-Text="colorValue" />
                 </MudPaper>
             </MudTabPanel>
         </MudTabs>
@@ -52,7 +52,7 @@
 
     <div style="grid-area: 5/2/span 3/2; overflow-y: scroll; min-height:200px">
         <MudPaper>
-            <MudTreeView T="Tactic" Hover="true" Dense="true" ExpandOnClick="true"> 
+            <MudTreeView T="Tactic" Hover="true" Dense="true" ExpandOnClick="true">
                 <MudTreeViewItem Icon="@Icons.Material.Outlined.Map">
                     <BodyContent>
                         <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
@@ -64,7 +64,7 @@
                         </div>
                     </BodyContent>
                     <ChildContent>
-                        @foreach(var folder in tactic.Folders)
+                        @foreach (var folder in tactic.Folders)
                         {
                             <MudTreeViewItem Icon="@Icons.Material.Filled.Folder">
                                 <BodyContent>
@@ -79,12 +79,12 @@
                                 <ChildContent>
                                     @foreach (var slide in folder.Slides)
                                     {
-                                        <MudTreeViewItem  Icon="@Icons.Material.Filled.Notes" @onclick="@(async (args) => await OnSelectedSlideChange(slide, folder))">
+                                        <MudTreeViewItem Icon="@Icons.Material.Filled.Notes" @onclick="@(async (args) => await OnSelectedSlideChange(slide, folder))">
                                             <BodyContent>
                                                 <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
-                                                    <MudText >@slide.Name</MudText>
+                                                    <MudText>@slide.Name</MudText>
                                                     <div style="justify-self: end;">
-                                                        <MudIconButton Icon="@Icons.Material.Filled.Edit" @onclick="@(async (args) => await onclickSlideRename(slide.Id, folder.Id))"/>
+                                                        <MudIconButton Icon="@Icons.Material.Filled.Edit" @onclick="@(async (args) => await onclickSlideRename(slide.Id, folder.Id))" />
                                                     </div>
                                                 </div>
                                             </BodyContent>
@@ -153,7 +153,7 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender) 
+        if (firstRender)
         {
             await JS.InvokeVoidAsync("setCanvasSize", "tacticsCanvas");
             if (currentSlide.MapPath != null)
@@ -187,7 +187,7 @@
 
 
     private async Task placeIcon(MouseEventArgs eventArgs)
-    { 
+    {
         // End X and End Y will be OFfset X + 40 so the base unit is 40x40
         var unit = new Icon(eventArgs.OffsetX, eventArgs.OffsetY, eventArgs.OffsetX + 40, eventArgs.OffsetY + 40, "/ConquerorsBladeData/Units/" + selectedUnit, IconType.Unit, colorValue);
 
@@ -251,13 +251,13 @@
             return;
         }
 
-        if( currentDraggingType == IconType.Unit)
+        if (currentDraggingType == IconType.Unit)
         {
             draggingIcon.StartX = args.OffsetX;
             draggingIcon.StartY = args.OffsetY;
             draggingIcon.EndX = args.OffsetX + 40;
             draggingIcon.EndY = args.OffsetY + 40;
-        } 
+        }
         else if (currentDraggingType == IconType.StraightLine && !drawingShape)
         {
             var deltaX = args.OffsetX - startX;
@@ -271,7 +271,7 @@
             startY = args.OffsetY;
         }
 
-        await JS.InvokeVoidAsync("dragIcon", args.ClientX, args.ClientY);
+        await JS.InvokeVoidAsync("dragIcon", args.OffsetX, args.OffsetY, currentSlide.Icons);
     }
 
     private async Task dragStop()
@@ -339,7 +339,7 @@
 
     }
 
-    private async Task onclickSlideRename(string slideID, string folderID) 
+    private async Task onclickSlideRename(string slideID, string folderID)
     {
         var slide = tactic.Folders.Single(f => f.Id == folderID).Slides.Single(s => s.Id == slideID);
         var parameters = new DialogParameters<RenameDialog>
@@ -349,7 +349,7 @@
 
         var dialog = await DialogService.ShowAsync<RenameDialog>("Rename", parameters);
         var newName = (await dialog.Result).Data.ToString();
-        if (newName != null) 
+        if (newName != null)
         {
             slide.Name = newName;
             var filter = Builders<Tactic>.Filter.Eq(t => t.Id, tactic.Id);
@@ -379,7 +379,7 @@
 
     }
 
-    private async Task onClickTacticRename() 
+    private async Task onClickTacticRename()
     {
         var parameters = new DialogParameters<RenameDialog>
         {
@@ -398,27 +398,27 @@
         }
     }
 
-    private async Task OnAddFolder() 
+    private async Task OnAddFolder()
     {
         var newFolder = new Folder
-            {
-                Id = ObjectId.GenerateNewId().ToString(),
-                Name = "New Folder",
-                Slides = new List<Slide>(),
-            };
+        {
+            Id = ObjectId.GenerateNewId().ToString(),
+            Name = "New Folder",
+            Slides = new List<Slide>(),
+        };
         var filter = Builders<Tactic>.Filter.Eq(t => t.Id, tactic.Id);
         var update = Builders<Tactic>.Update.Push(t => t.Folders, newFolder);
         await collection.UpdateOneAsync(filter, update);
         tactic.Folders.Add(newFolder);
     }
 
-    private async Task ReDrawCanvas() 
+    private async Task ReDrawCanvas()
     {
         await JS.InvokeVoidAsync("draw", currentSlide.Icons);
         await JS.InvokeVoidAsync("setBackground", currentSlide.MapPath);
     }
 
-    private void ChangeTool(IconType selectedTool) 
+    private void ChangeTool(IconType selectedTool)
     {
         currentTool = selectedTool;
     }
