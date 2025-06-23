@@ -257,6 +257,9 @@
             draggingIcon.StartY = args.OffsetY;
             draggingIcon.EndX = args.OffsetX + 40;
             draggingIcon.EndY = args.OffsetY + 40;
+            currentSlide.Icons.Add(draggingIcon);
+            await JS.InvokeVoidAsync("draw", currentSlide.Icons);
+            currentSlide.Icons.Remove(draggingIcon);
         }
         else if (currentDraggingType == IconType.StraightLine && !drawingShape)
         {
@@ -269,6 +272,9 @@
 
             startX = args.OffsetX;
             startY = args.OffsetY;
+            currentSlide.Icons.Add(draggingIcon);
+            await JS.InvokeVoidAsync("draw", currentSlide.Icons);
+            currentSlide.Icons.Remove(draggingIcon);
         }
 
         await JS.InvokeVoidAsync("dragIcon", args.OffsetX, args.OffsetY, currentSlide.Icons);
@@ -286,7 +292,6 @@
 
         if (currentTool == IconType.StraightLine && drawingShape)
         {
-            //TODO: Color is not set properly
             drawingShape = false;
             currentSlide.Icons.Add(drawableIcon);
             await JS.InvokeVoidAsync("draw", currentSlide.Icons);
