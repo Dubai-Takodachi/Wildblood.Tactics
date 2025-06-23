@@ -156,6 +156,12 @@
         if (firstRender)
         {
             await JS.InvokeVoidAsync("setCanvasSize", "tacticsCanvas");
+
+            var imageFilePaths = Directory.EnumerateFiles(baseUnitPath, "*.*", SearchOption.AllDirectories)
+                .Where(file => new[] { ".png", ".jpg", ".jpeg", ".gif", ".bmp" }.Contains(Path.GetExtension(file).ToLower()))
+                .Select(file => file.Replace("wwwroot", ""))
+                .ToList();
+            await JS.InvokeVoidAsync("preLoadImages", imageFilePaths);
             if (currentSlide.MapPath != null)
             {
                 await JS.InvokeVoidAsync("setBackground", currentSlide.MapPath);
@@ -258,7 +264,7 @@
             draggingIcon.EndX = args.OffsetX + 40;
             draggingIcon.EndY = args.OffsetY + 40;
             currentSlide.Icons.Add(draggingIcon);
-            await JS.InvokeVoidAsync("draw", currentSlide.Icons);
+            await JS.InvokeVoidAsync("dragIcon", args.OffsetX, args.OffsetY, currentSlide.Icons);
             currentSlide.Icons.Remove(draggingIcon);
         }
         else if (currentDraggingType == IconType.StraightLine && !drawingShape)
@@ -273,11 +279,9 @@
             startX = args.OffsetX;
             startY = args.OffsetY;
             currentSlide.Icons.Add(draggingIcon);
-            await JS.InvokeVoidAsync("draw", currentSlide.Icons);
+            await JS.InvokeVoidAsync("dragIcon", args.OffsetX, args.OffsetY, currentSlide.Icons);
             currentSlide.Icons.Remove(draggingIcon);
         }
-
-        await JS.InvokeVoidAsync("dragIcon", args.OffsetX, args.OffsetY, currentSlide.Icons);
     }
 
     private async Task dragStop()
