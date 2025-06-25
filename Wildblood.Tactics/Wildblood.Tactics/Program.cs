@@ -16,6 +16,7 @@ namespace Wildblood.Tactics
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            builder.Services.AddSignalR();
 
             // MongoDB stuff
             var mongoConnectionString = Environment.GetEnvironmentVariable("MONGO_CONNECTION_STRING");
@@ -94,6 +95,7 @@ namespace Wildblood.Tactics
                 app.UseHsts();
             }
 
+            app.MapHub<TacticsHub>("/tacticsHub");
             app.UseHttpsRedirection();
 
             app.MapStaticAssets();

@@ -1,13 +1,13 @@
 ﻿namespace Wildblood.Tactics.Entities
 {
     // This Class needs some work => If saved to DB you can use 2 coordiantes to draw the arrow.
-    public class Icon(double StartX, double StartY, double EndX, double EndY, string filePath, IconType tool, string color)
+    public class Icon(double StartX, double StartY, double EndX, double EndY, string filePath, IconType type, string color)
     {
         public double StartX { get; set; } = StartX;
         public double StartY { get; set; } = StartY;
         public double EndX { get; set; } = EndX;
         public double EndY { get; set; } = EndY;
-        public IconType Type { get; set; } = tool;
+        public IconType Type { get; set; } = type;
         public string FilePath { get; set; } = filePath;
         public string Color { get; set; } = color;
     }

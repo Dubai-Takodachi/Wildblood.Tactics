@@ -3,8 +3,13 @@
     "Docker Compose": {
       "commandName": "DockerCompose",
       "commandVersion": "1.0",
+      "composeLaunchAction": "LaunchBrowser",
+      "composeLaunchServiceName": "wildblood.tactics",
+      "composeLaunchUrl": "{Scheme}://localhost:{ServicePort}",
       "serviceActions": {
-        "wildblood.tactics": "StartDebugging"
+        "wildblood.tactics": "StartDebugging",
+        "mongodb": "StartWithoutDebugging",
+        "mssql": "StartWithoutDebugging"
       }
     }
   }

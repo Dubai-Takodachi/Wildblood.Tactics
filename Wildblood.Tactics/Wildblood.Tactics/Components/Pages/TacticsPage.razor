@@ -1,6 +1,9 @@
 ﻿@page "/Tactics/{ID}"
 @namespace Wildblood.Tactics.Components.Pages
+@using Microsoft.AspNetCore.SignalR
+@using Microsoft.AspNetCore.SignalR.Client
 @using MongoDB.Bson
+@using System.Text.Json
 @using Wildblood.Tactics.Entities
 @using MongoDB.Driver;
 @using Wildblood.Tactics.Models
@@ -8,7 +11,9 @@
 @using Wildblood.Tactics.Components.Layout
 @inject IJSRuntime JS;
 @inject IMongoDatabase Database;
-@inject IDialogService DialogService
+@inject IDialogService DialogService;
+@inject NavigationManager NavigationManager
+
 @rendermode InteractiveServer
 
 <div class="parent">
@@ -105,6 +110,7 @@
     [Parameter]
     public string? ID { get; set; }
 
+    private HubConnection? hubConnection;
     private Tactic? tactic;
     private string colorValue;
     private Slide currentSlide;
@@ -125,6 +131,7 @@
     private int draggingIconIndex;
     private double startX;
     private double startY;
+    private bool needsCanvasRedraw = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -136,6 +143,8 @@
         units = Directory.EnumerateFiles(baseUnitPath, "*", SearchOption.AllDirectories)
             .Select(f => Path.GetFileName(f))
             .ToList();
+
+
     }
 
     protected override async void OnParametersSet()
@@ -148,6 +157,70 @@
             currentSlide = currentFolder.Slides[0];
             colorValue = "#000000";
         }
+
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+
+        hubConnection = new HubConnectionBuilder()
+        .WithUrl(NavigationManager.ToAbsoluteUri("/tacticsHub"), options =>
+        {
+            options.HttpMessageHandlerFactory = handler =>
+        {
+            if (handler is HttpClientHandler clientHandler)
+            {
+                clientHandler.ServerCertificateCustomValidationCallback =
+                    HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+            }
+            return handler;
+        };
+        })
+        .WithAutomaticReconnect()
+        .Build();
+
+        hubConnection.On<string, object, object, object>("ReceiveTacticUpdate", async (tacticId, updatedData, slideId, folderId) =>
+        {
+            if (tacticId == ID)
+            {
+                Console.WriteLine($"Received update for tactic {tacticId}");
+                var json = updatedData.ToString();
+                var slideStringId = slideId.ToString();
+                var folderStringId = folderId.ToString();
+                var options = new JsonSerializerOptions()
+                {
+                    PropertyNameCaseInsensitive = true,
+                };
+
+                tactic = JsonSerializer.Deserialize<Tactic>(json, options);
+
+                if (slideStringId == currentSlide.Id && folderStringId == currentFolder.Id)
+                {
+                    currentSlide = tactic.Folders.Single(folder => folder.Id == folderStringId).Slides.Single(slide => slide.Id == slideStringId);
+                    currentFolder = tactic.Folders.Single(folder => folder.Id == folderStringId);
+                    needsCanvasRedraw = true;
+                }
+                await InvokeAsync(StateHasChanged);
+            }
+        });
+
+        hubConnection.On<string, string>("ReceiveTacticLock", async (tacticId, userId) =>
+        {
+            if (tacticId == ID)
+            {
+                Console.WriteLine($"Tactic {tacticId} locked by user {userId}");
+            }
+        });
+
+        hubConnection.On<string>("ReceiveTacticUnlock", async (tacticId) =>
+        {
+            if (tacticId == ID)
+            {
+                Console.WriteLine($"Tactic {tacticId} unlocked");
+            }
+        });
+
+        await hubConnection.StartAsync();
 
     }
 
@@ -171,6 +244,12 @@
             {
                 await JS.InvokeVoidAsync("draw", currentSlide.Icons);
             }
+        }
+
+        if (needsCanvasRedraw)
+        {
+            needsCanvasRedraw = false;
+            await ReDrawCanvas();
         }
     }
 
@@ -310,7 +389,7 @@
         await JS.InvokeVoidAsync("draw", currentSlide.Icons);
         var update = Builders<Tactic>.Update.Set(t => t.Folders[folderIndex].Slides[slideIndex].Icons[draggingIconIndex], draggingIcon);
         await collection.UpdateOneAsync(filter, update);
-
+        await UpdateTactic();
     }
 
     private async Task OnClickFolderRename(string folderID)
@@ -435,6 +514,41 @@
     private async Task setStartPointForArrow(MouseEventArgs eventArgs)
     {
         drawableIcon = new Icon(eventArgs.OffsetX, eventArgs.OffsetY, eventArgs.OffsetX, eventArgs.OffsetY, string.Empty, IconType.StraightLine, colorValue);
+    }
+
+    private async Task UpdateTactic()
+    {
+        if (hubConnection is not null)
+        {
+            Console.WriteLine($"Sending update for tactic {ID}");
+            await hubConnection.SendAsync("UpdateTactic", ID, tactic, currentSlide.Id, currentFolder.Id);
+        }
+    }
+
+    private async Task LockTactic()
+    {
+        if (hubConnection is not null)
+        {
+            Console.WriteLine($"Locking tactic {ID}");
+            await hubConnection.SendAsync("LockTactic", ID, "currentUserId");
+        }
+    }
+
+    private async Task UnlockTactic()
+    {
+        if (hubConnection is not null)
+        {
+            Console.WriteLine($"Unlocking tactic {ID}");
+            await hubConnection.SendAsync("UnlockTactic", ID);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
     }
 
 

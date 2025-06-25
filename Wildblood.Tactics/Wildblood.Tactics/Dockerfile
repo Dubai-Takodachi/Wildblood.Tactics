@@ -7,6 +7,14 @@ WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
 
+# Beispiel: Dein Base-Image
+FROM mcr.microsoft.com/dotnet/aspnet:7.0
+
+# Zertifikat in Container kopieren (relativer Pfad muss zu deinem Build-Kontext passen)
+COPY certs/devcert.crt /usr/local/share/ca-certificates/devcert.crt
+
+# Zertifikat im System als trusted hinzufügen
+RUN update-ca-certificates
 
 # This stage is used to build the service project
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build

@@ -8,8 +8,13 @@ services:
       - wildblood-network
     environment:
       - MONGO_CONNECTION_STRING=mongodb://admin:password@mongodb:27017
+      - ASPNETCORE_URLS=http://+:8080;https://+:8081  
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/devcert.pfx
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=password
     depends_on:
       - mongodb
+    volumes:
+      - ./certs:/https:ro
 
   mssql:
     image: mcr.microsoft.com/mssql/server:2019-latest
@@ -38,7 +43,7 @@ services:
       - mongodb_data:/data/db
     networks:
       - wildblood-network
-
+      
 volumes:
   mssql_data:
   mongodb_data:  
