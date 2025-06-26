@@ -1,4 +1,4 @@
-﻿let draggingIcon = null;
+let draggingIcon = null;
 let draggingArrow = null;
 let dragMode = null;
 let offsetX, offsetY, lastX, lastY;

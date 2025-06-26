@@ -26,7 +26,7 @@
 <div class="parent">
     <div style="grid-area: 1/1/span 7/2;" id="tacticsCanvasContainer">
         @*Width and Height is set via JS (=> 100% of size of parent container)*@
-        <canvas id="tacticsCanvas" width="100%" height="100%" style="border:1px solid #000000;" @onmousedown="MouseDown" @onmouseup="dragStop" @onmousemove="dragMove"></canvas>
+        <canvas id="tacticsCanvas" width="100%" height="100%" style="border:1px solid #000000;" @onmousedown="MouseDown" @onmouseup="dragStop" @onmousemove="dragMove" @onmousewheel="MouseScroll"></canvas>
         <img id="dragImage" src="" style="display:none" @onmouseup="dragStop"/>
     </div>
     <div id="MapSelectionDiv" style="grid-area:1/2/1/2">
@@ -109,10 +109,17 @@
                 </MudTreeViewItem>
             </MudTreeView>
         </MudPaper>
+        <MudPaper>
+            <MudIconButton Icon="@Icons.Material.Filled.ZoomOut" @onclick="() => SetZoom(zoomLevel - 0.1)"></MudIconButton>
+            <span>@zoomLevel.ToString("0.0")x</span>
+            <MudIconButton Icon="@Icons.Material.Filled.ZoomIn" @onclick="() => SetZoom(zoomLevel + 0.1)">+</MudIconButton>
+        </MudPaper>
     </div>
 </div>
 
 @code {
+
+
 
     [Parameter]
     public string? ID { get; set; }
@@ -138,6 +145,11 @@
     private double startX;
     private double startY;
     private bool needsCanvasRedraw = false;
+    private double zoomLevel = 1.0;
+    private bool isPanning = false;
+    private double panStartX, panStartY;
+    private double panOriginX, panOriginY;
+    private double panX = 0, panY = 0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -149,6 +161,8 @@
         units = Directory.EnumerateFiles(baseUnitPath, "*", SearchOption.AllDirectories)
             .Select(f => Path.GetFileName(f))
             .ToList();
+
+
     }
 
     protected override async void OnParametersSet()
@@ -290,6 +304,18 @@
 
     private async Task MouseDown(MouseEventArgs eventArgs)
     {
+        if (eventArgs.Button == 1)
+        {
+            isPanning = true;
+            panStartX = eventArgs.ClientX;
+            panStartY = eventArgs.ClientY;
+
+            // Get current pan from JS (optional, if you want to sync)
+            var pan = await JS.InvokeAsync<PanPosition>("getPan");
+            panOriginX = pan.x;
+            panOriginY = pan.y;
+            return;
+        }
         var pos = await JS.InvokeAsync<MousePosition>("getLogicalMousePosition", "tacticsCanvas", eventArgs.ClientX, eventArgs.ClientY);
         var mouseX = pos.x;
         var mouseY = pos.y;
@@ -369,8 +395,19 @@
         var mouseX = pos.x;
         var mouseY = pos.y;
 
-        if ((!isDragging || draggingIcon == null) && !drawingShape)
+        if ((!isDragging || draggingIcon == null) && !drawingShape && !isPanning)
         {
+            return;
+        }
+
+        if (isPanning)
+        {
+            var dx = args.ClientX - panStartX;
+            var dy = args.ClientY - panStartY;
+            panX = panOriginX + dx;
+            panY = panOriginY + dy;
+
+            await JS.InvokeVoidAsync("setPan", panX, panY);
             return;
         }
 
@@ -414,12 +451,19 @@
         }
     }
 
-    private async Task dragStop()
+    private async Task dragStop(MouseEventArgs args)
     {
-        if (!isDragging && !drawingShape)
+        if (!isDragging && !drawingShape && !isPanning)
         {
             return;
         }
+
+        if (isPanning && args.Button == 1)
+        {
+            isPanning = false;
+            return;
+        }
+
 
         if (currentTool == IconType.StraightLine && drawingShape)
         {
@@ -571,6 +615,18 @@
         {
             await hubConnection.DisposeAsync();
         }
+    }
+
+    private async Task MouseScroll(WheelEventArgs args)
+    {
+        zoomLevel -= args.DeltaY * 0.001; // Adjust the zoom speed as needed
+        await SetZoom(zoomLevel);
+    }
+
+    private async Task SetZoom(double newZoom)
+    {
+        zoomLevel = Math.Max(0.1, newZoom);
+        await JS.InvokeVoidAsync("setZoom", zoomLevel);
     }
 
 
