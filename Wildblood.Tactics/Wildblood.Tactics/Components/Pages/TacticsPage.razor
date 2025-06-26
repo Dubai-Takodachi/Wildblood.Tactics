@@ -233,7 +233,6 @@
         if (firstRender)
         {
             await JS.InvokeVoidAsync("setCanvasSize", "tacticsCanvas");
-
             var imageFilePaths = Directory.EnumerateFiles(baseUnitPath, "*.*", SearchOption.AllDirectories)
                 .Where(file => new[] { ".png", ".jpg", ".jpeg", ".gif", ".bmp" }.Contains(Path.GetExtension(file).ToLower()))
                 .Select(file => file.Replace("wwwroot", ""))
@@ -275,10 +274,9 @@
     }
 
 
-    private async Task placeIcon(MouseEventArgs eventArgs)
+    private async Task placeIcon(double mouseX, double mouseY)
     {
-        // End X and End Y will be OFfset X + 40 so the base unit is 40x40
-        var unit = new Icon
+        var unit = new Icon(mouseX, mouseY, mouseX + 40, mouseY + 40, "/ConquerorsBladeData/Units/" + selectedUnit, IconType.Unit, colorValue);
         {
             StartX = eventArgs.OffsetX,
             StartY = eventArgs.OffsetY,
@@ -297,18 +295,20 @@
         var filter = Builders<Tactic>.Filter.Eq(t => t.Id, tactic.Id);
         var update = Builders<Tactic>.Update.Push(t => t.Folders[folderIndex].Slides[slideIndex].Icons, unit);
         await collection.UpdateOneAsync(filter, update);
+        await UpdateTactic();
     }
 
     private async Task MouseDown(MouseEventArgs eventArgs)
     {
-        var mouseX = eventArgs.OffsetX;
-        var mouseY = eventArgs.OffsetY;
+        var pos = await JS.InvokeAsync<MousePosition>("getLogicalMousePosition", "tacticsCanvas", eventArgs.ClientX, eventArgs.ClientY);
+        var mouseX = pos.x;
+        var mouseY = pos.y;
 
         foreach (var icon in currentSlide.Icons)
         {
             if (mouseX > icon.StartX && mouseX < icon.EndX && mouseY > icon.StartY && mouseY < icon.EndY)
             {
-                draggingIcon = icon with {};
+                draggingIcon = new Icon(icon.StartX, icon.StartY, icon.EndX, icon.EndY, icon.FilePath, icon.Type, icon.Color);
                 draggingIconIndex = currentSlide.Icons.IndexOf(icon);
                 isDragging = true;
                 startX = mouseX;
@@ -322,10 +322,10 @@
         switch (currentTool)
         {
             case IconType.Unit:
-                await placeIcon(eventArgs);
+                await placeIcon(mouseX, mouseY);
                 return;
             case IconType.StraightLine:
-                await setStartPointForArrow(eventArgs);
+                await setStartPointForArrow(mouseX, mouseY);
                 drawingShape = true;
                 return;
         }
@@ -333,6 +333,10 @@
 
     private async Task dragMove(MouseEventArgs args)
     {
+        var pos = await JS.InvokeAsync<MousePosition>("getLogicalMousePosition", "tacticsCanvas", args.ClientX, args.ClientY);
+        var mouseX = pos.x;
+        var mouseY = pos.y;
+
         if ((!isDragging || draggingIcon == null) && !drawingShape)
         {
             return;
@@ -340,7 +344,8 @@
 
         if (currentTool == IconType.StraightLine && drawingShape)
         {
-            drawableIcon = drawableIcon with { EndX = args.OffsetX, EndY = args.OffsetY };                   
+            drawableIcon.EndX = mouseX;
+            drawableIcon.EndY = mouseY;
             currentSlide.Icons.Add(drawableIcon);
             await JS.InvokeVoidAsync("draw", currentSlide.Icons);
             currentSlide.Icons.Remove(drawableIcon);
@@ -349,22 +354,22 @@
 
         if (currentDraggingType == IconType.Unit)
         {
-            draggingIcon = draggingIcon with
-            {
-                StartX = args.OffsetX,
-                StartY = args.OffsetY,
+            draggingIcon.StartX = mouseX;
+            draggingIcon.StartY = mouseY;
+            draggingIcon.EndX = mouseX + 40;
+            draggingIcon.EndY = mouseY + 40;
                 EndX = args.OffsetX + 40,
                 EndY = args.OffsetY + 40,
             };
 
             currentSlide.Icons.Add(draggingIcon);
-            await JS.InvokeVoidAsync("dragIcon", args.OffsetX, args.OffsetY, currentSlide.Icons);
+            await JS.InvokeVoidAsync("dragIcon", mouseX, mouseY, currentSlide.Icons);
             currentSlide.Icons.Remove(draggingIcon);
         }
         else if (currentDraggingType == IconType.StraightLine && !drawingShape)
         {
-            var deltaX = args.OffsetX - startX;
-            var deltaY = args.OffsetY - startY;
+            var deltaX = mouseX - startX;
+            var deltaY = mouseY - startY;
 
             draggingIcon = draggingIcon with
             {
@@ -374,10 +379,10 @@
                 StartY = draggingIcon.StartY + deltaY,
             };
 
-            startX = args.OffsetX;
-            startY = args.OffsetY;
+            startX = mouseX;
+            startY = mouseY;
             currentSlide.Icons.Add(draggingIcon);
-            await JS.InvokeVoidAsync("dragIcon", args.OffsetX, args.OffsetY, currentSlide.Icons);
+            await JS.InvokeVoidAsync("dragIcon", mouseX, mouseY, currentSlide.Icons);
             currentSlide.Icons.Remove(draggingIcon);
         }
     }
@@ -530,9 +535,9 @@
         currentTool = selectedTool;
     }
 
-    private async Task setStartPointForArrow(MouseEventArgs eventArgs)
+    private async Task setStartPointForArrow(double mouseX, double mouseY)
     {
-        drawableIcon = new Icon
+        drawableIcon = new Icon(mouseX, mouseY, mouseX, mouseY, string.Empty, IconType.StraightLine, colorValue);
         {
             StartX = eventArgs.OffsetX,
             StartY = eventArgs.OffsetY,
