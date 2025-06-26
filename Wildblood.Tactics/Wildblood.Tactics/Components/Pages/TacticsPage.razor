@@ -276,12 +276,12 @@
 
     private async Task placeIcon(double mouseX, double mouseY)
     {
-        var unit = new Icon(mouseX, mouseY, mouseX + 40, mouseY + 40, "/ConquerorsBladeData/Units/" + selectedUnit, IconType.Unit, colorValue);
+        var unit = new Icon
         {
-            StartX = eventArgs.OffsetX,
-            StartY = eventArgs.OffsetY,
-            EndX = eventArgs.OffsetX + 40,
-            EndY = eventArgs.OffsetY + 40,
+            StartX = mouseX,
+            StartY = mouseY,
+            EndX = mouseX + 40,
+            EndY = mouseY + 40,
             FilePath = "/ConquerorsBladeData/Units/" + selectedUnit,
             Type = IconType.Unit,
             Color = colorValue,
@@ -308,7 +308,7 @@
         {
             if (mouseX > icon.StartX && mouseX < icon.EndX && mouseY > icon.StartY && mouseY < icon.EndY)
             {
-                draggingIcon = new Icon(icon.StartX, icon.StartY, icon.EndX, icon.EndY, icon.FilePath, icon.Type, icon.Color);
+                draggingIcon = icon with {};
                 draggingIconIndex = currentSlide.Icons.IndexOf(icon);
                 isDragging = true;
                 startX = mouseX;
@@ -344,8 +344,7 @@
 
         if (currentTool == IconType.StraightLine && drawingShape)
         {
-            drawableIcon.EndX = mouseX;
-            drawableIcon.EndY = mouseY;
+            drawableIcon = drawableIcon with { EndX = mouseX, EndY = mouseY };
             currentSlide.Icons.Add(drawableIcon);
             await JS.InvokeVoidAsync("draw", currentSlide.Icons);
             currentSlide.Icons.Remove(drawableIcon);
@@ -354,12 +353,12 @@
 
         if (currentDraggingType == IconType.Unit)
         {
-            draggingIcon.StartX = mouseX;
-            draggingIcon.StartY = mouseY;
-            draggingIcon.EndX = mouseX + 40;
-            draggingIcon.EndY = mouseY + 40;
-                EndX = args.OffsetX + 40,
-                EndY = args.OffsetY + 40,
+            draggingIcon = draggingIcon with
+            {
+                StartX = mouseX,
+                StartY = mouseY,
+                EndX = mouseX + 40,
+                EndY = mouseY,
             };
 
             currentSlide.Icons.Add(draggingIcon);
@@ -537,15 +536,15 @@
 
     private async Task setStartPointForArrow(double mouseX, double mouseY)
     {
-        drawableIcon = new Icon(mouseX, mouseY, mouseX, mouseY, string.Empty, IconType.StraightLine, colorValue);
+        drawableIcon = new Icon
         {
-            StartX = eventArgs.OffsetX,
-            StartY = eventArgs.OffsetY,
-            EndX = eventArgs.OffsetX,
-            EndY = eventArgs.OffsetY,
+            StartX = mouseX,
+            StartY = mouseY,
+            EndX = mouseX,
+            EndY = mouseY,
             FilePath = string.Empty,
             Type = IconType.StraightLine,
-            Color = colorValue,
+            Color = colorValue
         };
     }
 
