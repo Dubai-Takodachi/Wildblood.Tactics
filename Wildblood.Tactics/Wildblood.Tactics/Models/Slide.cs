@@ -1,27 +1,26 @@
-﻿using MongoDB.Bson.Serialization.Attributes;
+﻿namespace Wildblood.Tactics.Models;
+
 using System.Text.Json.Serialization;
+using MongoDB.Bson.Serialization.Attributes;
 using Wildblood.Tactics.Entities;
 
-namespace Wildblood.Tactics.Models
+public record Slide
 {
-    public class Slide
-    {
-        [BsonId]
-        [BsonElement("_id")]
-        [JsonPropertyName("_id")]
-        public string Id { get; set; }
+    [BsonId]
+    [BsonElement("_id")]
+    [JsonPropertyName("_id")]
+    public required string Id { get; set; }
 
-        [BsonElement("name")]
-        [JsonPropertyName("name")]
-        public string Name { get; set; }
+    [BsonElement("name")]
+    [JsonPropertyName("name")]
+    public required string Name { get; set; }
 
-        [BsonElement("MapPath")]
-        [JsonPropertyName("mapPath")]
-        public string MapPath { get; set; }
+    [BsonElement("MapPath")]
+    [JsonPropertyName("mapPath")]
+    public string? MapPath { get; set; }
 
-        [BsonElement("Icon")]
-        [JsonPropertyName("icon")]
-        public List<Icon> Icons { get; set; }
+    [BsonElement("Icon")]
+    [JsonPropertyName("icon")]
+    public required List<Icon> Icons { get; set; }
 
-    }
 }

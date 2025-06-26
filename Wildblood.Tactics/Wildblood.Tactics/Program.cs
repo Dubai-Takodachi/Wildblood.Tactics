@@ -8,6 +8,7 @@ using Wildblood.Tactics.Client.Pages;
 using Wildblood.Tactics.Components;
 using Wildblood.Tactics.Components.Account;
 using Wildblood.Tactics.Data;
+using Wildblood.Tactics.Services;
 
 namespace Wildblood.Tactics
 {
@@ -37,6 +38,8 @@ namespace Wildblood.Tactics
             });
 
             builder.Services.AddSingleton<MongoDbInitializer>();
+
+            builder.Services.AddSingleton<ITacticRepository, TacticRepository>();
 
             // Add services to the container.
             builder.Services.AddRazorComponents()

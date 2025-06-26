@@ -9,10 +9,11 @@
 @using Wildblood.Tactics.Models
 @using Icon = Wildblood.Tactics.Entities.Icon
 @using Wildblood.Tactics.Components.Layout
+@using Wildblood.Tactics.Services
 @inject IJSRuntime JS;
-@inject IMongoDatabase Database;
 @inject IDialogService DialogService;
 @inject NavigationManager NavigationManager
+@inject ITacticRepository repo;
 
 @rendermode InteractiveServer
 
@@ -126,7 +127,6 @@
     private static string baseMapPath = "wwwroot/ConquerorsBladeData/Maps";
     private static string baseUnitPath = "wwwroot/ConquerorsBladeData/Units";
     private string selectedUnit;
-    private IMongoCollection<Tactic> collection;
 
     private List<string> maps = new List<string>();
     private List<string> units = new List<string>();
@@ -155,8 +155,7 @@
     {
         if (ID != null)
         {
-            collection = Database.GetCollection<Tactic>("Tactics");
-            tactic = collection.Find(t => t.Id == ID).FirstOrDefault();
+            tactic = repo.GetTactic(ID);
             currentFolder = tactic.Folders[0];
             currentSlide = currentFolder.Slides[0];
             colorValue = "#000000";
@@ -171,14 +170,14 @@
         .WithUrl(NavigationManager.ToAbsoluteUri("/tacticsHub"), options =>
         {
             options.HttpMessageHandlerFactory = handler =>
-        {
-            if (handler is HttpClientHandler clientHandler)
             {
-                clientHandler.ServerCertificateCustomValidationCallback =
-                    HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-            }
-            return handler;
-        };
+                if (handler is HttpClientHandler clientHandler)
+                {
+                    clientHandler.ServerCertificateCustomValidationCallback =
+                        HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+                }
+                return handler;
+            };
         })
         .WithAutomaticReconnect()
         .Build();
@@ -266,15 +265,10 @@
     {
         currentSlide.MapPath = map;
         await JS.InvokeVoidAsync("setBackground", map);
-        var filter = Builders<Tactic>.Filter.Eq(t => t.Id, tactic.Id);
-        var folderIndex = tactic.Folders.FindIndex(f => f.Id == currentFolder.Id);
-        var slideIndex = tactic.Folders[folderIndex].Slides.FindIndex(s => s.Id == currentSlide.Id);
-        var update = Builders<Tactic>.Update.Set(t => t.Folders[folderIndex].Slides[slideIndex].MapPath, map);
-        await collection.UpdateOneAsync(filter, update);
+        await repo.UpdateMap(tactic.Id, currentFolder.Id, currentSlide.Id, map);
     }
 
-
-    private async Task placeIcon(double mouseX, double mouseY)
+    private async Task PlaceIcon(double mouseX, double mouseY)
     {
         var unit = new Icon
         {
@@ -290,11 +284,7 @@
         await JS.InvokeVoidAsync("placeIcon", unit);
 
         currentSlide.Icons.Add(unit);
-        var folderIndex = tactic.Folders.FindIndex(f => f.Id == currentFolder.Id);
-        var slideIndex = tactic.Folders[folderIndex].Slides.FindIndex(s => s.Id == currentSlide.Id);
-        var filter = Builders<Tactic>.Filter.Eq(t => t.Id, tactic.Id);
-        var update = Builders<Tactic>.Update.Push(t => t.Folders[folderIndex].Slides[slideIndex].Icons, unit);
-        await collection.UpdateOneAsync(filter, update);
+        await repo.CreateIcon(tactic.Id, currentFolder.Id, currentSlide.Id, unit);
         await UpdateTactic();
     }
 
@@ -323,10 +313,10 @@
         switch (currentTool)
         {
             case IconType.Unit:
-                await placeIcon(mouseX, mouseY);
+                await PlaceIcon(mouseX, mouseY);
                 return;
             case IconType.StraightLine:
-                await setStartPointForArrow(mouseX, mouseY);
+                SetStartPointForArrow(mouseX, mouseY);
                 drawingShape = true;
                 return;
         }
@@ -430,17 +420,13 @@
         {
             return;
         }
-        var folderIndex = tactic.Folders.FindIndex(f => f.Id == currentFolder.Id);
-        var slideIndex = tactic.Folders[folderIndex].Slides.FindIndex(s => s.Id == currentSlide.Id);
-        var filter = Builders<Tactic>.Filter.Eq(t => t.Id, tactic.Id);
 
         if (currentTool == IconType.StraightLine && drawingShape)
         {
             drawingShape = false;
             currentSlide.Icons.Add(drawableIcon);
             await JS.InvokeVoidAsync("draw", currentSlide.Icons);
-            var insert = Builders<Tactic>.Update.Push(t => t.Folders[folderIndex].Slides[slideIndex].Icons, drawableIcon);
-            await collection.UpdateOneAsync(filter, insert);
+            await repo.CreateIcon(tactic!.Id, currentFolder.Id, currentSlide.Id, drawableIcon);
             return;
         }
 
@@ -448,31 +434,25 @@
         currentSlide.Icons.Add(draggingIcon);
         await JS.InvokeVoidAsync("stopDrag");
         await JS.InvokeVoidAsync("draw", currentSlide.Icons);
-        var update = Builders<Tactic>.Update.Set(t => t.Folders[folderIndex].Slides[slideIndex].Icons[draggingIconIndex], draggingIcon);
-        await collection.UpdateOneAsync(filter, update);
+        await repo.UpdateIcon(tactic!.Id, currentFolder.Id, currentSlide.Id, draggingIconIndex, draggingIcon);
         await UpdateTactic();
     }
 
     private async Task OnClickFolderRename(string folderID)
     {
-        var folder = tactic.Folders.First(f => f.Id == folderID);
+        var folder = repo.GetFolder(tactic!.Id, folderID);
         var parameters = new DialogParameters<RenameDialog>
         {
-            { "Name", folder.Name }
+            { "Name", folder!.Name }
         };
 
         var dialog = await DialogService.ShowAsync<RenameDialog>("Rename", parameters);
-        var newName = (await dialog.Result).Data.ToString();
+        var newName = (await dialog.Result)?.Data?.ToString();
         if (newName != null)
         {
             // it is infact a referece!
             folder.Name = newName;
-            var filter = Builders<Tactic>.Filter.Eq(t => t.Id, tactic.Id);
-
-            var folderIndex = tactic.Folders.FindIndex(f => f.Id == folderID);
-
-            var update = Builders<Tactic>.Update.Set(t => t.Folders[folderIndex].Name, newName);
-            await collection.UpdateOneAsync(filter, update);
+            await repo.UpdateFolderName(tactic.Id, folder.Id, newName);
         }
     }
 
@@ -490,74 +470,46 @@
 
     private async Task onclickSlideRename(string slideID, string folderID)
     {
-        var slide = tactic.Folders.Single(f => f.Id == folderID).Slides.Single(s => s.Id == slideID);
+        var slide = repo.GetSlide(tactic!.Id, currentFolder.Id, currentSlide.Id);
         var parameters = new DialogParameters<RenameDialog>
         {
-            { "Name", slide.Name }
+            { "Name", slide!.Name }
         };
 
         var dialog = await DialogService.ShowAsync<RenameDialog>("Rename", parameters);
-        var newName = (await dialog.Result).Data.ToString();
+        var newName = (await dialog.Result)!.Data!.ToString();
         if (newName != null)
         {
             slide.Name = newName;
-            var filter = Builders<Tactic>.Filter.Eq(t => t.Id, tactic.Id);
-
-            var folderIndex = tactic.Folders.FindIndex(f => f.Id == folderID);
-            var slideIndex = tactic.Folders[folderIndex].Slides.FindIndex(s => s.Id == slideID);
-
-            var update = Builders<Tactic>.Update.Set(t => t.Folders[folderIndex].Slides[slideIndex].Name, newName);
-            await collection.UpdateOneAsync(filter, update);
+            await repo.UpdateSlideName(tactic.Id, currentFolder.Id, currentSlide.Id, newName);
         }
     }
 
     private async Task OnAddSlide(string folderID)
     {
-        var newSlide = new Slide
-        {
-            Id = ObjectId.GenerateNewId().ToString(),
-            Name = "New Slide",
-            MapPath = null,
-            Icons = new List<Icon>()
-        };
-        var filter = Builders<Tactic>.Filter.Eq(t => t.Id, tactic.Id) & Builders<Tactic>.Filter.ElemMatch(t => t.Folders, f => f.Id == folderID);
-        var folderIndex = tactic.Folders.FindIndex(f => f.Id == folderID);
-        var update = Builders<Tactic>.Update.Push(t => t.Folders[folderIndex].Slides, newSlide);
-        await collection.UpdateOneAsync(filter, update);
+        var newSlide = await repo.CreateSlide(tactic!.Id, folderID);
         tactic.Folders.Single(f => f.Id == folderID).Slides.Add(newSlide);
-
     }
 
     private async Task onClickTacticRename()
     {
         var parameters = new DialogParameters<RenameDialog>
         {
-            { "Name", tactic.Name }
+            { "Name", tactic!.Name }
         };
 
         var dialog = await DialogService.ShowAsync<RenameDialog>("Rename", parameters);
-        var newName = (await dialog.Result).Data.ToString();
+        var newName = (await dialog.Result)!.Data!.ToString();
         if (newName != null)
         {
             tactic.Name = newName;
-            //TODO currently im always replacing the entire document. Not good.
-            var filter = Builders<Tactic>.Filter.Eq(t => t.Id, tactic.Id);
-            var update = Builders<Tactic>.Update.Set(t => t.Name, newName);
-            await collection.UpdateOneAsync(filter, update);
+            await repo.UpdateTacticName(tactic.Id, newName);
         }
     }
 
     private async Task OnAddFolder()
     {
-        var newFolder = new Folder
-        {
-            Id = ObjectId.GenerateNewId().ToString(),
-            Name = "New Folder",
-            Slides = new List<Slide>(),
-        };
-        var filter = Builders<Tactic>.Filter.Eq(t => t.Id, tactic.Id);
-        var update = Builders<Tactic>.Update.Push(t => t.Folders, newFolder);
-        await collection.UpdateOneAsync(filter, update);
+        var newFolder = await repo.CreateFolder(tactic!.Id);
         tactic.Folders.Add(newFolder);
     }
 
@@ -572,7 +524,7 @@
         currentTool = selectedTool;
     }
 
-    private async Task setStartPointForArrow(double mouseX, double mouseY)
+    private void SetStartPointForArrow(double mouseX, double mouseY)
     {
         drawableIcon = new Icon
         {
