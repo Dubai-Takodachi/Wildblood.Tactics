@@ -7,6 +7,8 @@ const canvasId = "tacticsCanvas";
 let offscreenCanvas = document.createElement('canvas');
 let offscreenContext = offscreenCanvas.getContext('2d');
 let isDragging = false; // Flag to prevent multiple redraws
+let currentBackground;
+let backgroundImage = null; // Store the background image
 
 window.preLoadImages = function (icons) {
     imageCache = {}; // Reset the cache
@@ -18,13 +20,36 @@ window.preLoadImages = function (icons) {
 }
 
 window.setBackground = function (background) {
-    if (background == null || background == undefined) {
-        return;
-    }
+    if (!background) return;
     let canvas = document.getElementById(canvasId);
-    let url = "url('/ConquerorsBladeData/Maps/" + background + ".png')";
-    canvas.style.backgroundImage = url;
-    canvas.style.backgroundSize = "cover";
+
+    const logicalWidth = 960;
+    const logicalHeight = 540;
+    const dpr = window.devicePixelRatio || 1;
+
+    canvas.width = logicalWidth * dpr;
+    canvas.height = logicalHeight * dpr;
+    offscreenCanvas.width = logicalWidth * dpr;
+    offscreenCanvas.height = logicalHeight * dpr;
+
+    let ctx = offscreenContext;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(dpr, dpr);
+
+    let img = new Image();
+    img.src = "/ConquerorsBladeData/Maps/" + background + ".png";
+    img.onload = function () {
+        backgroundImage = img; // Store for later use in draw()
+        // Optionally, trigger a redraw here if needed
+        window.draw(window.lastIcons || []);
+    };
+
+    currentBackground = background;
+
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
+    offscreenCanvas.style.width = "100%";
+    offscreenCanvas.style.height = "100%";
 };
 
 window.setCanvasSize = function (canvasId) {
@@ -59,8 +84,33 @@ window.placeIcon = function (unit) {
 };
 
 window.draw = function (icons) {
+    window.lastIcons = icons; // Store for redraws
     offscreenContext.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
 
+    // Draw background image if loaded
+    if (backgroundImage) {
+        // "Contain" logic as before
+        const logicalWidth = 960;
+        const logicalHeight = 540;
+        const imgAspect = backgroundImage.width / backgroundImage.height;
+        const canvasAspect = logicalWidth / logicalHeight;
+
+        let drawWidth, drawHeight, offsetX, offsetY;
+        if (imgAspect > canvasAspect) {
+            drawWidth = logicalWidth;
+            drawHeight = logicalWidth / imgAspect;
+            offsetX = 0;
+            offsetY = (logicalHeight - drawHeight) / 2;
+        } else {
+            drawHeight = logicalHeight;
+            drawWidth = logicalHeight * imgAspect;
+            offsetX = (logicalWidth - drawWidth) / 2;
+            offsetY = 0;
+        }
+        offscreenContext.drawImage(backgroundImage, offsetX, offsetY, drawWidth, drawHeight);
+    }
+
+    // Draw icons/arrows
     icons.forEach(unit => {
         if (unit.type === 0) {
             if (imageCache[unit.filePath]) {
@@ -160,3 +210,13 @@ window.copyToVisibleCanvas = function () {
     context.drawImage(offscreenCanvas, 0, 0);
 };
 
+window.getLogicalMousePosition = function (canvasId, clientX, clientY) {
+    const canvas = document.getElementById(canvasId);
+    const rect = canvas.getBoundingClientRect();
+    // Logical size (as used for drawing)
+    const logicalWidth = 960;
+    const logicalHeight = 540;
+    const x = ((clientX - rect.left) / rect.width) * logicalWidth;
+    const y = ((clientY - rect.top) / rect.height) * logicalHeight;
+    return { x, y };
+};
