@@ -306,7 +306,8 @@
 
         foreach (var icon in currentSlide.Icons)
         {
-            if (mouseX > icon.StartX && mouseX < icon.EndX && mouseY > icon.StartY && mouseY < icon.EndY)
+            if (CheckLineClicked(mouseX, mouseY, icon) ||
+                CheckUnitClicked(mouseX, mouseY, icon))
             {
                 draggingIcon = icon with {};
                 draggingIconIndex = currentSlide.Icons.IndexOf(icon);
@@ -331,6 +332,47 @@
         }
     }
 
+    private static double LineSegmentSDF(
+        double px, double py,
+        double x1, double y1, // line start
+        double x2, double y2, // line end
+        double width)         // full thickness
+    {
+        var lineLengthX = x2 - x1;
+        var lineLengthY = y2 - y1;
+        var lengthSq = lineLengthX * lineLengthX + lineLengthY * lineLengthY;
+
+        if (lengthSq == 0)
+        {
+            var distanceToPoint = Math.Sqrt((px - x1) * (px - x1) + (py - y1) * (py - y1)) - width * 0.5f;
+            return distanceToPoint;
+        }
+
+        // Project point onto the line segment
+        var normalizedProjection = ((px - x1) * lineLengthX + (py - y1) * lineLengthY) / lengthSq;
+        normalizedProjection = Math.Max(0, Math.Min(1, normalizedProjection)); // Clamp to segment
+
+        // Closest point on the segment
+        var projectionX = x1 + normalizedProjection * lineLengthX;
+        var projectionY = y1 + normalizedProjection * lineLengthY;
+
+        // Distance to closest point
+        var distance = (float)Math.Sqrt(
+            (px - projectionX) *
+            (px - projectionX) + (py - projectionY) *
+            (py - projectionY));
+
+        return distance - width * 0.5f; // signed: negative inside the stroke
+    }
+
+    private bool CheckLineClicked(double mouseX, double mouseY, Icon icon) =>
+        icon.Type == IconType.StraightLine &&
+        LineSegmentSDF(mouseX, mouseY, icon.StartX, icon.StartY, icon.EndX, icon.EndY, 10f) < 0;
+
+    private bool CheckUnitClicked(double mouseX, double mouseY, Icon icon) =>
+        icon.Type == IconType.Unit &&
+        mouseX > icon.StartX && mouseX < icon.EndX && mouseY > icon.StartY && mouseY < icon.EndY;
+
     private async Task dragMove(MouseEventArgs args)
     {
         var pos = await JS.InvokeAsync<MousePosition>("getLogicalMousePosition", "tacticsCanvas", args.ClientX, args.ClientY);
@@ -344,7 +386,9 @@
 
         if (currentTool == IconType.StraightLine && drawingShape)
         {
-            drawableIcon = drawableIcon with { EndX = mouseX, EndY = mouseY };
+            drawableIcon.EndX = mouseX;
+            drawableIcon.EndY = mouseY;
+
             currentSlide.Icons.Add(drawableIcon);
             await JS.InvokeVoidAsync("draw", currentSlide.Icons);
             currentSlide.Icons.Remove(drawableIcon);
@@ -353,13 +397,10 @@
 
         if (currentDraggingType == IconType.Unit)
         {
-            draggingIcon = draggingIcon with
-            {
-                StartX = mouseX,
-                StartY = mouseY,
-                EndX = mouseX + 40,
-                EndY = mouseY,
-            };
+            draggingIcon.StartX = mouseX;
+            draggingIcon.StartY = mouseY;
+            draggingIcon.EndX = mouseX + 40;
+            draggingIcon.EndY = mouseY + 40;
 
             currentSlide.Icons.Add(draggingIcon);
             await JS.InvokeVoidAsync("dragIcon", mouseX, mouseY, currentSlide.Icons);
@@ -370,13 +411,10 @@
             var deltaX = mouseX - startX;
             var deltaY = mouseY - startY;
 
-            draggingIcon = draggingIcon with
-            {
-                EndX = draggingIcon.EndX + deltaX,
-                EndY = draggingIcon.StartY + deltaY,
-                StartX = draggingIcon.StartX + deltaX,
-                StartY = draggingIcon.StartY + deltaY,
-            };
+            draggingIcon.EndX += deltaX;
+            draggingIcon.EndY += deltaY;
+            draggingIcon.StartX += deltaX;
+            draggingIcon.StartY += deltaY;
 
             startX = mouseX;
             startY = mouseY;
