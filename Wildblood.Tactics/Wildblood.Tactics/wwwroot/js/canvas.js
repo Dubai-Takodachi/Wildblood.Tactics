@@ -123,8 +123,8 @@ window.placeIcon = function (unit) {
     if (imageCache[unit.filePath]) {
         offscreenContext.drawImage(
             imageCache[unit.filePath],
-            unit.startX, unit.startY,
-            unit.endX - unit.startX, unit.endY - unit.startY
+            unit.points[0].x, unit.points[0].y,
+            unit.points[1].x - unit.points[0].x, unit.points[1].y - unit.points[0].y
         );
         offscreenContext.restore();
         window.copyToVisibleCanvas();
@@ -135,8 +135,8 @@ window.placeIcon = function (unit) {
             imageCache[unit.filePath] = image;
             offscreenContext.drawImage(
                 image,
-                unit.startX, unit.startY,
-                unit.endX - unit.startX, unit.endY - unit.startY
+                unit.points[0].x, unit.points[0].y,
+                unit.points[1].x - unit.points[0].x, unit.points[1].y - unit.points[0].y
             );
             offscreenContext.restore();
             window.copyToVisibleCanvas();
@@ -185,12 +185,12 @@ window.draw = function (icons) {
             if (imageCache[unit.filePath]) {
                 offscreenContext.drawImage(
                     imageCache[unit.filePath],
-                    unit.startX, unit.startY,
-                    unit.endX - unit.startX, unit.endY - unit.startY
+                    unit.points[0].x, unit.points[0].y,
+                    unit.points[1].x - unit.points[0].x, unit.points[1].y - unit.points[0].y
                 );
             }
         } else if (unit.type === 1) {
-            window.drawArrow(unit.startX, unit.startY, unit.endX, unit.endY, unit.color, true);
+            window.drawArrow(unit.points[0].x, unit.points[0].y, unit.points[1].x, unit.points[1].y, unit.color, true);
         }
     });
 
@@ -240,20 +240,20 @@ window.dragIcon = function (x, y, icons) {
             if (draggingIcon && (x !== lastX || y !== lastY)) {
                 lastX = x;
                 lastY = y;
-                draggingIcon.startX = (x - offsetX);
-                draggingIcon.startY = (y - offsetY);
-                draggingIcon.endX = draggingIcon.startX + 40;
-                draggingIcon.endY = draggingIcon.startY + 40;
+                draggingIcon.points[0].x = (x - offsetX);
+                draggingIcon.points[0].y = (y - offsetY);
+                draggingIcon.points[1].x = draggingIcon.points[0].x + 40;
+                draggingIcon.points[1].y = draggingIcon.points[0].y + 40;
 
                 window.draw(icons);
             } else if (draggingArrow) {
                 let deltaX = x - offsetX;
                 let deltaY = y - offsetY;
 
-                draggingArrow.startX += deltaX;
-                draggingArrow.startY += deltaY;
-                draggingArrow.endX += deltaX;
-                draggingArrow.endY += deltaY;
+                draggingArrow.points[0].x += deltaX;
+                draggingArrow.points[0].y += deltaY;
+                draggingArrow.points[1].x += deltaX;
+                draggingArrow.points[1].y += deltaY;
 
                 offsetX = x;
                 offsetY = y;
@@ -268,8 +268,8 @@ window.dragIcon = function (x, y, icons) {
 window.startDrag = function (icon, x, y) {
     if (icon.type === 0) {
         draggingIcon = icon;
-        offsetX = x - icon.startX;
-        offsetY = y - icon.startY;
+        offsetX = x - icon.points[0].x;
+        offsetY = y - icon.points[0].y;
         lastX = x;
         lastY = y;
     } else if (icon.type === 1) {
