@@ -31,14 +31,14 @@
         if (user.Identity?.IsAuthenticated == true) 
         {
             var userId = user.FindFirst(c => c.Type == "sub")?.Value ?? user.FindFirst(c => c.Type == "nameidentifier")?.Value ?? user.Identity.Name;
-            var tactic = CreateTacticDocument(userId);
+            var tactic = CreateTacticDocument(userId, user.Identity.Name);
             var collection = Database.GetCollection<Tactic>("Tactics");
             collection.InsertOne(tactic);
             NavigationManager.NavigateTo("/tactics/" + tactic.Id);
         }
     }
 
-    private Tactic CreateTacticDocument(string user) {
+    private Tactic CreateTacticDocument(string user, string userName) {
         return new Tactic
             {
                 Id = ObjectId.GenerateNewId().ToString(),
@@ -56,7 +56,16 @@
                             }
                         }
                     }
-                }
+                },
+                Members = new List<MemberRole>
+                {
+                    new MemberRole
+                    {
+                        Name = userName,
+                        Roles = Role.Owner,
+                    }
+                },
+               
             };
 
     }

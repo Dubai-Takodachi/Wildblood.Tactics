@@ -16,7 +16,7 @@
 	
   <ItemGroup>
     <PackageReference Include="MongoDB.Driver" Version="3.4.0" />
-    <PackageReference Include="MudBlazor" Version="8.7.0" />
+    <PackageReference Include="MudBlazor" Version="8.8.0" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.556">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

@@ -117,15 +117,7 @@
                 <MudIconButton Icon="@Icons.Material.Filled.ZoomIn" @onclick="() => SetZoom(zoomLevel + 0.1)">+</MudIconButton>
             </MudPaper>
             <MudPaper>
-                <MudList T="string">
-                    <MudListSubheader>
-                        Online Users:
-                    </MudListSubheader>
-                    @foreach (var user in users)
-                    {
-                        <MudListItem Text="@user" />
-                    }
-                </MudList>
+                <MudButton Color="Color.Primary" OnClick="ShowMemberList">Member List</MudButton>
             </MudPaper>
         </div>
     </MudCard>
@@ -149,6 +141,7 @@
     private static string baseMapPath = "wwwroot/ConquerorsBladeData/Maps";
     private static string baseUnitPath = "wwwroot/ConquerorsBladeData/Units";
     private string selectedUnit;
+    private bool isAllowedToEdit = false;
 
     private List<string> maps = new List<string>();
     private List<string> units = new List<string>();
@@ -165,7 +158,6 @@
     private double panStartX, panStartY;
     private double panOriginX, panOriginY;
     private double panX = 0, panY = 0;
-    private static List<string> users = new List<string>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -189,6 +181,11 @@
             currentFolder = tactic.Folders[0];
             currentSlide = currentFolder.Slides[0];
             colorValue = "#000000";
+            var username = await GetCurrentUserNameAsync();
+            if (tactic.Members.Any(m => m.Name == username && (m.Roles == Role.Admin || m.Roles == Role.Owner)))
+            {
+                isAllowedToEdit = true;
+            }
         }
 
         hubConnection = new HubConnectionBuilder()
@@ -231,32 +228,7 @@
                 await InvokeAsync(StateHasChanged);
             }
         });
-
-        hubConnection.On<string, string>("ReceiveTacticLock", async (tacticId, userId) =>
-        {
-            if (tacticId == ID)
-            {
-                Console.WriteLine($"Tactic {tacticId} locked by user {userId}");
-            }
-        });
-
-        hubConnection.On<string>("ReceiveTacticUnlock", async (tacticId) =>
-        {
-            if (tacticId == ID)
-            {
-                Console.WriteLine($"Tactic {tacticId} unlocked");
-            }
-        });
-
-        hubConnection.On<List<string>>("UserListChanged", (userList) =>
-        {
-            users = userList;
-            InvokeAsync(StateHasChanged);
-
-        });
         await hubConnection.StartAsync();
-        var userName = await GetCurrentUserNameAsync();
-        await hubConnection.InvokeAsync("JoinTactic", ID, userName);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -304,6 +276,10 @@
 
     private async Task PlaceIcon(double mouseX, double mouseY)
     {
+        if (!isAllowedToEdit)
+        {
+            return;
+        }
         var unit = new Icon
         {
             StartX = mouseX,
@@ -339,6 +315,11 @@
         var pos = await JS.InvokeAsync<MousePosition>("getLogicalMousePosition", "tacticsCanvas", eventArgs.ClientX, eventArgs.ClientY);
         var mouseX = pos.x;
         var mouseY = pos.y;
+
+        if (!isAllowedToEdit)
+        {
+            return;
+        }
 
         foreach (var icon in currentSlide.Icons)
         {
@@ -431,6 +412,11 @@
             return;
         }
 
+        if (!isAllowedToEdit)
+        {
+            return;
+        }
+
         if (currentTool == IconType.StraightLine && drawingShape)
         {
             drawableIcon.EndX = mouseX;
@@ -484,6 +470,11 @@
             return;
         }
 
+        if (!isAllowedToEdit)
+        {
+            return;
+        }
+
 
         if (currentTool == IconType.StraightLine && drawingShape)
         {
@@ -504,6 +495,11 @@
 
     private async Task OnClickFolderRename(string folderID)
     {
+        if (!isAllowedToEdit)
+        {
+            return;
+        }
+
         var folder = repo.GetFolder(tactic!.Id, folderID);
         var parameters = new DialogParameters<RenameDialog>
         {
@@ -534,6 +530,11 @@
 
     private async Task onclickSlideRename(string slideID, string folderID)
     {
+        if (!isAllowedToEdit)
+        {
+            return;
+        }
+
         var slide = repo.GetSlide(tactic!.Id, currentFolder.Id, currentSlide.Id);
         var parameters = new DialogParameters<RenameDialog>
         {
@@ -551,12 +552,22 @@
 
     private async Task OnAddSlide(string folderID)
     {
+        if (!isAllowedToEdit)
+        {
+            return;
+        }
+
         var newSlide = await repo.CreateSlide(tactic!.Id, folderID);
         tactic.Folders.Single(f => f.Id == folderID).Slides.Add(newSlide);
     }
 
     private async Task onClickTacticRename()
     {
+        if (!isAllowedToEdit)
+        {
+            return;
+        }
+
         var parameters = new DialogParameters<RenameDialog>
         {
             { "Name", tactic!.Name }
@@ -573,6 +584,11 @@
 
     private async Task OnAddFolder()
     {
+        if (!isAllowedToEdit)
+        {
+            return;
+        }
+
         var newFolder = await repo.CreateFolder(tactic!.Id);
         tactic.Folders.Add(newFolder);
     }
@@ -628,6 +644,29 @@
         // You can get the user name from the authentication state
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         return authState.User.Identity?.Name ?? "Unknown";
+    }
+
+    private async Task ShowMemberList()
+    {
+        if (!isAllowedToEdit)
+        {
+            return;
+        }
+
+        var parameters = new DialogParameters<MemberListDialog>
+        {
+            { "Members", tactic!.Members }
+        };
+
+        var dialog = await DialogService.ShowAsync<MemberListDialog>("Member List", parameters);
+        var result = (await dialog.Result)!.Data!;
+        var newMemberList = result as List<MemberRole>;
+
+        if (newMemberList != null)
+        {
+            tactic.Members = newMemberList;
+            await repo.UpdateMemberList(tactic.Id, newMemberList);
+        }
     }
 
     static string vectorLineIcon = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><title>vector-line</title><path d=\"M15,3V7.59L7.59,15H3V21H9V16.42L16.42,9H21V3M17,5H19V7H17M5,17H7V19H5\" /></svg>";

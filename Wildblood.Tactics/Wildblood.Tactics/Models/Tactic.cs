@@ -15,6 +15,7 @@ namespace Wildblood.Tactics.Models
         [JsonPropertyName("name")]
         public string Name { get; set; }
 
+        // TODO kick it out 
         [BsonElement("userId")]
         [JsonPropertyName("userId")]
         public string UserId { get; set; }
@@ -22,5 +23,9 @@ namespace Wildblood.Tactics.Models
         [BsonElement("folder")]
         [JsonPropertyName("folder")]
         public List<Folder> Folders { get; set; }
+
+        [BsonElement("members")]
+        [JsonPropertyName("members")]
+        public List<MemberRole> Members { get; set; }
     }
 }

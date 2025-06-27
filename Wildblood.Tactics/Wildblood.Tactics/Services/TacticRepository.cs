@@ -116,6 +116,13 @@ public class TacticRepository : ITacticRepository
         return newFolder;
     }
 
+    public async Task UpdateMemberList(string tacticId, List<MemberRole> members)
+    {
+        var nav = GetNavigation(tacticId);
+        var update = Builders<Tactic>.Update.Set(t => t.Members, members);
+        await tactics.UpdateOneAsync(CreateFilter(nav.TacticIndex), update);
+    }
+
     private static FilterDefinition<Tactic> CreateFilter(string tacticId) =>
         Builders<Tactic>.Filter.Eq(t => t.Id, tacticId);
 
