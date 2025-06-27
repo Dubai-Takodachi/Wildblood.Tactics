@@ -39,7 +39,7 @@
             </MudSelect>
         </div>
         <MudPaper style="grid-area:2/2/span 3/2">
-            <MudTabs>
+            <MudTabs MinimumTabWidth="20px">
                 <MudTabPanel Icon="@swordsIcon" @onclick="() => ChangeTool(IconType.Unit)">
                     <div>
                         @*Unit*@
@@ -49,12 +49,16 @@
                                 <MudPaper Class="ma-1" @onclick="@(async (args) => await SelectedUnitChanged(unit))">
                                     <img src="/ConquerorsBladeData/Units/@unit" height="40" width="40" />
                                 </MudPaper>
-
                             }
                         </MudPaper>
                     </div>
                 </MudTabPanel>
                 <MudTabPanel Icon="@vectorLineIcon" @onclick="() => ChangeTool(IconType.StraightLine)">
+                    <MudPaper>
+                        <MudColorPicker Label="Line Color" @bind-Text="colorValue" />
+                    </MudPaper>
+                </MudTabPanel>
+                <MudTabPanel Icon="@curveIcon" @onclick="() => ChangeTool(IconType.CurveLine)">
                     <MudPaper>
                         <MudColorPicker Label="Line Color" @bind-Text="colorValue" />
                     </MudPaper>
@@ -132,15 +136,15 @@
     private Slide currentSlide;
     private Folder currentFolder;
     private IconType currentTool = IconType.Unit;
-    private IconType currentDraggingType = IconType.Unit;
+    private IconType? currentDraggingType = null!;
     private static string baseMapPath = "wwwroot/ConquerorsBladeData/Maps";
     private static string baseUnitPath = "wwwroot/ConquerorsBladeData/Units";
     private string selectedUnit;
 
     private List<string> maps = new List<string>();
     private List<string> units = new List<string>();
-    private Icon draggingIcon;
-    private Icon drawableIcon;
+    private Icon draggingIcon = null!;
+    private Icon drawableIcon = null!;
     private bool drawingShape = false;
     private bool isDragging = false;
     private int draggingIconIndex;
@@ -288,7 +292,7 @@
     {
         var unit = new Icon
         {
-            Points = [pos, new Point(pos.X + 40, pos.Y + 40)],
+            Points = [pos, pos + new Point(40, 40)],
             FilePath = "/ConquerorsBladeData/Units/" + selectedUnit,
             Type = IconType.Unit,
             Color = colorValue,
@@ -315,7 +319,8 @@
             panOriginY = pan.Y;
             return;
         }
-        var pos = await JS.InvokeAsync<Point>("getLogicalMousePosition", "tacticsCanvas", eventArgs.ClientX, eventArgs.ClientY);
+        var pos = await JS.InvokeAsync<Point>(
+            "getLogicalMousePosition", "tacticsCanvas", eventArgs.ClientX, eventArgs.ClientY);
 
         foreach (var icon in currentSlide.Icons)
         {
@@ -332,16 +337,54 @@
                 return;
             }
         }
+
         switch (currentTool)
         {
             case IconType.Unit:
                 await PlaceIcon(pos);
-                return;
+                break;
             case IconType.StraightLine:
                 SetStartPointForArrow(pos);
                 drawingShape = true;
-                return;
+                break;
+            case IconType.CurveLine:
+                await AddCurvePoint(pos);
+                drawingShape = true;
+                break;
         }
+    }
+
+    private async Task AddCurvePoint(Point pos)
+    {
+        if (drawableIcon == null)
+        {
+            drawableIcon = new Icon
+            {
+                Points = [pos],
+                Color = colorValue,
+                FilePath = "",
+                Type = IconType.CurveLine,
+            };
+        }
+        else if (CircleSDF(pos, drawableIcon.Points.Last(), 5) < 0)
+        {
+            currentSlide.Icons.Add(drawableIcon);
+            await repo.CreateIcon(tactic, currentFolder.Id, currentSlide.Id, drawableIcon);
+            await UpdateTactic();
+            drawableIcon = null!;
+        }
+        else
+        {
+            drawableIcon.Points.Add(pos);
+        }
+    }
+
+    private static float CircleSDF(Point pos, Point circleCenter, float radius)
+    {
+        var distanceVector = pos - circleCenter;
+        var distance = MathF
+            .Sqrt(distanceVector.X * distanceVector.X + distanceVector.Y * distanceVector.Y);
+        return distance - radius;
     }
 
     private static double LineSegmentSDF(Point p, Point start, Point end, double width)
@@ -408,6 +451,19 @@
             return;
         }
 
+        if (currentTool == IconType.CurveLine && drawingShape && drawableIcon != null)
+        {
+            drawableIcon.Points.Add(pos);
+            currentSlide.Icons.Add(drawableIcon);
+            await JS.InvokeVoidAsync("draw", currentSlide.Icons);
+            if (drawableIcon != null)
+            {
+                currentSlide.Icons.Remove(drawableIcon);
+                drawableIcon.Points.Remove(pos);
+            }
+            return;
+        }
+
         if (currentTool == IconType.StraightLine && drawingShape)
         {
             drawableIcon.Points[1] = pos;
@@ -464,12 +520,15 @@
             return;
         }
 
-        isDragging = false;
-        currentSlide.Icons.Add(draggingIcon);
-        await JS.InvokeVoidAsync("stopDrag");
-        await JS.InvokeVoidAsync("draw", currentSlide.Icons);
-        await repo.UpdateIcon(tactic, currentFolder.Id, currentSlide.Id, draggingIconIndex, draggingIcon);
-        await UpdateTactic();
+        if (draggingIcon != null)
+        {
+            isDragging = false;
+            currentSlide.Icons.Add(draggingIcon);
+            await JS.InvokeVoidAsync("stopDrag");
+            await JS.InvokeVoidAsync("draw", currentSlide.Icons);
+            await repo.UpdateIcon(tactic, currentFolder.Id, currentSlide.Id, draggingIconIndex, draggingIcon);
+            await UpdateTactic();
+        }
     }
 
     private async Task OnClickFolderRename(string folderID)
@@ -560,6 +619,7 @@
     private void ChangeTool(IconType selectedTool)
     {
         currentTool = selectedTool;
+        drawableIcon = null!;
     }
 
     private void SetStartPointForArrow(Point pos)
@@ -620,7 +680,7 @@
         await JS.InvokeVoidAsync("setZoom", zoomLevel);
     }
 
-
+    static string curveIcon = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><title>vector-curve</title><path d=\"M18.5,2A1.5,1.5 0 0,1 20,3.5A1.5,1.5 0 0,1 18.5,5C18.27,5 18.05,4.95 17.85,4.85L14.16,8.55L14.5,9C16.69,7.74 19.26,7 22,7L23,7.03V9.04L22,9C19.42,9 17,9.75 15,11.04A3.96,3.96 0 0,1 11.04,15C9.75,17 9,19.42 9,22L9.04,23H7.03L7,22C7,19.26 7.74,16.69 9,14.5L8.55,14.16L4.85,17.85C4.95,18.05 5,18.27 5,18.5A1.5,1.5 0 0,1 3.5,20A1.5,1.5 0 0,1 2,18.5A1.5,1.5 0 0,1 3.5,17C3.73,17 3.95,17.05 4.15,17.15L7.84,13.45C7.31,12.78 7,11.92 7,11A4,4 0 0,1 11,7C11.92,7 12.78,7.31 13.45,7.84L17.15,4.15C17.05,3.95 17,3.73 17,3.5A1.5,1.5 0 0,1 18.5,2M11,9A2,2 0 0,0 9,11A2,2 0 0,0 11,13A2,2 0 0,0 13,11A2,2 0 0,0 11,9Z\"/></svg>";
     static string vectorLineIcon = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><title>vector-line</title><path d=\"M15,3V7.59L7.59,15H3V21H9V16.42L16.42,9H21V3M17,5H19V7H17M5,17H7V19H5\" /></svg>";
     static string swordsIcon = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><title>sword-cross</title><path d=\"M6.2,2.44L18.1,14.34L20.22,12.22L21.63,13.63L19.16,16.1L22.34,19.28C22.73,19.67 22.73,20.3 22.34,20.69L21.63,21.4C21.24,21.79 20.61,21.79 20.22,21.4L17,18.23L14.56,20.7L13.15,19.29L15.27,17.17L3.37,5.27V2.44H6.2M15.89,10L20.63,5.26V2.44H17.8L13.06,7.18L15.89,10M10.94,15L8.11,12.13L5.9,14.34L3.78,12.22L2.37,13.63L4.84,16.1L1.66,19.29C1.27,19.68 1.27,20.31 1.66,20.7L2.37,21.41C2.76,21.8 3.39,21.8 3.78,21.41L7,18.23L9.44,20.7L10.85,19.29L8.73,17.17L10.94,15Z\" /></svg>";
 }

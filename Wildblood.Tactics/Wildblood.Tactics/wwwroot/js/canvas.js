@@ -191,6 +191,8 @@ window.draw = function (icons) {
             }
         } else if (unit.type === 1) {
             window.drawArrow(unit.points[0].x, unit.points[0].y, unit.points[1].x, unit.points[1].y, unit.color, true);
+        } else if (unit.type === 3) {
+            window.drawSpline(unit.points, 0.5, 16, unit.color);
         }
     });
 
@@ -302,4 +304,40 @@ window.getLogicalMousePosition = function (canvasId, clientX, clientY) {
     const x = (((clientX - rect.left) / rect.width) * logicalWidth - panX) / zoom;
     const y = (((clientY - rect.top) / rect.height) * logicalHeight - panY) / zoom;
     return { x, y };
+};
+
+window.drawSpline = function (points, tension = 0.5, segments = 16, color = '#ffffff') {
+    offscreenContext.beginPath();
+    offscreenContext.moveTo(points[0].x, points[0].y);
+
+    for (let i = 0; i < points.length - 1; i++) {
+        const p0 = points[i === 0 ? i : i - 1];
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        const p3 = points[i + 2 < points.length ? i + 2 : i + 1];
+
+        for (let j = 0; j <= segments; j++) {
+            const t = j / segments;
+
+            const tt = t * t;
+            const ttt = tt * t;
+
+            const q1 = -tension * ttt + 2 * tension * tt - tension * t;
+            const q2 = (2 - tension) * ttt + (tension - 3) * tt + 1;
+            const q3 = (tension - 2) * ttt + (3 - 2 * tension) * tt + tension * t;
+            const q4 = tension * ttt - tension * tt;
+
+            const x = q1 * p0.x + q2 * p1.x + q3 * p2.x + q4 * p3.x;
+            const y = q1 * p0.y + q2 * p1.y + q3 * p2.y + q4 * p3.y;
+
+            offscreenContext.lineTo(x, y);
+        }
+    }
+
+    offscreenContext.strokeStyle = color;
+    offscreenContext.lineWidth = 2;
+    offscreenContext.stroke();
+
+    offscreenContext.restore();
+    window.copyToVisibleCanvas();
 };

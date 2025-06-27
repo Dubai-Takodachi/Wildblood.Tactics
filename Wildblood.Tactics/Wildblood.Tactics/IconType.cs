@@ -5,5 +5,6 @@
         Unit,
         StraightLine,
         Box,
+        CurveLine,
     }
 }
