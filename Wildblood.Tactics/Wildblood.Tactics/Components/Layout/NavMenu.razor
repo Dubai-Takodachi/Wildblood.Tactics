@@ -10,7 +10,7 @@
 
 <input type="checkbox" title="Navigation menu" class="navbar-toggler" />
 
-<MudNavMenu Color="Color.Error">
+<MudNavMenu Color="Color.Primary" Dense="true" Rounded="true">
             <MudNavLink href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">
                 Home
             </MudNavLink>
@@ -31,9 +31,9 @@
                     <form action="Account/Logout" method="post">
                         <AntiforgeryToken />
                         <input type="hidden" name="ReturnUrl" value="@currentUrl" />
-                        <button type="submit" class="nav-link">
+                        <MudButton ButtonType="ButtonType.Submit" class="nav-link">
                             <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
-                        </button>
+                        </MudButton>
                     </form>
                 </MudNavLink>
             </Authorized>
