@@ -20,62 +20,59 @@ public class TacticRepository : ITacticRepository
     public Tactic? GetTactic(string? id) =>
         tactics.Find(t => t.Id == id).FirstOrDefault();
 
-    public async Task UpdateMap(string tacticId, string folderId, string slideId, string mapPath)
+    public async Task UpdateMap(Tactic tactic, string folderId, string slideId, string mapPath)
     {
-        var nav = GetNavigation(tacticId, folderId, slideId);
+        var nav = GetNavigation(tactic, folderId, slideId);
         var update = Builders<Tactic>.Update
             .Set(t => t.Folders[nav.FolderIndex!.Value].Slides[nav.SlideIndex!.Value].MapPath, mapPath);
-        await tactics.UpdateOneAsync(CreateFilter(nav.TacticIndex), update);
+        await tactics.UpdateOneAsync(CreateFilter(tactic), update);
     }
 
-    public async Task CreateIcon(string tacticId, string folderId, string slideId, Icon unit)
+    public async Task CreateIcon(Tactic tactic, string folderId, string slideId, Icon unit)
     {
-        var nav = GetNavigation(tacticId, folderId, slideId);
+        var nav = GetNavigation(tactic, folderId, slideId);
         var update = Builders<Tactic>.Update
             .Push(t => t.Folders[nav.FolderIndex!.Value].Slides[nav.SlideIndex!.Value].Icons, unit);
-        await tactics.UpdateOneAsync(CreateFilter(nav.TacticIndex), update);
+        await tactics.UpdateOneAsync(CreateFilter(tactic), update);
     }
 
-    public async Task UpdateIcon(string tacticId, string folderId, string slideId, int iconId, Icon icon)
+    public async Task UpdateIcon(Tactic tactic, string folderId, string slideId, int iconId, Icon icon)
     {
-        var nav = GetNavigation(tacticId, folderId, slideId);
+        var nav = GetNavigation(tactic, folderId, slideId);
         var update = Builders<Tactic>.Update
             .Set(t => t.Folders[nav.FolderIndex!.Value].Slides[nav.SlideIndex!.Value].Icons[iconId], icon);
-        await tactics.UpdateOneAsync(CreateFilter(nav.TacticIndex), update);
+        await tactics.UpdateOneAsync(CreateFilter(tactic), update);
     }
 
-    public Folder? GetFolder(string tacticId, string folderId)
+    public Folder? GetFolder(Tactic tactic, string folderId)
     {
-        var tactic = GetTactic(tacticId) ?? throw new Exception("Tactic not found");
-        return tactic.Folders
-            .FirstOrDefault(f => f.Id == folderId);
+        return tactic.Folders.FirstOrDefault(f => f.Id == folderId);
     }
 
-    public async Task UpdateFolderName(string tacticId, string folderId, string newName)
+    public async Task UpdateFolderName(Tactic tactic, string folderId, string newName)
     {
-        var nav = GetNavigation(tacticId, folderId);
+        var nav = GetNavigation(tactic, folderId);
         var update = Builders<Tactic>.Update
             .Set(t => t.Folders[nav.FolderIndex!.Value].Name, newName);
-        await tactics.UpdateOneAsync(CreateFilter(nav.TacticIndex), update);
+        await tactics.UpdateOneAsync(CreateFilter(tactic), update);
     }
 
-    public Slide? GetSlide(string tacticId, string folderId, string slideId)
+    public Slide? GetSlide(Tactic tactic, string folderId, string slideId)
     {
-        var tactic = GetTactic(tacticId) ?? throw new Exception("Tactic not found");
         return tactic.Folders
             .Single(f => f.Id == folderId).Slides
             .Single(s => s.Id == slideId);
     }
 
-    public async Task UpdateSlideName(string tacticId, string folderId, string slideId, string newName)
+    public async Task UpdateSlideName(Tactic tactic, string folderId, string slideId, string newName)
     {
-        var nav = GetNavigation(tacticId, folderId, slideId);
+        var nav = GetNavigation(tactic, folderId, slideId);
         var update = Builders<Tactic>.Update
             .Set(t => t.Folders[nav.FolderIndex!.Value].Slides[nav.SlideIndex!.Value].Name, newName);
-        await tactics.UpdateOneAsync(CreateFilter(nav.TacticIndex), update);
+        await tactics.UpdateOneAsync(CreateFilter(tactic), update);
     }
 
-    public async Task<Slide> CreateSlide(string tacticId, string folderId)
+    public async Task<Slide> CreateSlide(Tactic tactic, string folderId)
     {
         var newSlide = new Slide
         {
@@ -85,23 +82,23 @@ public class TacticRepository : ITacticRepository
             Icons = [],
         };
 
-        var nav = GetNavigation(tacticId, folderId);
-        var filter = CreateFilter(nav.TacticIndex)
+        var nav = GetNavigation(tactic, folderId);
+        var filter = CreateFilter(tactic)
             & Builders<Tactic>.Filter.ElemMatch(t => t.Folders, f => f.Id == folderId);
         var update = Builders<Tactic>.Update.Push(t => t.Folders[nav.FolderIndex!.Value].Slides, newSlide);
         await tactics.UpdateOneAsync(filter, update);
         return newSlide;
     }
 
-    public async Task UpdateTacticName(string tacticId, string newName)
+    public async Task UpdateTacticName(Tactic tactic, string newName)
     {
         //// TODO currently im always replacing the entire document. Not good.
-        var nav = GetNavigation(tacticId);
+        var nav = GetNavigation(tactic);
         var update = Builders<Tactic>.Update.Set(t => t.Name, newName);
-        await tactics.UpdateOneAsync(CreateFilter(nav.TacticIndex), update);
+        await tactics.UpdateOneAsync(CreateFilter(tactic), update);
     }
 
-    public async Task<Folder> CreateFolder(string tacticId)
+    public async Task<Folder> CreateFolder(Tactic tactic)
     {
         var newFolder = new Folder
         {
@@ -110,14 +107,14 @@ public class TacticRepository : ITacticRepository
             Slides = [],
         };
 
-        var nav = GetNavigation(tacticId);
+        var nav = GetNavigation(tactic);
         var update = Builders<Tactic>.Update.Push(t => t.Folders, newFolder);
-        await tactics.UpdateOneAsync(CreateFilter(nav.TacticIndex), update);
+        await tactics.UpdateOneAsync(CreateFilter(tactic), update);
         return newFolder;
     }
 
-    private static FilterDefinition<Tactic> CreateFilter(string tacticId) =>
-        Builders<Tactic>.Filter.Eq(t => t.Id, tacticId);
+    private static FilterDefinition<Tactic> CreateFilter(Tactic tactic) =>
+        Builders<Tactic>.Filter.Eq(t => t.Id, tactic.Id);
 
     private record TacticNavigation
     {
@@ -129,9 +126,8 @@ public class TacticRepository : ITacticRepository
     }
 
     private TacticNavigation GetNavigation(
-        string tacticId, string? folderId = null, string? slideId = null)
+        Tactic tactic, string? folderId = null, string? slideId = null)
     {
-        var tactic = GetTactic(tacticId) ?? throw new Exception("Tactic not found");
         int? folderIndex = folderId != null
             ? tactic.Folders.FindIndex(f => f.Id == folderId)
             : null;

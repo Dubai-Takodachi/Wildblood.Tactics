@@ -7,23 +7,23 @@ public interface ITacticRepository
 {
     public Tactic? GetTactic(string? id);
 
-    public Task UpdateMap(string tacticId, string folderId, string slideId, string mapPath);
+    public Task UpdateMap(Tactic tactic, string folderId, string slideId, string mapPath);
 
-    public Task CreateIcon(string tacticId, string folderId, string slideId, Icon unit);
+    public Task CreateIcon(Tactic tactic, string folderId, string slideId, Icon unit);
 
-    public Task UpdateIcon(string tacticId, string folderId, string slideId, int iconId, Icon icon);
+    public Task UpdateIcon(Tactic tactic, string folderId, string slideId, int iconId, Icon icon);
 
-    public Folder? GetFolder(string tacticId, string folderId);
+    public Folder? GetFolder(Tactic tactic, string folderId);
 
-    public Task UpdateFolderName(string tacticId, string folderId, string newName);
+    public Task UpdateFolderName(Tactic tactic, string folderId, string newName);
 
-    public Slide? GetSlide(string tacticId, string folderId, string slideId);
+    public Slide? GetSlide(Tactic tactic, string folderId, string slideId);
 
-    public Task UpdateSlideName(string tacticId, string folderId, string slideId, string newName);
+    public Task UpdateSlideName(Tactic tactic, string folderId, string slideId, string newName);
 
-    public Task<Slide> CreateSlide(string tacticId, string folderId);
+    public Task<Slide> CreateSlide(Tactic tactic, string folderId);
 
-    public Task UpdateTacticName(string tacticId, string newName);
+    public Task UpdateTacticName(Tactic tactic, string newName);
 
-    public Task<Folder> CreateFolder(string tacticId);
+    public Task<Folder> CreateFolder(Tactic tactic);
 }

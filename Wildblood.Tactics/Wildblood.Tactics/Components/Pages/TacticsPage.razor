@@ -26,8 +26,8 @@
 <div class="parent">
     <div style="grid-area: 1/1/span 7/2;" id="tacticsCanvasContainer">
         @*Width and Height is set via JS (=> 100% of size of parent container)*@
-        <canvas id="tacticsCanvas" width="100%" height="100%" style="border:1px solid #000000;" @onmousedown="MouseDown" @onmouseup="dragStop" @onmousemove="dragMove" @onmousewheel="MouseScroll"></canvas>
-        <img id="dragImage" src="" style="display:none" @onmouseup="dragStop"/>
+        <canvas id="tacticsCanvas" width="100%" height="100%" style="border:1px solid #000000;" @onmousedown="MouseDown" @onmouseup="DragStop" @onmousemove="DragMove" @onmousewheel="MouseScroll"></canvas>
+        <img id="dragImage" src="" style="display:none" @onmouseup="DragStop"/>
     </div>
     <div id="MapSelectionDiv" style="grid-area:1/2/1/2">
         <MudSelect T="string" Label="Maps" ValueChanged="MapChanged">
@@ -45,7 +45,7 @@
                     <MudPaper Class="flex-wrap d-flex" Width="300px">
                         @foreach (var unit in units)
                         {
-                            <MudPaper Class="ma-1" @onclick="@(async (args) => await selectedUnitChanged(unit))">
+                            <MudPaper Class="ma-1" @onclick="@(async (args) => await SelectedUnitChanged(unit))">
                                 <img src="/ConquerorsBladeData/Units/@unit" height="40" width="40" />
                             </MudPaper>
 
@@ -70,7 +70,7 @@
                         <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
                             <MudText>@tactic.Name</MudText>
                             <div style="justify-self: end;">
-                                <MudIconButton Icon="@Icons.Material.Filled.Edit" @onclick="@(async (args) => await onClickTacticRename())" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" @onclick="@(async (args) => await OnClickTacticRename())" />
                                 <MudIconButton Icon="@Icons.Material.Filled.AddBox" @onclick="@(async (args) => await OnAddFolder())" />
                             </div>
                         </div>
@@ -96,7 +96,7 @@
                                                 <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
                                                     <MudText>@slide.Name</MudText>
                                                     <div style="justify-self: end;">
-                                                        <MudIconButton Icon="@Icons.Material.Filled.Edit" @onclick="@(async (args) => await onclickSlideRename(slide.Id, folder.Id))" />
+                                                        <MudIconButton Icon="@Icons.Material.Filled.Edit" @onclick="@(async (args) => await OnClickSlideRename(slide.Id, folder.Id))" />
                                                     </div>
                                                 </div>
                                             </BodyContent>
@@ -125,7 +125,7 @@
     public string? ID { get; set; }
 
     private HubConnection? hubConnection;
-    private Tactic? tactic;
+    private Tactic tactic = null!;
     private string colorValue;
     private Slide currentSlide;
     private Folder currentFolder;
@@ -161,15 +161,13 @@
         units = Directory.EnumerateFiles(baseUnitPath, "*", SearchOption.AllDirectories)
             .Select(f => Path.GetFileName(f))
             .ToList();
-
-
     }
 
     protected override async void OnParametersSet()
     {
         if (ID != null)
         {
-            tactic = repo.GetTactic(ID);
+            tactic = repo.GetTactic(ID) ?? throw new Exception("Could not load tactic");
             currentFolder = tactic.Folders[0];
             currentSlide = currentFolder.Slides[0];
             colorValue = "#000000";
@@ -196,7 +194,8 @@
         .WithAutomaticReconnect()
         .Build();
 
-        hubConnection.On<string, object, object, object>("ReceiveTacticUpdate", async (tacticId, updatedData, slideId, folderId) =>
+        hubConnection.On<string, object, object, object>(
+            "ReceiveTacticUpdate", async (tacticId, updatedData, slideId, folderId) =>
         {
             if (tacticId == ID)
             {
@@ -209,11 +208,13 @@
                     PropertyNameCaseInsensitive = true,
                 };
 
-                tactic = JsonSerializer.Deserialize<Tactic>(json, options);
+                tactic = JsonSerializer.Deserialize<Tactic>(json!, options)!;
 
                 if (slideStringId == currentSlide.Id && folderStringId == currentFolder.Id)
                 {
-                    currentSlide = tactic.Folders.Single(folder => folder.Id == folderStringId).Slides.Single(slide => slide.Id == slideStringId);
+                    currentSlide = tactic.Folders
+                        .Single(folder => folder.Id == folderStringId).Slides
+                        .Single(slide => slide.Id == slideStringId);
                     currentFolder = tactic.Folders.Single(folder => folder.Id == folderStringId);
                     needsCanvasRedraw = true;
                 }
@@ -269,7 +270,7 @@
         }
     }
 
-    public Task selectedUnitChanged(string unit)
+    public Task SelectedUnitChanged(string unit)
     {
         selectedUnit = unit;
         return Task.CompletedTask;
@@ -279,7 +280,7 @@
     {
         currentSlide.MapPath = map;
         await JS.InvokeVoidAsync("setBackground", map);
-        await repo.UpdateMap(tactic.Id, currentFolder.Id, currentSlide.Id, map);
+        await repo.UpdateMap(tactic, currentFolder.Id, currentSlide.Id, map);
     }
 
     private async Task PlaceIcon(double mouseX, double mouseY)
@@ -298,7 +299,7 @@
         await JS.InvokeVoidAsync("placeIcon", unit);
 
         currentSlide.Icons.Add(unit);
-        await repo.CreateIcon(tactic.Id, currentFolder.Id, currentSlide.Id, unit);
+        await repo.CreateIcon(tactic, currentFolder.Id, currentSlide.Id, unit);
         await UpdateTactic();
     }
 
@@ -389,7 +390,7 @@
         icon.Type == IconType.Unit &&
         mouseX > icon.StartX && mouseX < icon.EndX && mouseY > icon.StartY && mouseY < icon.EndY;
 
-    private async Task dragMove(MouseEventArgs args)
+    private async Task DragMove(MouseEventArgs args)
     {
         var pos = await JS.InvokeAsync<MousePosition>("getLogicalMousePosition", "tacticsCanvas", args.ClientX, args.ClientY);
         var mouseX = pos.x;
@@ -451,7 +452,7 @@
         }
     }
 
-    private async Task dragStop(MouseEventArgs args)
+    private async Task DragStop(MouseEventArgs args)
     {
         if (!isDragging && !drawingShape && !isPanning)
         {
@@ -470,7 +471,7 @@
             drawingShape = false;
             currentSlide.Icons.Add(drawableIcon);
             await JS.InvokeVoidAsync("draw", currentSlide.Icons);
-            await repo.CreateIcon(tactic!.Id, currentFolder.Id, currentSlide.Id, drawableIcon);
+            await repo.CreateIcon(tactic, currentFolder.Id, currentSlide.Id, drawableIcon);
             return;
         }
 
@@ -478,13 +479,13 @@
         currentSlide.Icons.Add(draggingIcon);
         await JS.InvokeVoidAsync("stopDrag");
         await JS.InvokeVoidAsync("draw", currentSlide.Icons);
-        await repo.UpdateIcon(tactic!.Id, currentFolder.Id, currentSlide.Id, draggingIconIndex, draggingIcon);
+        await repo.UpdateIcon(tactic, currentFolder.Id, currentSlide.Id, draggingIconIndex, draggingIcon);
         await UpdateTactic();
     }
 
     private async Task OnClickFolderRename(string folderID)
     {
-        var folder = repo.GetFolder(tactic!.Id, folderID);
+        var folder = repo.GetFolder(tactic, folderID);
         var parameters = new DialogParameters<RenameDialog>
         {
             { "Name", folder!.Name }
@@ -496,7 +497,8 @@
         {
             // it is infact a referece!
             folder.Name = newName;
-            await repo.UpdateFolderName(tactic.Id, folder.Id, newName);
+            await repo.UpdateFolderName(tactic, folder.Id, newName);
+            await UpdateTactic();
         }
     }
 
@@ -509,37 +511,38 @@
 
         currentSlide = slide;
         await ReDrawCanvas();
-
     }
 
-    private async Task onclickSlideRename(string slideID, string folderID)
+    private async Task OnClickSlideRename(string slideID, string folderID)
     {
-        var slide = repo.GetSlide(tactic!.Id, currentFolder.Id, currentSlide.Id);
+        var slide = repo.GetSlide(tactic, currentFolder.Id, currentSlide.Id);
         var parameters = new DialogParameters<RenameDialog>
         {
             { "Name", slide!.Name }
         };
 
         var dialog = await DialogService.ShowAsync<RenameDialog>("Rename", parameters);
-        var newName = (await dialog.Result)!.Data!.ToString();
+        var newName = (await dialog.Result)?.Data?.ToString();
         if (newName != null)
         {
             slide.Name = newName;
-            await repo.UpdateSlideName(tactic.Id, currentFolder.Id, currentSlide.Id, newName);
+            await repo.UpdateSlideName(tactic, currentFolder.Id, currentSlide.Id, newName);
+            await UpdateTactic();
         }
     }
 
     private async Task OnAddSlide(string folderID)
     {
-        var newSlide = await repo.CreateSlide(tactic!.Id, folderID);
+        var newSlide = await repo.CreateSlide(tactic, folderID);
         tactic.Folders.Single(f => f.Id == folderID).Slides.Add(newSlide);
+        await UpdateTactic();
     }
 
-    private async Task onClickTacticRename()
+    private async Task OnClickTacticRename()
     {
         var parameters = new DialogParameters<RenameDialog>
         {
-            { "Name", tactic!.Name }
+            { "Name", tactic.Name }
         };
 
         var dialog = await DialogService.ShowAsync<RenameDialog>("Rename", parameters);
@@ -547,14 +550,16 @@
         if (newName != null)
         {
             tactic.Name = newName;
-            await repo.UpdateTacticName(tactic.Id, newName);
+            await repo.UpdateTacticName(tactic, newName);
+            await UpdateTactic();
         }
     }
 
     private async Task OnAddFolder()
     {
-        var newFolder = await repo.CreateFolder(tactic!.Id);
+        var newFolder = await repo.CreateFolder(tactic);
         tactic.Folders.Add(newFolder);
+        await UpdateTactic();
     }
 
     private async Task ReDrawCanvas()
