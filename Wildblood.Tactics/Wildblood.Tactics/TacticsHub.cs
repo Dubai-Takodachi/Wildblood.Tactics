@@ -5,6 +5,7 @@
     public class TacticsHub : Hub
     {
         private static readonly Dictionary<string, string> LockedTactics = new();
+        private static readonly Dictionary<string, HashSet<string>> TacticUsers = [];
 
         public async Task UpdateTactic(string tacticId, object updatedData, object slideId, object folderId)
         {
@@ -13,38 +14,55 @@
             await Clients.Others.SendAsync("ReceiveTacticUpdate", tacticId, updatedData, slideId, folderId);
         }
 
-        public async Task LockTactic(string tacticId, string userId)
+        public async Task JoinTactic(string tacticId, string userName)
         {
-            if (!LockedTactics.ContainsKey(tacticId))
+            lock (TacticUsers)
             {
-                LockedTactics[tacticId] = userId;
-                await Clients.Others.SendAsync("ReceiveTacticLock", tacticId, userId);
+                if (!TacticUsers.ContainsKey(tacticId))
+                    TacticUsers[tacticId] = new HashSet<string>();
+                TacticUsers[tacticId].Add(userName);
             }
+            Console.WriteLine($"{userName} has joined Tactic: {tacticId}");
+            await Clients.Group(tacticId).SendAsync("UserListChanged", TacticUsers[tacticId].ToList());
+            await Groups.AddToGroupAsync(Context.ConnectionId, tacticId);
         }
 
-        public async Task UnlockTactic(string tacticId)
+        public async Task LeaveTactic(string tacticId, string userName)
         {
-            if (LockedTactics.ContainsKey(tacticId))
+            lock (TacticUsers)
             {
-                LockedTactics.Remove(tacticId);
-                await Clients.Others.SendAsync("ReceiveTacticUnlock", tacticId);
+                if (TacticUsers.ContainsKey(tacticId))
+                {
+                    TacticUsers[tacticId].Remove(userName);
+                    if (TacticUsers[tacticId].Count == 0)
+                        TacticUsers.Remove(tacticId);
+                }
             }
+            Console.WriteLine($"{userName} left tactic: {tacticId}");
+            await Clients.Group(tacticId).SendAsync("UserListChanged", TacticUsers.ContainsKey(tacticId) ? TacticUsers[tacticId].ToList() : new List<string>());
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, tacticId);
         }
 
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
-            var userId = Context.ConnectionId;
-            var lockedTactics = LockedTactics.Where(kvp => kvp.Value == userId).Select(kvp => kvp.Key).ToList();
-
-            foreach (var tacticId in lockedTactics)
+            // Remove user from all tactic groups
+            var userName = Context.User?.Identity?.Name ?? Context.ConnectionId;
+            List<string> tacticsToUpdate = new();
+            lock (TacticUsers)
             {
-                LockedTactics.Remove(tacticId);
-                await Clients.Others.SendAsync("ReceiveTacticUnlock", tacticId);
+                foreach (var kvp in TacticUsers)
+                {
+                    if (kvp.Value.Remove(userName))
+                        tacticsToUpdate.Add(kvp.Key);
+                }
+                foreach (var tacticId in tacticsToUpdate.Where(id => TacticUsers[id].Count == 0).ToList())
+                    TacticUsers.Remove(tacticId);
             }
-
+            foreach (var tacticId in tacticsToUpdate)
+            {
+                await Clients.Group(tacticId).SendAsync("UserListChanged", TacticUsers.ContainsKey(tacticId) ? TacticUsers[tacticId].ToList() : new List<string>());
+            }
             await base.OnDisconnectedAsync(exception);
         }
-
-
     }
 }
