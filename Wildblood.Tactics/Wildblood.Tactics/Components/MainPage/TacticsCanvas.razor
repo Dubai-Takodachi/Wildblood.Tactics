@@ -1,0 +1,5 @@
+﻿<div style="grid-area: 1/1/6/2;" id="tacticsCanvasContainer">
+    @*Width and Height is set via JS (=> 100% of size of parent container)*@
+    <canvas id="tacticsCanvas" width="100%" height="100%" style="border:1px solid #000000;" @onmousedown="MouseDown" @onmouseup="MouseUp" @onmousemove="MouseMove" @onmousewheel="MouseScroll"></canvas>
+    <img id="dragImage" src="" style="display:none" @onmouseup="MouseUp" />
+</div>

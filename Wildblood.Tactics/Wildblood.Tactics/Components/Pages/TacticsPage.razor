@@ -129,12 +129,9 @@
 
 @code {
 
-
-
     [Parameter]
     public string? ID { get; set; }
 
-    private static string lastTacticId = string.Empty;
     private HubConnection? hubConnection;
     private Tactic tactic = null!;
     private string colorValue;
@@ -292,7 +289,8 @@
             Color = colorValue,
         };
 
-        await JS.InvokeVoidAsync("placeIcon", unit);
+        needsCanvasRedraw = true;
+        ////await JS.InvokeVoidAsync("placeIcon", unit);
 
         currentSlide.Icons.Add(unit);
         await repo.CreateIcon(tactic, currentFolder.Id, currentSlide.Id, unit);
@@ -527,7 +525,6 @@
         {
             return;
         }
-
 
         if (currentTool == IconType.StraightLine && drawingShape)
         {
