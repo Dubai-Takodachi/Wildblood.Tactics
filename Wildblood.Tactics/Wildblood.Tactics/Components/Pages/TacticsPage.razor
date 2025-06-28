@@ -14,6 +14,7 @@
 @inject IDialogService DialogService;
 @inject NavigationManager NavigationManager
 @inject ITacticRepository repo;
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 @rendermode InteractiveServer
 
@@ -119,6 +120,9 @@
                 <span>@zoomLevel.ToString("0.0")x</span>
                 <MudIconButton Icon="@Icons.Material.Filled.ZoomIn" @onclick="() => SetZoom(zoomLevel + 0.1)">+</MudIconButton>
             </MudPaper>
+            <MudPaper>
+                <MudButton Color="Color.Primary" OnClick="ShowMemberList">Member List</MudButton>
+            </MudPaper>
         </div>
     </MudCard>
 </div>
@@ -130,6 +134,7 @@
     [Parameter]
     public string? ID { get; set; }
 
+    private static string lastTacticId = string.Empty;
     private HubConnection? hubConnection;
     private Tactic tactic = null!;
     private string colorValue;
@@ -140,6 +145,7 @@
     private static string baseMapPath = "wwwroot/ConquerorsBladeData/Maps";
     private static string baseUnitPath = "wwwroot/ConquerorsBladeData/Units";
     private string selectedUnit;
+    private bool isAllowedToEdit = false;
 
     private List<string> maps = new List<string>();
     private List<string> units = new List<string>();
@@ -176,11 +182,11 @@
             currentFolder = tactic.Folders[0];
             currentSlide = currentFolder.Slides[0];
             colorValue = "#000000";
-        }
-
-        if (hubConnection is not null)
-        {
-            await hubConnection.DisposeAsync();
+            var username = await GetCurrentUserNameAsync();
+            if (tactic.Members.Any(m => m.Name == username && (m.Roles == Role.Admin || m.Roles == Role.Owner)))
+            {
+                isAllowedToEdit = true;
+            }
         }
 
         hubConnection = new HubConnectionBuilder()
@@ -226,25 +232,7 @@
                 await InvokeAsync(StateHasChanged);
             }
         });
-
-        hubConnection.On<string, string>("ReceiveTacticLock", async (tacticId, userId) =>
-        {
-            if (tacticId == ID)
-            {
-                Console.WriteLine($"Tactic {tacticId} locked by user {userId}");
-            }
-        });
-
-        hubConnection.On<string>("ReceiveTacticUnlock", async (tacticId) =>
-        {
-            if (tacticId == ID)
-            {
-                Console.WriteLine($"Tactic {tacticId} unlocked");
-            }
-        });
-
         await hubConnection.StartAsync();
-
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -266,6 +254,8 @@
             {
                 await JS.InvokeVoidAsync("draw", currentSlide.Icons);
             }
+
+
         }
 
         if (needsCanvasRedraw)
@@ -290,6 +280,10 @@
 
     private async Task PlaceIcon(Point pos)
     {
+        if (!isAllowedToEdit)
+        {
+            return;
+        }
         var unit = new Icon
         {
             Points = [pos, pos + new Point(40, 40)],
@@ -321,6 +315,11 @@
         }
         var pos = await JS.InvokeAsync<Point>(
             "getLogicalMousePosition", "tacticsCanvas", eventArgs.ClientX, eventArgs.ClientY);
+
+        if (!isAllowedToEdit)
+        {
+            return;
+        }
 
         foreach (var icon in currentSlide.Icons)
         {
@@ -451,6 +450,11 @@
             return;
         }
 
+        if (!isAllowedToEdit)
+        {
+            return;
+        }
+        
         if (currentTool == IconType.CurveLine && drawingShape && drawableIcon != null)
         {
             drawableIcon.Points.Add(pos);
@@ -510,6 +514,11 @@
             return;
         }
 
+        if (!isAllowedToEdit)
+        {
+            return;
+        }
+
 
         if (currentTool == IconType.StraightLine && drawingShape)
         {
@@ -533,7 +542,14 @@
 
     private async Task OnClickFolderRename(string folderID)
     {
+        
+        if (!isAllowedToEdit)
+        {
+            return;
+        }
+        
         var folder = repo.GetFolder(tactic, folderID);
+        
         var parameters = new DialogParameters<RenameDialog>
         {
             { "Name", folder!.Name }
@@ -563,7 +579,13 @@
 
     private async Task OnClickSlideRename(string slideID, string folderID)
     {
+        if (!isAllowedToEdit)
+        {
+            return;
+        }
+        
         var slide = repo.GetSlide(tactic, currentFolder.Id, currentSlide.Id);
+        
         var parameters = new DialogParameters<RenameDialog>
         {
             { "Name", slide!.Name }
@@ -581,13 +603,24 @@
 
     private async Task OnAddSlide(string folderID)
     {
+        if (!isAllowedToEdit)
+        {
+            return;
+        }
+        
         var newSlide = await repo.CreateSlide(tactic, folderID);
+
         tactic.Folders.Single(f => f.Id == folderID).Slides.Add(newSlide);
         await UpdateTactic();
     }
 
     private async Task OnClickTacticRename()
     {
+        if (!isAllowedToEdit)
+        {
+            return;
+        }
+
         var parameters = new DialogParameters<RenameDialog>
         {
             { "Name", tactic.Name }
@@ -605,6 +638,11 @@
 
     private async Task OnAddFolder()
     {
+        if (!isAllowedToEdit)
+        {
+            return;
+        }
+        
         var newFolder = await repo.CreateFolder(tactic);
         tactic.Folders.Add(newFolder);
         await UpdateTactic();
@@ -642,32 +680,6 @@
         }
     }
 
-    private async Task LockTactic()
-    {
-        if (hubConnection is not null)
-        {
-            Console.WriteLine($"Locking tactic {ID}");
-            await hubConnection.SendAsync("LockTactic", ID, "currentUserId");
-        }
-    }
-
-    private async Task UnlockTactic()
-    {
-        if (hubConnection is not null)
-        {
-            Console.WriteLine($"Unlocking tactic {ID}");
-            await hubConnection.SendAsync("UnlockTactic", ID);
-        }
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        if (hubConnection is not null)
-        {
-            await hubConnection.DisposeAsync();
-        }
-    }
-
     private async Task MouseScroll(WheelEventArgs args)
     {
         zoomLevel -= args.DeltaY * 0.001; // Adjust the zoom speed as needed
@@ -678,6 +690,36 @@
     {
         zoomLevel = Math.Max(0.1, newZoom);
         await JS.InvokeVoidAsync("setZoom", zoomLevel);
+    }
+
+    private async Task<string> GetCurrentUserNameAsync()
+    {
+        // You can get the user name from the authentication state
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        return authState.User.Identity?.Name ?? "Unknown";
+    }
+
+    private async Task ShowMemberList()
+    {
+        if (!isAllowedToEdit)
+        {
+            return;
+        }
+
+        var parameters = new DialogParameters<MemberListDialog>
+        {
+            { "Members", tactic!.Members }
+        };
+
+        var dialog = await DialogService.ShowAsync<MemberListDialog>("Member List", parameters);
+        var result = (await dialog.Result)!.Data!;
+        var newMemberList = result as List<MemberRole>;
+
+        if (newMemberList != null)
+        {
+            tactic.Members = newMemberList;
+            await repo.UpdateMemberList(tactic.Id, newMemberList);
+        }
     }
 
     static string curveIcon = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><title>vector-curve</title><path d=\"M18.5,2A1.5,1.5 0 0,1 20,3.5A1.5,1.5 0 0,1 18.5,5C18.27,5 18.05,4.95 17.85,4.85L14.16,8.55L14.5,9C16.69,7.74 19.26,7 22,7L23,7.03V9.04L22,9C19.42,9 17,9.75 15,11.04A3.96,3.96 0 0,1 11.04,15C9.75,17 9,19.42 9,22L9.04,23H7.03L7,22C7,19.26 7.74,16.69 9,14.5L8.55,14.16L4.85,17.85C4.95,18.05 5,18.27 5,18.5A1.5,1.5 0 0,1 3.5,20A1.5,1.5 0 0,1 2,18.5A1.5,1.5 0 0,1 3.5,17C3.73,17 3.95,17.05 4.15,17.15L7.84,13.45C7.31,12.78 7,11.92 7,11A4,4 0 0,1 11,7C11.92,7 12.78,7.31 13.45,7.84L17.15,4.15C17.05,3.95 17,3.73 17,3.5A1.5,1.5 0 0,1 18.5,2M11,9A2,2 0 0,0 9,11A2,2 0 0,0 11,13A2,2 0 0,0 13,11A2,2 0 0,0 11,9Z\"/></svg>";
