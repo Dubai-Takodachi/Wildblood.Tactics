@@ -321,19 +321,22 @@
             return;
         }
 
-        foreach (var icon in currentSlide.Icons)
+        if (!drawingShape)
         {
-            if (CheckLineClicked(pos, icon) ||
-                CheckUnitClicked(pos, icon))
+            foreach (var icon in currentSlide.Icons)
             {
-                draggingIcon = icon with {};
-                draggingIconIndex = currentSlide.Icons.IndexOf(icon);
-                isDragging = true;
-                lastLineDragPosition = pos;
-                await JS.InvokeVoidAsync("startDrag", draggingIcon, pos.X, pos.Y);
-                currentSlide.Icons.Remove(icon);
-                currentDraggingType = icon.Type;
-                return;
+                if (CheckLineClicked(pos, icon) ||
+                    CheckUnitClicked(pos, icon))
+                {
+                    draggingIcon = icon with {};
+                    draggingIconIndex = currentSlide.Icons.IndexOf(icon);
+                    isDragging = true;
+                    lastLineDragPosition = pos;
+                    await JS.InvokeVoidAsync("startDrag", draggingIcon, pos.X, pos.Y);
+                    currentSlide.Icons.Remove(icon);
+                    currentDraggingType = icon.Type;
+                    return;
+                }
             }
         }
 
@@ -364,18 +367,23 @@
                 FilePath = "",
                 Type = IconType.CurveLine,
             };
-        }
-        else if (CircleSDF(pos, drawableIcon.Points.Last(), 5) < 0)
-        {
             currentSlide.Icons.Add(drawableIcon);
             await repo.CreateIcon(tactic, currentFolder.Id, currentSlide.Id, drawableIcon);
-            await UpdateTactic();
+        }
+        else if (CircleSDF(pos, drawableIcon.Points.Last(), 5) is var dist && dist < 0)
+        {
+            drawableIcon.Points.Add(pos);
+            await repo.UpdateIcon(tactic, currentFolder.Id, currentSlide.Id,
+                currentSlide.Icons.IndexOf(drawableIcon), drawableIcon);
             drawableIcon = null!;
         }
         else
         {
             drawableIcon.Points.Add(pos);
+            await repo.UpdateIcon(tactic, currentFolder.Id, currentSlide.Id,
+                currentSlide.Icons.IndexOf(drawableIcon), drawableIcon);
         }
+        await UpdateTactic();
     }
 
     private static float CircleSDF(Point pos, Point circleCenter, float radius)
@@ -454,17 +462,18 @@
         {
             return;
         }
-        
+
         if (currentTool == IconType.CurveLine && drawingShape && drawableIcon != null)
         {
-            drawableIcon.Points.Add(pos);
-            currentSlide.Icons.Add(drawableIcon);
-            await JS.InvokeVoidAsync("draw", currentSlide.Icons);
-            if (drawableIcon != null)
+            var tempDrawableIcon = drawableIcon with { Points = [.. drawableIcon.Points, pos] };
+
+            var icons = currentSlide.Icons.ToList();
+            if (icons.Contains(drawableIcon))
             {
-                currentSlide.Icons.Remove(drawableIcon);
-                drawableIcon.Points.Remove(pos);
+                icons.Remove(drawableIcon);
             }
+            icons.Add(tempDrawableIcon);
+            await JS.InvokeVoidAsync("draw", icons);
             return;
         }
 
