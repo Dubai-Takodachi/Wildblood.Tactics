@@ -3,6 +3,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
+using MudBlazor;
 using Wildblood.Tactics.Entities;
 using Wildblood.Tactics.Services;
 
@@ -20,13 +21,20 @@ public partial class TacticsCanvas
 
     private float zoomLevel = 1.0f;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override void OnInitialized()
     {
-        if (TacticsCanvasService.GetRedrawIconsWhenRequested() is List<Icon> icons)
-        {
-            await DrawIcons(icons);
-            await InvokeAsync(StateHasChanged);
-        }
+        TacticsCanvasService.OnGameStateChanged += RefreshUI;
+    }
+
+    private async Task RefreshUI()
+    {
+        var icons = TacticsCanvasService.GetRedrawIcons();
+        await DrawIcons(icons);
+
+        var map = TacticsCanvasService.GetMap();
+        await JS.InvokeVoidAsync("setBackground", map);
+
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task MouseDown(MouseEventArgs args)
@@ -48,6 +56,8 @@ public partial class TacticsCanvas
             await JS.InvokeVoidAsync("startDrag", draggingIcon, pos.X, pos.Y);
             return;
         }
+
+        await TacticsCanvasService.CreateIcon(pos);
     }
 
     private async Task MouseMove(MouseEventArgs args)

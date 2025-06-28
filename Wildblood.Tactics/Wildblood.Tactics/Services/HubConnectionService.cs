@@ -21,6 +21,7 @@ public class HubConnectionService
                         clientHandler.ServerCertificateCustomValidationCallback =
                             HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
                     }
+
                     return handler;
                 };
             })
@@ -30,7 +31,14 @@ public class HubConnectionService
 
     public IDisposable Register(Func<HubConnection, IDisposable> method)
     {
-        return method(hubConnection);
+        var connection = method(hubConnection);
+
+        if (hubConnection.State == HubConnectionState.Disconnected)
+        {
+            hubConnection.StartAsync().GetAwaiter().GetResult();
+        }
+
+        return connection;
     }
 
     public async Task UpdateTactic(string id, Tactic tactic, string slideId, string folderId)

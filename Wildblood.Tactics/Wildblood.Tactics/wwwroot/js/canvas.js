@@ -73,6 +73,7 @@ window.preLoadImages = function (icons) {
 
 window.setBackground = function (background) {
     if (!background) return;
+    if (background === currentBackground) return;
     let canvas = document.getElementById(canvasId);
 
     const logicalWidth = 960;
@@ -192,7 +193,7 @@ window.draw = function (icons) {
         } else if (unit.type === 1) {
             window.drawArrow(unit.points[0].x, unit.points[0].y, unit.points[1].x, unit.points[1].y, unit.color, true);
         } else if (unit.type === 3) {
-            window.drawSpline(unit.points, 0.5, 16, unit.color);
+            window.drawSpline(unit.points, 0.2, 16, unit.color);
         }
     });
 

@@ -1,24 +1,39 @@
 ﻿namespace Wildblood.Tactics.Services;
 
 using Wildblood.Tactics.Entities;
+using Wildblood.Tactics.Models;
 
 public interface ITacticsCanvasService
 {
-    public void SetEditMode(IconType editMode);
+    public event Func<Task>? OnGameStateChanged;
+
+    public Tactic CurrentTactic { get; set; }
+
+    public Folder CurrentFolder { get; set; }
+
+    public Slide CurrentSlide { get; set; }
+
+    public string SelectedUnit { get; set; }
+
+    public string SelectedColorValue { get; set; }
+
+    public IconType EditMode { get; set; }
+
+    public Task UpdateServerTactic();
+
+    public Task SetNeedsRedraw();
+
+    public Task CreateIcon(Point pos);
 
     public Task<Icon?> CreateDraggingIcon(Point pos);
 
-    public List<Icon>? GetRedrawIconsWhenRequested();
+    public List<Icon> GetRedrawIcons();
+
+    public string GetMap();
 
     public Task<List<Icon>?> DrawingInteraction(Point pos);
 
     public Task<List<Icon>?> GrabbingInteraction(Point pos);
 
     public Task<List<Icon>?> StopInteraction();
-
-    public Task SetMap(string mapPath);
-
-    public void SetSelectedUnit(string unit);
-
-    public void SetColorValue(string color);
 }

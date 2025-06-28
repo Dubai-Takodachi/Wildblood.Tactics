@@ -51,6 +51,10 @@ public class Program
         builder.Services.AddScoped<AuthenticationStateProvider, PersistingRevalidatingAuthenticationStateProvider>();
         builder.Services.AddMudServices();
 
+        builder.Services.AddScoped<IHubConnectionService, HubConnectionService>();
+        builder.Services.AddScoped<IUserService, UserService>();
+        builder.Services.AddScoped<ITacticsCanvasService, TacticsCanvasService>();
+
         builder.Services.AddAuthentication().AddGoogle(googleOptions =>
         {
             googleOptions.ClientId = builder.Configuration["Google:ClientId"] ?? throw new InvalidOperationException("Google ClientId not found.");

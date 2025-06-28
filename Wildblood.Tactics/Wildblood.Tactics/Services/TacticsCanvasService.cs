@@ -7,19 +7,26 @@ using Wildblood.Tactics.Models;
 
 public class TacticsCanvasService : ITacticsCanvasService, IDisposable
 {
-    private IconType editMode;
-    private Tactic tactic = null!;
+    public event Func<Task>? OnGameStateChanged;
+
+    public Tactic CurrentTactic { get; set; } = null!;
+
+    public Folder CurrentFolder { get; set; } = null!;
+
+    public Slide CurrentSlide { get; set; } = null!;
+
+    public string SelectedUnit { get; set; } = null!;
+
+    public string SelectedColorValue { get; set; } = null!;
+
+    public IconType EditMode { get; set; } = default!;
+
     private Icon? draggingIcon;
     private bool drawingShape = false;
-    private Folder currentFolder = null!;
-    private Slide currentSlide = null!;
     private int draggingIconIndex = 0;
     private bool isDragging = false;
     private Point lastLineDragPosition = null!;
-    private string selectedUnit = null!;
-    private string colorValue = null!;
-    private bool needsRedraw = false;
-    private Icon drawableIcon = null!;
+    private Icon? drawableIcon = null;
 
     private IUserService userService;
     private ITacticRepository tacticRepository;
@@ -39,63 +46,59 @@ public class TacticsCanvasService : ITacticsCanvasService, IDisposable
         this.connection = hubConnectionService.Register(hub =>
             hub.On<string, object, object, object>(
             "ReceiveTacticUpdate", async (tacticId, updatedData, slideId, folderId) =>
-            {
-                if (tacticId == tactic.Id)
                 {
-                    Console.WriteLine($"Received update for tactic {tacticId}");
-                    var json = updatedData.ToString();
-                    var slideStringId = slideId.ToString();
-                    var folderStringId = folderId.ToString();
-                    var options = new JsonSerializerOptions()
+                    if (tacticId == CurrentTactic.Id)
                     {
-                        PropertyNameCaseInsensitive = true,
-                    };
+                        Console.WriteLine($"Received update for tactic {tacticId}");
+                        var json = updatedData.ToString();
+                        var slideStringId = slideId.ToString();
+                        var folderStringId = folderId.ToString();
+                        var options = new JsonSerializerOptions()
+                        {
+                            PropertyNameCaseInsensitive = true,
+                        };
 
-                    tactic = JsonSerializer.Deserialize<Tactic>(json!, options)!;
+                        CurrentTactic = JsonSerializer.Deserialize<Tactic>(json!, options)!;
 
-                    if (slideStringId == currentSlide.Id && folderStringId == currentFolder.Id)
-                    {
-                        currentSlide = tactic.Folders
-                            .Single(folder => folder.Id == folderStringId).Slides
-                            .Single(slide => slide.Id == slideStringId);
-                        currentFolder = tactic.Folders.Single(folder => folder.Id == folderStringId);
+                        if (slideStringId == CurrentSlide.Id && folderStringId == CurrentFolder.Id)
+                        {
+                            CurrentSlide = CurrentTactic.Folders
+                                .Single(folder => folder.Id == folderStringId).Slides
+                                .Single(slide => slide.Id == slideStringId);
+                            CurrentFolder = CurrentTactic.Folders.Single(folder => folder.Id == folderStringId);
+                        }
+
+                        await OnGameStateChanged!.Invoke();
                     }
-
-                    needsRedraw = true;
-                    ////await InvokeAsync(StateHasChanged);
-                }
-            }));
+                }));
     }
 
-    public List<Icon>? GetRedrawIconsWhenRequested()
+    public List<Icon> GetRedrawIcons()
     {
-        if (needsRedraw)
-        {
-            needsRedraw = false;
-            return currentSlide.Icons;
-        }
-
-        return null;
+        return CurrentSlide.Icons;
     }
 
-    public void SetEditMode(IconType editMode) => this.editMode = editMode;
+    public string GetMap()
+    {
+        return CurrentSlide.MapPath!;
+    }
 
     public async Task<Icon?> CreateDraggingIcon(Point pos)
     {
-        if (drawingShape || !await userService.CheckHasEditAcces(tactic))
+        if (drawingShape || !await userService.CheckHasEditAcces(CurrentTactic))
         {
             return null;
         }
 
-        if (currentSlide.Icons
+        if (CurrentSlide.Icons
             .FirstOrDefault(icon => CheckLineClicked(pos, icon) || CheckUnitClicked(pos, icon))
             is Icon selectedIcon)
         {
             draggingIcon = selectedIcon with { };
-            draggingIconIndex = currentSlide.Icons.IndexOf(selectedIcon);
+            draggingIconIndex = CurrentSlide.Icons.IndexOf(selectedIcon);
             isDragging = true;
             lastLineDragPosition = pos;
-            currentSlide.Icons.Remove(selectedIcon);
+            CurrentSlide.Icons.Remove(selectedIcon);
             return draggingIcon;
         }
 
@@ -104,12 +107,12 @@ public class TacticsCanvasService : ITacticsCanvasService, IDisposable
 
     public async Task CreateIcon(Point pos)
     {
-        if (!await userService.CheckHasEditAcces(tactic))
+        if (!await userService.CheckHasEditAcces(CurrentTactic))
         {
             return;
         }
 
-        switch (editMode)
+        switch (EditMode)
         {
             case IconType.Unit:
                 await PlaceIcon(pos);
@@ -127,37 +130,35 @@ public class TacticsCanvasService : ITacticsCanvasService, IDisposable
 
     private async Task AddCurvePoint(Point pos)
     {
+        if (drawableIcon?.Type != IconType.CurveLine)
+        {
+            drawableIcon = null;
+        }
+
         if (drawableIcon == null)
         {
             drawableIcon = new Icon
             {
                 Points = [pos],
-                Color = colorValue,
+                Color = SelectedColorValue,
                 FilePath = string.Empty,
                 Type = IconType.CurveLine,
             };
-            currentSlide.Icons.Add(drawableIcon);
-            await tacticRepository.CreateIcon(tactic, currentFolder.Id, currentSlide.Id, drawableIcon);
+            CurrentSlide.Icons.Add(drawableIcon);
+            await tacticRepository.CreateIcon(CurrentTactic, CurrentFolder.Id, CurrentSlide.Id, drawableIcon);
         }
         else if (CircleSDF(pos, drawableIcon.Points.Last(), 5) is var dist && dist < 0)
         {
-            drawableIcon.Points.Add(pos);
-            await tacticRepository.UpdateIcon(
-                tactic,
-                currentFolder.Id,
-                currentSlide.Id,
-                currentSlide.Icons.IndexOf(drawableIcon),
-                drawableIcon);
             drawableIcon = null!;
         }
         else
         {
             drawableIcon.Points.Add(pos);
             await tacticRepository.UpdateIcon(
-                tactic,
-                currentFolder.Id,
-                currentSlide.Id,
-                currentSlide.Icons.IndexOf(drawableIcon),
+                CurrentTactic,
+                CurrentFolder.Id,
+                CurrentSlide.Id,
+                CurrentSlide.Icons.IndexOf(drawableIcon),
                 drawableIcon);
         }
 
@@ -171,7 +172,7 @@ public class TacticsCanvasService : ITacticsCanvasService, IDisposable
             Points = [pos, pos],
             FilePath = string.Empty,
             Type = IconType.StraightLine,
-            Color = colorValue,
+            Color = SelectedColorValue,
         };
     }
 
@@ -180,22 +181,22 @@ public class TacticsCanvasService : ITacticsCanvasService, IDisposable
         var unit = new Icon
         {
             Points = [pos, pos + new Point(40, 40)],
-            FilePath = "/ConquerorsBladeData/Units/" + selectedUnit,
+            FilePath = "/ConquerorsBladeData/Units/" + SelectedUnit,
             Type = IconType.Unit,
-            Color = colorValue,
+            Color = SelectedColorValue,
         };
 
-        needsRedraw = true;
-        ////await JS.InvokeVoidAsync("placeIcon", unit);
+        await OnGameStateChanged!.Invoke();
 
-        currentSlide.Icons.Add(unit);
-        await tacticRepository.CreateIcon(tactic, currentFolder.Id, currentSlide.Id, unit);
+        CurrentSlide.Icons.Add(unit);
+        await tacticRepository.CreateIcon(CurrentTactic, CurrentFolder.Id, CurrentSlide.Id, unit);
         await UpdateTactic();
     }
 
     private async Task UpdateTactic()
     {
-        await hubConnectionService.UpdateTactic(tactic.Id, tactic, currentSlide.Id, currentFolder.Id);
+        await hubConnectionService.UpdateTactic(CurrentTactic.Id, CurrentTactic, CurrentSlide.Id, CurrentFolder.Id);
+        await OnGameStateChanged!.Invoke();
     }
 
     private bool CheckLineClicked(Point mouse, Icon icon) =>
@@ -249,14 +250,14 @@ public class TacticsCanvasService : ITacticsCanvasService, IDisposable
 
     public async Task<List<Icon>?> DrawingInteraction(Point pos)
     {
-        if (!await userService.CheckHasEditAcces(tactic) || !drawingShape)
+        if (!await userService.CheckHasEditAcces(CurrentTactic) || !drawingShape)
         {
             return null;
         }
 
-        var icons = currentSlide.Icons.ToList();
+        var icons = CurrentSlide.Icons.ToList();
 
-        if (editMode == IconType.CurveLine && drawingShape && drawableIcon != null)
+        if (EditMode == IconType.CurveLine && drawingShape && drawableIcon != null)
         {
             var tempDrawableIcon = drawableIcon with { Points = [.. drawableIcon.Points, pos] };
             icons.Remove(drawableIcon);
@@ -264,7 +265,7 @@ public class TacticsCanvasService : ITacticsCanvasService, IDisposable
             return icons;
         }
 
-        if (editMode == IconType.StraightLine && drawingShape && drawableIcon != null)
+        if (EditMode == IconType.StraightLine && drawingShape && drawableIcon != null)
         {
             drawableIcon.Points[1] = pos;
             icons.Add(drawableIcon);
@@ -276,12 +277,12 @@ public class TacticsCanvasService : ITacticsCanvasService, IDisposable
 
     public async Task<List<Icon>?> GrabbingInteraction(Point pos)
     {
-        if (!await userService.CheckHasEditAcces(tactic) || !isDragging)
+        if (!await userService.CheckHasEditAcces(CurrentTactic) || !isDragging)
         {
             return null;
         }
 
-        var icons = currentSlide.Icons.ToList();
+        var icons = CurrentSlide.Icons.ToList();
 
         if (draggingIcon?.Type == IconType.Unit)
         {
@@ -305,48 +306,42 @@ public class TacticsCanvasService : ITacticsCanvasService, IDisposable
 
     public async Task<List<Icon>?> StopInteraction()
     {
-        if (!await userService.CheckHasEditAcces(tactic))
+        if (!await userService.CheckHasEditAcces(CurrentTactic))
         {
             return null;
         }
 
-        var icons = currentSlide.Icons.ToList();
+        var icons = CurrentSlide.Icons.ToList();
 
-        if (editMode == IconType.StraightLine && drawingShape)
+        if (EditMode == IconType.StraightLine && drawingShape)
         {
             drawingShape = false;
-            currentSlide.Icons.Add(drawableIcon);
-            await tacticRepository.CreateIcon(tactic, currentFolder.Id, currentSlide.Id, drawableIcon);
-            return currentSlide.Icons;
+            CurrentSlide.Icons.Add(drawableIcon);
+            await tacticRepository.CreateIcon(CurrentTactic, CurrentFolder.Id, CurrentSlide.Id, drawableIcon);
+            return CurrentSlide.Icons;
         }
 
         if (draggingIcon != null)
         {
             isDragging = false;
-            currentSlide.Icons.Add(draggingIcon);
+            CurrentSlide.Icons.Add(draggingIcon);
             await tacticRepository
-                .UpdateIcon(tactic, currentFolder.Id, currentSlide.Id, draggingIconIndex, draggingIcon);
+                .UpdateIcon(CurrentTactic, CurrentFolder.Id, CurrentSlide.Id, draggingIconIndex, draggingIcon);
             await UpdateTactic();
-            return currentSlide.Icons;
+            return CurrentSlide.Icons;
         }
 
         return null;
     }
 
-    public async Task SetMap(string mapPath)
+    public async Task UpdateServerTactic()
     {
-        currentSlide.MapPath = mapPath;
-        await tacticRepository.UpdateMap(tactic, currentFolder.Id, currentSlide.Id, mapPath);
+        await UpdateTactic();
     }
 
-    public void SetSelectedUnit(string unit)
+    public async Task SetNeedsRedraw()
     {
-        selectedUnit = unit;
-    }
-
-    public void SetColorValue(string color)
-    {
-        colorValue = color;
+        await OnGameStateChanged!.Invoke();
     }
 
     public void Dispose()

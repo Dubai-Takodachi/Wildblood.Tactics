@@ -1,4 +1,4 @@
-﻿@page "/Tactics/{ID}"
+﻿@page "/tactics/{ID}"
 @namespace Wildblood.Tactics.Components.Pages
 @using Microsoft.AspNetCore.SignalR
 @using Microsoft.AspNetCore.SignalR.Client
@@ -14,22 +14,13 @@
 @inject IDialogService DialogService;
 @inject NavigationManager NavigationManager
 @inject ITacticRepository repo;
-@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject ITacticsCanvasService tacticsCanvasService;
+@inject IUserService userService;
 
 @rendermode InteractiveServer
 
-@if (tactic == null)
-{
-    <div>Loading</div>
-    return;
-}
-
 <div class="parent">
-    <div style="grid-area: 1/1/6/2;" id="tacticsCanvasContainer">
-        @*Width and Height is set via JS (=> 100% of size of parent container)*@
-        <canvas id="tacticsCanvas" width="100%" height="100%" style="border:1px solid #000000;" @onmousedown="MouseDown" @onmouseup="DragStop" @onmousemove="DragMove" @onmousewheel="MouseScroll"></canvas>
-        <img id="dragImage" src="" style="display:none" @onmouseup="DragStop"/>
-    </div>
+    <Wildblood.Tactics.Components.MainPage.TacticsCanvas/>
     <MudCard Style="grid-area: 1/2/6/3">
         <div id="MapSelectionDiv">
             <MudSelect T="string" Label="Maps" ValueChanged="MapChanged">
@@ -56,12 +47,12 @@
                 </MudTabPanel>
                 <MudTabPanel Icon="@vectorLineIcon" @onclick="() => ChangeTool(IconType.StraightLine)">
                     <MudPaper>
-                        <MudColorPicker Label="Line Color" @bind-Text="colorValue" />
+                        <MudColorPicker Label="Line Color" @bind-Text="tacticsCanvasService.SelectedColorValue" />
                     </MudPaper>
                 </MudTabPanel>
                 <MudTabPanel Icon="@curveIcon" @onclick="() => ChangeTool(IconType.CurveLine)">
                     <MudPaper>
-                        <MudColorPicker Label="Line Color" @bind-Text="colorValue" />
+                        <MudColorPicker Label="Line Color" @bind-Text="tacticsCanvasService.SelectedColorValue" />
                     </MudPaper>
                 </MudTabPanel>
             </MudTabs>
@@ -74,7 +65,7 @@
                     <MudTreeViewItem Icon="@Icons.Material.Outlined.Map">
                         <BodyContent>
                             <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
-                                <MudText>@tactic.Name</MudText>
+                                <MudText>@tacticsCanvasService.CurrentTactic.Name</MudText>
                                 <div style="justify-self: end;">
                                     <MudIconButton Icon="@Icons.Material.Filled.Edit" @onclick="@(async (args) => await OnClickTacticRename())" />
                                     <MudIconButton Icon="@Icons.Material.Filled.AddBox" @onclick="@(async (args) => await OnAddFolder())" />
@@ -82,7 +73,7 @@
                             </div>
                         </BodyContent>
                         <ChildContent>
-                            @foreach (var folder in tactic.Folders)
+                            @foreach (var folder in tacticsCanvasService.CurrentTactic.Folders)
                             {
                                 <MudTreeViewItem Icon="@Icons.Material.Filled.Folder">
                                     <BodyContent>
@@ -132,32 +123,12 @@
     [Parameter]
     public string? ID { get; set; }
 
-    private HubConnection? hubConnection;
-    private Tactic tactic = null!;
-    private string colorValue;
-    private Slide currentSlide;
-    private Folder currentFolder;
-    private IconType currentTool = IconType.Unit;
-    private IconType? currentDraggingType = null!;
     private static string baseMapPath = "wwwroot/ConquerorsBladeData/Maps";
     private static string baseUnitPath = "wwwroot/ConquerorsBladeData/Units";
-    private string selectedUnit;
-    private bool isAllowedToEdit = false;
 
     private List<string> maps = new List<string>();
     private List<string> units = new List<string>();
-    private Icon draggingIcon = null!;
-    private Icon drawableIcon = null!;
-    private bool drawingShape = false;
-    private bool isDragging = false;
-    private int draggingIconIndex;
-    private Point lastLineDragPosition = null!;
-    private bool needsCanvasRedraw = false;
     private double zoomLevel = 1.0;
-    private bool isPanning = false;
-    private double panStartX, panStartY;
-    private double panOriginX, panOriginY;
-    private double panX = 0, panY = 0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -171,65 +142,15 @@
             .ToList();
     }
 
-    protected override async void OnParametersSet()
+    protected override void OnParametersSet()
     {
         if (ID != null)
         {
-            tactic = repo.GetTactic(ID) ?? throw new Exception("Could not load tactic");
-            currentFolder = tactic.Folders[0];
-            currentSlide = currentFolder.Slides[0];
-            colorValue = "#000000";
-            var username = await GetCurrentUserNameAsync();
-            if (tactic.Members.Any(m => m.Name == username && (m.Roles == Role.Admin || m.Roles == Role.Owner)))
-            {
-                isAllowedToEdit = true;
-            }
+            tacticsCanvasService.CurrentTactic = repo.GetTactic(ID) ?? throw new Exception("Could not load tactic");
+            tacticsCanvasService.CurrentFolder = tacticsCanvasService.CurrentTactic.Folders[0];
+            tacticsCanvasService.CurrentSlide = tacticsCanvasService.CurrentFolder.Slides[0];
+            tacticsCanvasService.SelectedColorValue = "#000000";
         }
-
-        hubConnection = new HubConnectionBuilder()
-        .WithUrl(NavigationManager.ToAbsoluteUri("/tacticsHub"), options =>
-        {
-            options.HttpMessageHandlerFactory = handler =>
-            {
-                if (handler is HttpClientHandler clientHandler)
-                {
-                    clientHandler.ServerCertificateCustomValidationCallback =
-                        HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
-                }
-                return handler;
-            };
-        })
-        .WithAutomaticReconnect()
-        .Build();
-
-        hubConnection.On<string, object, object, object>(
-            "ReceiveTacticUpdate", async (tacticId, updatedData, slideId, folderId) =>
-        {
-            if (tacticId == ID)
-            {
-                Console.WriteLine($"Received update for tactic {tacticId}");
-                var json = updatedData.ToString();
-                var slideStringId = slideId.ToString();
-                var folderStringId = folderId.ToString();
-                var options = new JsonSerializerOptions()
-                {
-                    PropertyNameCaseInsensitive = true,
-                };
-
-                tactic = JsonSerializer.Deserialize<Tactic>(json!, options)!;
-
-                if (slideStringId == currentSlide.Id && folderStringId == currentFolder.Id)
-                {
-                    currentSlide = tactic.Folders
-                        .Single(folder => folder.Id == folderStringId).Slides
-                        .Single(slide => slide.Id == slideStringId);
-                    currentFolder = tactic.Folders.Single(folder => folder.Id == folderStringId);
-                    needsCanvasRedraw = true;
-                }
-                await InvokeAsync(StateHasChanged);
-            }
-        });
-        await hubConnection.StartAsync();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -242,320 +163,37 @@
                 .Select(file => file.Replace("wwwroot", ""))
                 .ToList();
             await JS.InvokeVoidAsync("preLoadImages", imageFilePaths);
-            if (currentSlide.MapPath != null)
+            if (tacticsCanvasService.CurrentSlide.MapPath != null)
             {
-                await JS.InvokeVoidAsync("setBackground", currentSlide.MapPath);
+                await JS.InvokeVoidAsync("setBackground", tacticsCanvasService.CurrentSlide.MapPath);
             }
-
-            if (currentSlide.Icons.Any())
-            {
-                await JS.InvokeVoidAsync("draw", currentSlide.Icons);
-            }
-
-
-        }
-
-        if (needsCanvasRedraw)
-        {
-            needsCanvasRedraw = false;
-            await ReDrawCanvas();
         }
     }
 
     public Task SelectedUnitChanged(string unit)
     {
-        selectedUnit = unit;
+        tacticsCanvasService.SelectedUnit = unit;
         return Task.CompletedTask;
     }
 
     public async Task MapChanged(string map)
     {
-        currentSlide.MapPath = map;
+        tacticsCanvasService.CurrentSlide.MapPath = map;
         await JS.InvokeVoidAsync("setBackground", map);
-        await repo.UpdateMap(tactic, currentFolder.Id, currentSlide.Id, map);
-    }
-
-    private async Task PlaceIcon(Point pos)
-    {
-        if (!isAllowedToEdit)
-        {
-            return;
-        }
-        var unit = new Icon
-        {
-            Points = [pos, pos + new Point(40, 40)],
-            FilePath = "/ConquerorsBladeData/Units/" + selectedUnit,
-            Type = IconType.Unit,
-            Color = colorValue,
-        };
-
-        needsCanvasRedraw = true;
-        ////await JS.InvokeVoidAsync("placeIcon", unit);
-
-        currentSlide.Icons.Add(unit);
-        await repo.CreateIcon(tactic, currentFolder.Id, currentSlide.Id, unit);
-        await UpdateTactic();
-    }
-
-    private async Task MouseDown(MouseEventArgs eventArgs)
-    {
-        if (eventArgs.Button == 1)
-        {
-            isPanning = true;
-            panStartX = eventArgs.ClientX;
-            panStartY = eventArgs.ClientY;
-
-            // Get current pan from JS (optional, if you want to sync)
-            var pan = await JS.InvokeAsync<Point>("getPan");
-            panOriginX = pan.X;
-            panOriginY = pan.Y;
-            return;
-        }
-        var pos = await JS.InvokeAsync<Point>(
-            "getLogicalMousePosition", "tacticsCanvas", eventArgs.ClientX, eventArgs.ClientY);
-
-        if (!isAllowedToEdit)
-        {
-            return;
-        }
-
-        if (!drawingShape)
-        {
-            foreach (var icon in currentSlide.Icons)
-            {
-                if (CheckLineClicked(pos, icon) ||
-                    CheckUnitClicked(pos, icon))
-                {
-                    draggingIcon = icon with {};
-                    draggingIconIndex = currentSlide.Icons.IndexOf(icon);
-                    isDragging = true;
-                    lastLineDragPosition = pos;
-                    await JS.InvokeVoidAsync("startDrag", draggingIcon, pos.X, pos.Y);
-                    currentSlide.Icons.Remove(icon);
-                    currentDraggingType = icon.Type;
-                    return;
-                }
-            }
-        }
-
-        switch (currentTool)
-        {
-            case IconType.Unit:
-                await PlaceIcon(pos);
-                break;
-            case IconType.StraightLine:
-                SetStartPointForArrow(pos);
-                drawingShape = true;
-                break;
-            case IconType.CurveLine:
-                await AddCurvePoint(pos);
-                drawingShape = true;
-                break;
-        }
-    }
-
-    private async Task AddCurvePoint(Point pos)
-    {
-        if (drawableIcon == null)
-        {
-            drawableIcon = new Icon
-            {
-                Points = [pos],
-                Color = colorValue,
-                FilePath = "",
-                Type = IconType.CurveLine,
-            };
-            currentSlide.Icons.Add(drawableIcon);
-            await repo.CreateIcon(tactic, currentFolder.Id, currentSlide.Id, drawableIcon);
-        }
-        else if (CircleSDF(pos, drawableIcon.Points.Last(), 5) is var dist && dist < 0)
-        {
-            drawableIcon.Points.Add(pos);
-            await repo.UpdateIcon(tactic, currentFolder.Id, currentSlide.Id,
-                currentSlide.Icons.IndexOf(drawableIcon), drawableIcon);
-            drawableIcon = null!;
-        }
-        else
-        {
-            drawableIcon.Points.Add(pos);
-            await repo.UpdateIcon(tactic, currentFolder.Id, currentSlide.Id,
-                currentSlide.Icons.IndexOf(drawableIcon), drawableIcon);
-        }
-        await UpdateTactic();
-    }
-
-    private static float CircleSDF(Point pos, Point circleCenter, float radius)
-    {
-        var distanceVector = pos - circleCenter;
-        var distance = MathF
-            .Sqrt(distanceVector.X * distanceVector.X + distanceVector.Y * distanceVector.Y);
-        return distance - radius;
-    }
-
-    private static double LineSegmentSDF(Point p, Point start, Point end, double width)
-    {
-        var lineLengthX = end.X - start.X;
-        var lineLengthY = end.Y - start.Y;
-        var lengthSq = lineLengthX * lineLengthX + lineLengthY * lineLengthY;
-
-        if (lengthSq == 0)
-        {
-            var distanceToPoint = Math
-                .Sqrt((p.X - start.X) * (p.X - start.X) + (p.Y - start.Y) * (p.Y - start.Y)) - width * 0.5f;
-            return distanceToPoint;
-        }
-
-        // Project point onto the line segment
-        var normalizedProjection = ((p.X - start.X) * lineLengthX + (p.Y - start.Y) * lineLengthY) / lengthSq;
-        normalizedProjection = Math.Max(0, Math.Min(1, normalizedProjection)); // Clamp to segment
-
-        // Closest point on the segment
-        var projectionX = start.X + normalizedProjection * lineLengthX;
-        var projectionY = start.Y + normalizedProjection * lineLengthY;
-
-        // Distance to closest point
-        var distance = (float)Math.Sqrt(
-            (p.X - projectionX) *
-            (p.X - projectionX) + (p.Y - projectionY) *
-            (p.Y - projectionY));
-
-        return distance - width * 0.5f; // signed: negative inside the stroke
-    }
-
-    private bool CheckLineClicked(Point mouse, Icon icon) =>
-        icon.Type == IconType.StraightLine &&
-        LineSegmentSDF(mouse, icon.Points[0], icon.Points[1], 10f) < 0;
-
-    private bool CheckUnitClicked(Point mouse, Icon icon) =>
-        icon.Type == IconType.Unit &&
-        mouse.X > icon.Points[0].X &&
-        mouse.X < icon.Points[1].X &&
-        mouse.Y > icon.Points[0].Y &&
-        mouse.Y < icon.Points[1].Y;
-
-    private async Task DragMove(MouseEventArgs args)
-    {
-        var pos = await JS
-            .InvokeAsync<Point>("getLogicalMousePosition", "tacticsCanvas", args.ClientX, args.ClientY);
-        var mouseX = pos.X;
-        var mouseY = pos.Y;
-
-        if ((!isDragging || draggingIcon == null) && !drawingShape && !isPanning)
-        {
-            return;
-        }
-
-        if (isPanning)
-        {
-            var dx = args.ClientX - panStartX;
-            var dy = args.ClientY - panStartY;
-            panX = panOriginX + dx;
-            panY = panOriginY + dy;
-
-            await JS.InvokeVoidAsync("setPan", panX, panY);
-            return;
-        }
-
-        if (!isAllowedToEdit)
-        {
-            return;
-        }
-
-        if (currentTool == IconType.CurveLine && drawingShape && drawableIcon != null)
-        {
-            var tempDrawableIcon = drawableIcon with { Points = [.. drawableIcon.Points, pos] };
-
-            var icons = currentSlide.Icons.ToList();
-            if (icons.Contains(drawableIcon))
-            {
-                icons.Remove(drawableIcon);
-            }
-            icons.Add(tempDrawableIcon);
-            await JS.InvokeVoidAsync("draw", icons);
-            return;
-        }
-
-        if (currentTool == IconType.StraightLine && drawingShape)
-        {
-            drawableIcon.Points[1] = pos;
-
-            currentSlide.Icons.Add(drawableIcon);
-            await JS.InvokeVoidAsync("draw", currentSlide.Icons);
-            currentSlide.Icons.Remove(drawableIcon);
-            return;
-        }
-
-        if (currentDraggingType == IconType.Unit)
-        {
-            draggingIcon.Points[0] = pos;
-            draggingIcon.Points[1] = pos + new Point(40, 40);
-
-            currentSlide.Icons.Add(draggingIcon);
-            await JS.InvokeVoidAsync("dragIcon", mouseX, mouseY, currentSlide.Icons);
-            currentSlide.Icons.Remove(draggingIcon);
-        }
-        else if (currentDraggingType == IconType.StraightLine && !drawingShape)
-        {
-            var delta = pos - lastLineDragPosition;
-
-            draggingIcon.Points[0] = draggingIcon.Points[0] + delta;
-            draggingIcon.Points[1] = draggingIcon.Points[1] + delta;
-
-            lastLineDragPosition = pos;
-            currentSlide.Icons.Add(draggingIcon);
-            await JS.InvokeVoidAsync("dragIcon", mouseX, mouseY, currentSlide.Icons);
-            currentSlide.Icons.Remove(draggingIcon);
-        }
-    }
-
-    private async Task DragStop(MouseEventArgs args)
-    {
-        if (!isDragging && !drawingShape && !isPanning)
-        {
-            return;
-        }
-
-        if (isPanning && args.Button == 1)
-        {
-            isPanning = false;
-            return;
-        }
-
-        if (!isAllowedToEdit)
-        {
-            return;
-        }
-
-        if (currentTool == IconType.StraightLine && drawingShape)
-        {
-            drawingShape = false;
-            currentSlide.Icons.Add(drawableIcon);
-            await JS.InvokeVoidAsync("draw", currentSlide.Icons);
-            await repo.CreateIcon(tactic, currentFolder.Id, currentSlide.Id, drawableIcon);
-            return;
-        }
-
-        if (draggingIcon != null)
-        {
-            isDragging = false;
-            currentSlide.Icons.Add(draggingIcon);
-            await JS.InvokeVoidAsync("stopDrag");
-            await JS.InvokeVoidAsync("draw", currentSlide.Icons);
-            await repo.UpdateIcon(tactic, currentFolder.Id, currentSlide.Id, draggingIconIndex, draggingIcon);
-            await UpdateTactic();
-        }
+        await repo.UpdateMap(tacticsCanvasService.CurrentTactic, tacticsCanvasService.CurrentFolder.Id, tacticsCanvasService.CurrentSlide.Id, map);
+        await tacticsCanvasService.UpdateServerTactic();
     }
 
     private async Task OnClickFolderRename(string folderID)
     {
-        
-        if (!isAllowedToEdit)
+
+        if (!(await userService.CheckHasEditAcces(tacticsCanvasService.CurrentTactic)))
         {
             return;
         }
-        
-        var folder = repo.GetFolder(tactic, folderID);
-        
+
+        var folder = repo.GetFolder(tacticsCanvasService.CurrentTactic, folderID);
+
         var parameters = new DialogParameters<RenameDialog>
         {
             { "Name", folder!.Name }
@@ -567,31 +205,31 @@
         {
             // it is infact a referece!
             folder.Name = newName;
-            await repo.UpdateFolderName(tactic, folder.Id, newName);
-            await UpdateTactic();
+            await repo.UpdateFolderName(tacticsCanvasService.CurrentTactic, folder.Id, newName);
+            await tacticsCanvasService.UpdateServerTactic();
         }
     }
 
     private async Task OnSelectedSlideChange(Slide slide, Folder folder)
     {
-        if (currentFolder != folder)
+        if (tacticsCanvasService.CurrentFolder != folder)
         {
-            currentFolder = folder;
+            tacticsCanvasService.CurrentFolder = folder;
         }
 
-        currentSlide = slide;
-        await ReDrawCanvas();
+        tacticsCanvasService.CurrentSlide = slide;
+        await tacticsCanvasService.SetNeedsRedraw();
     }
 
     private async Task OnClickSlideRename(string slideID, string folderID)
     {
-        if (!isAllowedToEdit)
+        if (!(await userService.CheckHasEditAcces(tacticsCanvasService.CurrentTactic)))
         {
             return;
         }
-        
-        var slide = repo.GetSlide(tactic, currentFolder.Id, currentSlide.Id);
-        
+
+        var slide = repo.GetSlide(tacticsCanvasService.CurrentTactic, tacticsCanvasService.CurrentFolder.Id, tacticsCanvasService.CurrentSlide.Id);
+
         var parameters = new DialogParameters<RenameDialog>
         {
             { "Name", slide!.Name }
@@ -602,87 +240,84 @@
         if (newName != null)
         {
             slide.Name = newName;
-            await repo.UpdateSlideName(tactic, currentFolder.Id, currentSlide.Id, newName);
-            await UpdateTactic();
+            await repo.UpdateSlideName(tacticsCanvasService.CurrentTactic, tacticsCanvasService.CurrentFolder.Id, tacticsCanvasService.CurrentSlide.Id, newName);
+            await tacticsCanvasService.UpdateServerTactic();
         }
     }
 
     private async Task OnAddSlide(string folderID)
     {
-        if (!isAllowedToEdit)
+        if (!(await userService.CheckHasEditAcces(tacticsCanvasService.CurrentTactic)))
         {
             return;
         }
-        
-        var newSlide = await repo.CreateSlide(tactic, folderID);
 
-        tactic.Folders.Single(f => f.Id == folderID).Slides.Add(newSlide);
-        await UpdateTactic();
+        var newSlide = await repo.CreateSlide(tacticsCanvasService.CurrentTactic, folderID);
+
+        tacticsCanvasService.CurrentTactic.Folders.Single(f => f.Id == folderID).Slides.Add(newSlide);
+        await tacticsCanvasService.UpdateServerTactic();
     }
 
     private async Task OnClickTacticRename()
     {
-        if (!isAllowedToEdit)
+        if (!(await userService.CheckHasEditAcces(tacticsCanvasService.CurrentTactic)))
         {
             return;
         }
 
         var parameters = new DialogParameters<RenameDialog>
         {
-            { "Name", tactic.Name }
+            { "Name", tacticsCanvasService.CurrentTactic.Name }
         };
 
         var dialog = await DialogService.ShowAsync<RenameDialog>("Rename", parameters);
         var newName = (await dialog.Result)!.Data!.ToString();
         if (newName != null)
         {
-            tactic.Name = newName;
-            await repo.UpdateTacticName(tactic, newName);
-            await UpdateTactic();
+            tacticsCanvasService.CurrentTactic.Name = newName;
+            await repo.UpdateTacticName(tacticsCanvasService.CurrentTactic, newName);
+            await tacticsCanvasService.UpdateServerTactic();
         }
     }
 
     private async Task OnAddFolder()
     {
-        if (!isAllowedToEdit)
+        if (!(await userService.CheckHasEditAcces(tacticsCanvasService.CurrentTactic)))
         {
             return;
         }
         
-        var newFolder = await repo.CreateFolder(tactic);
-        tactic.Folders.Add(newFolder);
-        await UpdateTactic();
-    }
-
-    private async Task ReDrawCanvas()
-    {
-        await JS.InvokeVoidAsync("draw", currentSlide.Icons);
-        await JS.InvokeVoidAsync("setBackground", currentSlide.MapPath);
+        var newFolder = await repo.CreateFolder(tacticsCanvasService.CurrentTactic);
+        tacticsCanvasService.CurrentTactic.Folders.Add(newFolder);
+        await tacticsCanvasService.UpdateServerTactic();
     }
 
     private void ChangeTool(IconType selectedTool)
     {
-        currentTool = selectedTool;
-        drawableIcon = null!;
+        tacticsCanvasService.EditMode = selectedTool;
+        ////drawableIcon = null!;
     }
 
-    private void SetStartPointForArrow(Point pos)
+    private async Task ShowMemberList()
     {
-        drawableIcon = new Icon
+        if (!(await userService.CheckHasEditAcces(tacticsCanvasService.CurrentTactic)))
         {
-            Points = [pos, pos],
-            FilePath = string.Empty,
-            Type = IconType.StraightLine,
-            Color = colorValue
+            return;
+        }
+
+        var parameters = new DialogParameters<MemberListDialog>
+        {
+            { "Members", tacticsCanvasService.CurrentTactic.Members }
         };
-    }
 
-    private async Task UpdateTactic()
-    {
-        if (hubConnection is not null)
+        var dialog = await DialogService.ShowAsync<MemberListDialog>("Member List", parameters);
+        var result = (await dialog.Result)!.Data!;
+        var newMemberList = result as List<MemberRole>;
+
+        if (newMemberList != null)
         {
-            Console.WriteLine($"Sending update for tactic {ID}");
-            await hubConnection.SendAsync("UpdateTactic", ID, tactic, currentSlide.Id, currentFolder.Id);
+            tacticsCanvasService.CurrentTactic.Members = newMemberList;
+            await repo.UpdateMemberList(tacticsCanvasService.CurrentTactic, newMemberList);
         }
     }
 
@@ -696,36 +331,6 @@
     {
         zoomLevel = Math.Max(0.1, newZoom);
         await JS.InvokeVoidAsync("setZoom", zoomLevel);
-    }
-
-    private async Task<string> GetCurrentUserNameAsync()
-    {
-        // You can get the user name from the authentication state
-        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        return authState.User.Identity?.Name ?? "Unknown";
-    }
-
-    private async Task ShowMemberList()
-    {
-        if (!isAllowedToEdit)
-        {
-            return;
-        }
-
-        var parameters = new DialogParameters<MemberListDialog>
-        {
-            { "Members", tactic!.Members }
-        };
-
-        var dialog = await DialogService.ShowAsync<MemberListDialog>("Member List", parameters);
-        var result = (await dialog.Result)!.Data!;
-        var newMemberList = result as List<MemberRole>;
-
-        if (newMemberList != null)
-        {
-            tactic.Members = newMemberList;
-            await repo.UpdateMemberList(tactic, newMemberList);
-        }
     }
 
     static string curveIcon = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><title>vector-curve</title><path d=\"M18.5,2A1.5,1.5 0 0,1 20,3.5A1.5,1.5 0 0,1 18.5,5C18.27,5 18.05,4.95 17.85,4.85L14.16,8.55L14.5,9C16.69,7.74 19.26,7 22,7L23,7.03V9.04L22,9C19.42,9 17,9.75 15,11.04A3.96,3.96 0 0,1 11.04,15C9.75,17 9,19.42 9,22L9.04,23H7.03L7,22C7,19.26 7.74,16.69 9,14.5L8.55,14.16L4.85,17.85C4.95,18.05 5,18.27 5,18.5A1.5,1.5 0 0,1 3.5,20A1.5,1.5 0 0,1 2,18.5A1.5,1.5 0 0,1 3.5,17C3.73,17 3.95,17.05 4.15,17.15L7.84,13.45C7.31,12.78 7,11.92 7,11A4,4 0 0,1 11,7C11.92,7 12.78,7.31 13.45,7.84L17.15,4.15C17.05,3.95 17,3.73 17,3.5A1.5,1.5 0 0,1 18.5,2M11,9A2,2 0 0,0 9,11A2,2 0 0,0 11,13A2,2 0 0,0 13,11A2,2 0 0,0 11,9Z\"/></svg>";
