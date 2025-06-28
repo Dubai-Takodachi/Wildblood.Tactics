@@ -24,8 +24,11 @@
     protected override async Task OnInitializedAsync() 
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User.FindFirst(c => c.Type == "sub")?.Value ?? authState.User.FindFirst(c => c.Type == "nameidentifier")?.Value ?? authState.User.Identity.Name;
-        Tactics = await Database.GetCollection<Tactic>("Tactics").Find(t => t.UserId == user).ToListAsync();
+        var user = authState.User.FindFirst(c => c.Type == "sub")?.Value
+            ?? authState.User.FindFirst(c => c.Type == "nameidentifier")?.Value
+            ?? authState.User.Identity!.Name;
+        Tactics = await Database.GetCollection<Tactic>("Tactics")
+            .Find(t => t.UserId == user).ToListAsync();
     }
 
     private void OnRowClicked(DataGridRowClickEventArgs<Tactic> args)

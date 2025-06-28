@@ -27,5 +27,5 @@ public interface ITacticRepository
 
     public Task<Folder> CreateFolder(Tactic tactic);
 
-    public Task UpdateMemberList(string tacticId, List<MemberRole> members);
+    public Task UpdateMemberList(Tactic tactic, List<MemberRole> members);
 }

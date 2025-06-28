@@ -718,7 +718,7 @@
         if (newMemberList != null)
         {
             tactic.Members = newMemberList;
-            await repo.UpdateMemberList(tactic.Id, newMemberList);
+            await repo.UpdateMemberList(tactic, newMemberList);
         }
     }
 
