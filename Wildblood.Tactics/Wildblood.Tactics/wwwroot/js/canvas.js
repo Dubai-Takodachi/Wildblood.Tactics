@@ -193,7 +193,7 @@ window.draw = function (icons) {
         } else if (unit.type === 1) {
             window.drawArrow(unit.points[0].x, unit.points[0].y, unit.points[1].x, unit.points[1].y, unit.color, true);
         } else if (unit.type === 3) {
-            window.drawSpline(unit.points, 0.2, 16, unit.color);
+            window.drawSpline(unit.points, 0.2, 16, unit.color, true);
         }
     });
 
@@ -307,7 +307,13 @@ window.getLogicalMousePosition = function (canvasId, clientX, clientY) {
     return { x, y };
 };
 
-window.drawSpline = function (points, tension = 0.5, segments = 16, color = '#ffffff') {
+window.drawSpline = function (points, tension = 0.5, segments = 16, color = '#ffffff', skipZoom) {
+    if (!skipZoom) {
+        offscreenContext.save();
+        offscreenContext.translate(panX, panY);
+        offscreenContext.scale(zoom, zoom);
+    }
+
     offscreenContext.beginPath();
     offscreenContext.moveTo(points[0].x, points[0].y);
 
@@ -339,6 +345,6 @@ window.drawSpline = function (points, tension = 0.5, segments = 16, color = '#ff
     offscreenContext.lineWidth = 2;
     offscreenContext.stroke();
 
-    offscreenContext.restore();
+    if (!skipZoom) offscreenContext.restore();
     window.copyToVisibleCanvas();
 };

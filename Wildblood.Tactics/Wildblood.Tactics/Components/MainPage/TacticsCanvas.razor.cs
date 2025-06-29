@@ -3,7 +3,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
-using MudBlazor;
 using Wildblood.Tactics.Entities;
 using Wildblood.Tactics.Services;
 
@@ -24,6 +23,14 @@ public partial class TacticsCanvas
     protected override void OnInitialized()
     {
         TacticsCanvasService.OnGameStateChanged += RefreshUI;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await RefreshUI();
+        }
     }
 
     private async Task RefreshUI()
