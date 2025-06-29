@@ -3,7 +3,7 @@
 using Wildblood.Tactics.Entities;
 using Wildblood.Tactics.Models;
 
-public interface ITacticsCanvasService
+public interface ITacticCanvasService
 {
     public event Func<Task>? OnGameStateChanged;
 
@@ -19,6 +19,8 @@ public interface ITacticsCanvasService
 
     public IconType EditMode { get; set; }
 
+    public float ZoomLevel { get; }
+
     public Task UpdateServerTactic();
 
     public Task SetNeedsRedraw();
@@ -30,6 +32,8 @@ public interface ITacticsCanvasService
     public List<Icon> GetRedrawIcons();
 
     public string GetMap();
+
+    public Task SetZoom(float zoomLevel);
 
     public Task<List<Icon>?> DrawingInteraction(Point pos);
 

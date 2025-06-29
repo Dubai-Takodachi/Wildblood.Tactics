@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.SignalR.Client;
 using Wildblood.Tactics.Entities;
 using Wildblood.Tactics.Models;
 
-public class TacticsCanvasService : ITacticsCanvasService, IDisposable
+public class TacticCanvasService : ITacticCanvasService, IDisposable
 {
     public event Func<Task>? OnGameStateChanged;
 
@@ -21,6 +21,10 @@ public class TacticsCanvasService : ITacticsCanvasService, IDisposable
 
     public IconType EditMode { get; set; } = default!;
 
+    private float zoomLevel = 1.0f;
+
+    public float ZoomLevel => zoomLevel;
+
     private Icon? draggingIcon;
     private bool drawingShape = false;
     private int draggingIconIndex = 0;
@@ -31,17 +35,22 @@ public class TacticsCanvasService : ITacticsCanvasService, IDisposable
     private IUserService userService;
     private ITacticRepository tacticRepository;
     private IHubConnectionService hubConnectionService;
+    private ITacticZoomService tacticZoomService;
 
     private IDisposable connection;
 
-    public TacticsCanvasService(
+    public TacticCanvasService(
         IUserService userService,
         ITacticRepository tacticRepository,
-        IHubConnectionService hubConnectionService)
+        IHubConnectionService hubConnectionService,
+        ITacticZoomService tacticZoomService)
     {
         this.userService = userService;
         this.tacticRepository = tacticRepository;
         this.hubConnectionService = hubConnectionService;
+        this.tacticZoomService = tacticZoomService;
+
+        tacticZoomService.OnZoomChanged += RefreshZoom;
 
         this.connection = hubConnectionService.Register(hub =>
             hub.On<string, object, object, object>(
@@ -71,6 +80,7 @@ public class TacticsCanvasService : ITacticsCanvasService, IDisposable
                         await OnGameStateChanged!.Invoke();
                     }
                 }));
+        this.tacticZoomService = tacticZoomService;
     }
 
     public List<Icon> GetRedrawIcons()
@@ -186,7 +196,10 @@ public class TacticsCanvasService : ITacticsCanvasService, IDisposable
             Color = SelectedColorValue,
         };
 
-        await OnGameStateChanged!.Invoke();
+        if (OnGameStateChanged != null)
+        {
+            await OnGameStateChanged.Invoke();
+        }
 
         CurrentSlide.Icons.Add(unit);
         await tacticRepository.CreateIcon(CurrentTactic, CurrentFolder.Id, CurrentSlide.Id, unit);
@@ -196,7 +209,10 @@ public class TacticsCanvasService : ITacticsCanvasService, IDisposable
     private async Task UpdateTactic()
     {
         await hubConnectionService.UpdateTactic(CurrentTactic.Id, CurrentTactic, CurrentSlide.Id, CurrentFolder.Id);
-        await OnGameStateChanged!.Invoke();
+        if (OnGameStateChanged != null)
+        {
+            await OnGameStateChanged.Invoke();
+        }
     }
 
     private bool CheckLineClicked(Point mouse, Icon icon) =>
@@ -318,6 +334,7 @@ public class TacticsCanvasService : ITacticsCanvasService, IDisposable
             drawingShape = false;
             CurrentSlide.Icons.Add(drawableIcon);
             await tacticRepository.CreateIcon(CurrentTactic, CurrentFolder.Id, CurrentSlide.Id, drawableIcon);
+            await UpdateTactic();
             return CurrentSlide.Icons;
         }
 
@@ -341,7 +358,25 @@ public class TacticsCanvasService : ITacticsCanvasService, IDisposable
 
     public async Task SetNeedsRedraw()
     {
-        await OnGameStateChanged!.Invoke();
+        if (OnGameStateChanged != null)
+        {
+            await OnGameStateChanged.Invoke();
+        }
+    }
+
+    private async Task RefreshZoom()
+    {
+        zoomLevel = tacticZoomService.ZoomLevel;
+
+        if (OnGameStateChanged != null)
+        {
+            await OnGameStateChanged.Invoke();
+        }
+    }
+
+    public async Task SetZoom(float zoomLevel)
+    {
+        await tacticZoomService.SetZoomLevel(zoomLevel);
     }
 
     public void Dispose()

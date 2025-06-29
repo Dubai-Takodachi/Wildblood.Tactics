@@ -6,23 +6,21 @@ using Microsoft.JSInterop;
 using Wildblood.Tactics.Entities;
 using Wildblood.Tactics.Services;
 
-public partial class TacticsCanvas
+public partial class TacticCanvas
 {
     [Inject]
     private IJSRuntime JS { get; init; } = default!;
 
     [Inject]
-    private ITacticsCanvasService TacticsCanvasService { get; init; } = default!;
+    private ITacticCanvasService TacticCanvasService { get; init; } = default!;
 
     private Point? panMouseStart;
     private Point? panCanvasOrigin;
     private bool isPanning = false;
 
-    private float zoomLevel = 1.0f;
-
     protected override void OnInitialized()
     {
-        TacticsCanvasService.OnGameStateChanged += RefreshUI;
+        TacticCanvasService.OnGameStateChanged += RefreshUI;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -35,11 +33,14 @@ public partial class TacticsCanvas
 
     private async Task RefreshUI()
     {
-        var icons = TacticsCanvasService.GetRedrawIcons();
+        var icons = TacticCanvasService.GetRedrawIcons();
         await DrawIcons(icons);
 
-        var map = TacticsCanvasService.GetMap();
+        var map = TacticCanvasService.GetMap();
         await JS.InvokeVoidAsync("setBackground", map);
+
+        var zoomLevel = TacticCanvasService.ZoomLevel;
+        await JS.InvokeVoidAsync("setZoom", zoomLevel);
 
         await InvokeAsync(StateHasChanged);
     }
@@ -57,14 +58,14 @@ public partial class TacticsCanvas
             return;
         }
 
-        var draggingIcon = await TacticsCanvasService.CreateDraggingIcon(pos);
+        var draggingIcon = await TacticCanvasService.CreateDraggingIcon(pos);
         if (draggingIcon != null)
         {
             await JS.InvokeVoidAsync("startDrag", draggingIcon, pos.X, pos.Y);
             return;
         }
 
-        await TacticsCanvasService.CreateIcon(pos);
+        await TacticCanvasService.CreateIcon(pos);
     }
 
     private async Task MouseMove(MouseEventArgs args)
@@ -83,10 +84,10 @@ public partial class TacticsCanvas
             return;
         }
 
-        var icons = await TacticsCanvasService.DrawingInteraction(pos);
+        var icons = await TacticCanvasService.DrawingInteraction(pos);
         await DrawIcons(icons);
 
-        icons = await TacticsCanvasService.GrabbingInteraction(pos);
+        icons = await TacticCanvasService.GrabbingInteraction(pos);
 
         if (icons != null)
         {
@@ -102,7 +103,7 @@ public partial class TacticsCanvas
             return;
         }
 
-        var icons = await TacticsCanvasService.StopInteraction();
+        var icons = await TacticCanvasService.StopInteraction();
         await DrawIcons(icons);
 
         await JS.InvokeVoidAsync("stopDrag");
@@ -118,8 +119,7 @@ public partial class TacticsCanvas
 
     private async Task MouseScroll(WheelEventArgs args)
     {
-        zoomLevel -= (float)args.DeltaY * 0.001f;
-        zoomLevel = Math.Max(0.1f, zoomLevel);
-        await JS.InvokeVoidAsync("setZoom", zoomLevel);
+
+        await TacticCanvasService.SetZoom(TacticCanvasService.ZoomLevel - (float)args.DeltaY * 0.001f);
     }
 }

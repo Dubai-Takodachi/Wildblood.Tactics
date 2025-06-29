@@ -53,7 +53,8 @@ public class Program
 
         builder.Services.AddScoped<IHubConnectionService, HubConnectionService>();
         builder.Services.AddScoped<IUserService, UserService>();
-        builder.Services.AddScoped<ITacticsCanvasService, TacticsCanvasService>();
+        builder.Services.AddScoped<ITacticZoomService, TacticZoomService>();
+        builder.Services.AddScoped<ITacticCanvasService, TacticCanvasService>();
 
         builder.Services.AddAuthentication().AddGoogle(googleOptions =>
         {
