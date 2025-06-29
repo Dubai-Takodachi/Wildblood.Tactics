@@ -51,6 +51,7 @@ public class Program
 
         builder.Services.AddScoped<IHubConnectionService, HubConnectionService>();
         builder.Services.AddScoped<IUserService, UserService>();
+        builder.Services.AddScoped<ITacticToolService, TacticToolService>();
         builder.Services.AddScoped<ITacticExplorerService, TacticExplorerService>();
         builder.Services.AddScoped<ITacticZoomService, TacticZoomService>();
         builder.Services.AddScoped<ITacticCanvasService, TacticCanvasService>();

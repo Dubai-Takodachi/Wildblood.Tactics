@@ -1,0 +1,31 @@
+﻿<MudPaper style="grid-area:2/2/span 3/2">
+    <MudTabs MinimumTabWidth="20px">
+        <MudTabPanel Icon="@swordsIcon" @onclick="() => ChangeTool(IconType.Unit)">
+            <div>
+                @*Unit*@
+                <MudPaper Class="flex-wrap d-flex" Width="300px">
+                    @foreach (var unit in TacticToolService.Units)
+                    {
+                        <MudPaper Class="ma-1" @onclick="@(async (args) => await SelectedUnit(unit))">
+                            <img src="/ConquerorsBladeData/Units/@unit" height="40" width="40" />
+                        </MudPaper>
+                    }
+                </MudPaper>
+            </div>
+        </MudTabPanel>
+        <MudTabPanel Icon="@vectorLineIcon" @onclick="() => ChangeTool(IconType.StraightLine)">
+            <MudPaper>
+                <MudColorPicker Label="Line Color"
+                                Text="@TacticToolService.SelectedColorValue"
+                                TextChanged="OnColorChanged" />
+            </MudPaper>
+        </MudTabPanel>
+        <MudTabPanel Icon="@curveIcon" @onclick="() => ChangeTool(IconType.CurveLine)">
+            <MudPaper>
+                <MudColorPicker Label="Line Color"
+                                Text="@TacticToolService.SelectedColorValue"
+                                TextChanged="OnColorChanged" />
+            </MudPaper>
+        </MudTabPanel>
+    </MudTabs>
+</MudPaper>

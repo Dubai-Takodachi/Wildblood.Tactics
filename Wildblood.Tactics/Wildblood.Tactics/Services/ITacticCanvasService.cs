@@ -13,17 +13,15 @@ public interface ITacticCanvasService
 
     public Slide CurrentSlide { get; }
 
-    public string SelectedUnit { get; set; }
+    public string SelectedUnit { get; }
 
-    public string SelectedColorValue { get; set; }
+    public string SelectedColorValue { get; }
 
-    public IconType EditMode { get; set; }
+    public IconType EditMode { get; }
 
     public float ZoomLevel { get; }
 
     public Task UpdateServerTactic();
-
-    public Task SetNeedsRedraw();
 
     public Task CreateIcon(Point pos);
 

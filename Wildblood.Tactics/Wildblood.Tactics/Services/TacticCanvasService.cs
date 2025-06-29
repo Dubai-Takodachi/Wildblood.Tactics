@@ -13,15 +13,13 @@ public class TacticCanvasService : ITacticCanvasService
 
     public Slide CurrentSlide => tacticExplorerService.CurrentSlide;
 
-    public string SelectedUnit { get; set; } = null!;
+    public string SelectedUnit => tacticToolService.SelectedUnit;
 
-    public string SelectedColorValue { get; set; } = null!;
+    public string SelectedColorValue => tacticToolService.SelectedColorValue;
 
-    public IconType EditMode { get; set; } = default!;
+    public IconType EditMode => tacticToolService.EditMode;
 
-    private float zoomLevel = 1.0f;
-
-    public float ZoomLevel => zoomLevel;
+    public float ZoomLevel => tacticZoomService.ZoomLevel;
 
     private Icon? draggingIcon;
     private bool drawingShape = false;
@@ -35,22 +33,26 @@ public class TacticCanvasService : ITacticCanvasService
     private IHubConnectionService hubConnectionService;
     private ITacticZoomService tacticZoomService;
     private ITacticExplorerService tacticExplorerService;
+    private ITacticToolService tacticToolService;
 
     public TacticCanvasService(
         IUserService userService,
         ITacticExplorerService tacticRepository,
         IHubConnectionService hubConnectionService,
         ITacticZoomService tacticZoomService,
-        ITacticExplorerService tacticExplorerService)
+        ITacticExplorerService tacticExplorerService,
+        ITacticToolService tacticToolService)
     {
         this.userService = userService;
         this.tacticRepository = tacticRepository;
         this.hubConnectionService = hubConnectionService;
         this.tacticZoomService = tacticZoomService;
         this.tacticExplorerService = tacticExplorerService;
+        this.tacticToolService = tacticToolService;
 
         tacticZoomService.OnZoomChanged += RefreshZoom;
         tacticExplorerService.OnTacticChanged += RefreshTactic;
+        tacticToolService.OnToolChanged += RefreshTool;
     }
 
     public List<Icon> GetRedrawIcons()
@@ -320,18 +322,8 @@ public class TacticCanvasService : ITacticCanvasService
         await UpdateTactic();
     }
 
-    public async Task SetNeedsRedraw()
-    {
-        if (OnGameStateChanged != null)
-        {
-            await OnGameStateChanged.Invoke();
-        }
-    }
-
     private async Task RefreshZoom()
     {
-        zoomLevel = tacticZoomService.ZoomLevel;
-
         if (OnGameStateChanged != null)
         {
             await OnGameStateChanged.Invoke();
@@ -344,6 +336,11 @@ public class TacticCanvasService : ITacticCanvasService
         {
             await OnGameStateChanged.Invoke();
         }
+    }
+
+    private async Task RefreshTool()
+    {
+
     }
 
     public async Task SetZoom(float zoomLevel)
