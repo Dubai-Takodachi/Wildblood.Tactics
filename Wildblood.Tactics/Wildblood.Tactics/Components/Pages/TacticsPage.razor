@@ -14,7 +14,7 @@
 @inject IJSRuntime JS;
 @inject IDialogService DialogService;
 @inject NavigationManager NavigationManager
-@inject ITacticRepository repo;
+@inject ITacticExplorerService repo;
 @inject ITacticCanvasService tacticsCanvasService;
 @inject IUserService userService;
 
@@ -61,52 +61,7 @@
 
 
         <div style="grid-area: 5/2/span 3/2; overflow-y: scroll; min-height:200px">
-            <MudPaper>
-                <MudTreeView T="Tactic" Hover="true" Dense="true" ExpandOnClick="true">
-                    <MudTreeViewItem Icon="@Icons.Material.Outlined.Map">
-                        <BodyContent>
-                            <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
-                                <MudText>@tacticsCanvasService.CurrentTactic.Name</MudText>
-                                <div style="justify-self: end;">
-                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" @onclick="@(async (args) => await OnClickTacticRename())" />
-                                    <MudIconButton Icon="@Icons.Material.Filled.AddBox" @onclick="@(async (args) => await OnAddFolder())" />
-                                </div>
-                            </div>
-                        </BodyContent>
-                        <ChildContent>
-                            @foreach (var folder in tacticsCanvasService.CurrentTactic.Folders)
-                            {
-                                <MudTreeViewItem Icon="@Icons.Material.Filled.Folder">
-                                    <BodyContent>
-                                        <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
-                                            <MudText>@folder.Name</MudText>
-                                            <div style="justify-self: end;">
-                                                <MudIconButton Icon="@Icons.Material.Filled.Edit" @onclick="@(async (args) => await OnClickFolderRename(folder.Id))" />
-                                                <MudIconButton Icon="@Icons.Material.Filled.AddBox" @onclick="@(async (args) => await OnAddSlide(folder.Id))" />
-                                            </div>
-                                        </div>
-                                    </BodyContent>
-                                    <ChildContent>
-                                        @foreach (var slide in folder.Slides)
-                                        {
-                                            <MudTreeViewItem Icon="@Icons.Material.Filled.Notes" @onclick="@(async (args) => await OnSelectedSlideChange(slide, folder))">
-                                                <BodyContent>
-                                                    <div style="display: grid; grid-template-columns: 1fr auto; align-items: center; width: 100%">
-                                                        <MudText>@slide.Name</MudText>
-                                                        <div style="justify-self: end;">
-                                                            <MudIconButton Icon="@Icons.Material.Filled.Edit" @onclick="@(async (args) => await OnClickSlideRename(slide.Id, folder.Id))" />
-                                                        </div>
-                                                    </div>
-                                                </BodyContent>
-                                            </MudTreeViewItem>
-                                        }
-                                    </ChildContent>
-                                </MudTreeViewItem>
-                            }
-                        </ChildContent>
-                    </MudTreeViewItem>
-                </MudTreeView>
-            </MudPaper>
+            <TacticExplorer/>
             <TacticZoom/>
             <MudPaper>
                 <MudButton Color="Color.Primary" OnClick="ShowMemberList">Member List</MudButton>
@@ -138,13 +93,11 @@
             .ToList();
     }
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
         if (ID != null)
         {
-            tacticsCanvasService.CurrentTactic = repo.GetTactic(ID) ?? throw new Exception("Could not load tactic");
-            tacticsCanvasService.CurrentFolder = tacticsCanvasService.CurrentTactic.Folders[0];
-            tacticsCanvasService.CurrentSlide = tacticsCanvasService.CurrentFolder.Slides[0];
+            await repo.ChangeTactic(ID);
             tacticsCanvasService.SelectedColorValue = "#000000";
         }
     }
@@ -176,117 +129,10 @@
     {
         tacticsCanvasService.CurrentSlide.MapPath = map;
         await JS.InvokeVoidAsync("setBackground", map);
-        await repo.UpdateMap(tacticsCanvasService.CurrentTactic, tacticsCanvasService.CurrentFolder.Id, tacticsCanvasService.CurrentSlide.Id, map);
+        await repo.UpdateMap(map);
         await tacticsCanvasService.UpdateServerTactic();
     }
 
-    private async Task OnClickFolderRename(string folderID)
-    {
-
-        if (!(await userService.CheckHasEditAcces(tacticsCanvasService.CurrentTactic)))
-        {
-            return;
-        }
-
-        var folder = repo.GetFolder(tacticsCanvasService.CurrentTactic, folderID);
-
-        var parameters = new DialogParameters<RenameDialog>
-        {
-            { "Name", folder!.Name }
-        };
-
-        var dialog = await DialogService.ShowAsync<RenameDialog>("Rename", parameters);
-        var newName = (await dialog.Result)?.Data?.ToString();
-        if (newName != null)
-        {
-            // it is infact a referece!
-            folder.Name = newName;
-            await repo.UpdateFolderName(tacticsCanvasService.CurrentTactic, folder.Id, newName);
-            await tacticsCanvasService.UpdateServerTactic();
-        }
-    }
-
-    private async Task OnSelectedSlideChange(Slide slide, Folder folder)
-    {
-        if (tacticsCanvasService.CurrentFolder != folder)
-        {
-            tacticsCanvasService.CurrentFolder = folder;
-        }
-
-        tacticsCanvasService.CurrentSlide = slide;
-        await tacticsCanvasService.SetNeedsRedraw();
-    }
-
-    private async Task OnClickSlideRename(string slideID, string folderID)
-    {
-        if (!(await userService.CheckHasEditAcces(tacticsCanvasService.CurrentTactic)))
-        {
-            return;
-        }
-
-        var slide = repo.GetSlide(tacticsCanvasService.CurrentTactic, tacticsCanvasService.CurrentFolder.Id, tacticsCanvasService.CurrentSlide.Id);
-
-        var parameters = new DialogParameters<RenameDialog>
-        {
-            { "Name", slide!.Name }
-        };
-
-        var dialog = await DialogService.ShowAsync<RenameDialog>("Rename", parameters);
-        var newName = (await dialog.Result)?.Data?.ToString();
-        if (newName != null)
-        {
-            slide.Name = newName;
-            await repo.UpdateSlideName(tacticsCanvasService.CurrentTactic, tacticsCanvasService.CurrentFolder.Id, tacticsCanvasService.CurrentSlide.Id, newName);
-            await tacticsCanvasService.UpdateServerTactic();
-        }
-    }
-
-    private async Task OnAddSlide(string folderID)
-    {
-        if (!(await userService.CheckHasEditAcces(tacticsCanvasService.CurrentTactic)))
-        {
-            return;
-        }
-
-        var newSlide = await repo.CreateSlide(tacticsCanvasService.CurrentTactic, folderID);
-
-        tacticsCanvasService.CurrentTactic.Folders.Single(f => f.Id == folderID).Slides.Add(newSlide);
-        await tacticsCanvasService.UpdateServerTactic();
-    }
-
-    private async Task OnClickTacticRename()
-    {
-        if (!(await userService.CheckHasEditAcces(tacticsCanvasService.CurrentTactic)))
-        {
-            return;
-        }
-
-        var parameters = new DialogParameters<RenameDialog>
-        {
-            { "Name", tacticsCanvasService.CurrentTactic.Name }
-        };
-
-        var dialog = await DialogService.ShowAsync<RenameDialog>("Rename", parameters);
-        var newName = (await dialog.Result)!.Data!.ToString();
-        if (newName != null)
-        {
-            tacticsCanvasService.CurrentTactic.Name = newName;
-            await repo.UpdateTacticName(tacticsCanvasService.CurrentTactic, newName);
-            await tacticsCanvasService.UpdateServerTactic();
-        }
-    }
-
-    private async Task OnAddFolder()
-    {
-        if (!(await userService.CheckHasEditAcces(tacticsCanvasService.CurrentTactic)))
-        {
-            return;
-        }
-        
-        var newFolder = await repo.CreateFolder(tacticsCanvasService.CurrentTactic);
-        tacticsCanvasService.CurrentTactic.Folders.Add(newFolder);
-        await tacticsCanvasService.UpdateServerTactic();
-    }
 
     private void ChangeTool(IconType selectedTool)
     {

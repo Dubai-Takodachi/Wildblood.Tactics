@@ -7,11 +7,11 @@ public interface ITacticCanvasService
 {
     public event Func<Task>? OnGameStateChanged;
 
-    public Tactic CurrentTactic { get; set; }
+    public Tactic CurrentTactic { get; }
 
-    public Folder CurrentFolder { get; set; }
+    public Folder CurrentFolder { get; }
 
-    public Slide CurrentSlide { get; set; }
+    public Slide CurrentSlide { get; }
 
     public string SelectedUnit { get; set; }
 

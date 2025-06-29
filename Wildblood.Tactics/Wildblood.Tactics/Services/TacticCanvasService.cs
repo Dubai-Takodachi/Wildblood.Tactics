@@ -1,19 +1,17 @@
 ﻿namespace Wildblood.Tactics.Services;
 
-using System.Text.Json;
-using Microsoft.AspNetCore.SignalR.Client;
 using Wildblood.Tactics.Entities;
 using Wildblood.Tactics.Models;
 
-public class TacticCanvasService : ITacticCanvasService, IDisposable
+public class TacticCanvasService : ITacticCanvasService
 {
     public event Func<Task>? OnGameStateChanged;
 
-    public Tactic CurrentTactic { get; set; } = null!;
+    public Tactic CurrentTactic => tacticExplorerService.CurrentTactic;
 
-    public Folder CurrentFolder { get; set; } = null!;
+    public Folder CurrentFolder => tacticExplorerService.CurrentFolder;
 
-    public Slide CurrentSlide { get; set; } = null!;
+    public Slide CurrentSlide => tacticExplorerService.CurrentSlide;
 
     public string SelectedUnit { get; set; } = null!;
 
@@ -33,54 +31,26 @@ public class TacticCanvasService : ITacticCanvasService, IDisposable
     private Icon? drawableIcon = null;
 
     private IUserService userService;
-    private ITacticRepository tacticRepository;
+    private ITacticExplorerService tacticRepository;
     private IHubConnectionService hubConnectionService;
     private ITacticZoomService tacticZoomService;
-
-    private IDisposable connection;
+    private ITacticExplorerService tacticExplorerService;
 
     public TacticCanvasService(
         IUserService userService,
-        ITacticRepository tacticRepository,
+        ITacticExplorerService tacticRepository,
         IHubConnectionService hubConnectionService,
-        ITacticZoomService tacticZoomService)
+        ITacticZoomService tacticZoomService,
+        ITacticExplorerService tacticExplorerService)
     {
         this.userService = userService;
         this.tacticRepository = tacticRepository;
         this.hubConnectionService = hubConnectionService;
         this.tacticZoomService = tacticZoomService;
+        this.tacticExplorerService = tacticExplorerService;
 
         tacticZoomService.OnZoomChanged += RefreshZoom;
-
-        this.connection = hubConnectionService.Register(hub =>
-            hub.On<string, object, object, object>(
-            "ReceiveTacticUpdate", async (tacticId, updatedData, slideId, folderId) =>
-                {
-                    if (tacticId == CurrentTactic.Id)
-                    {
-                        Console.WriteLine($"Received update for tactic {tacticId}");
-                        var json = updatedData.ToString();
-                        var slideStringId = slideId.ToString();
-                        var folderStringId = folderId.ToString();
-                        var options = new JsonSerializerOptions()
-                        {
-                            PropertyNameCaseInsensitive = true,
-                        };
-
-                        CurrentTactic = JsonSerializer.Deserialize<Tactic>(json!, options)!;
-
-                        if (slideStringId == CurrentSlide.Id && folderStringId == CurrentFolder.Id)
-                        {
-                            CurrentSlide = CurrentTactic.Folders
-                                .Single(folder => folder.Id == folderStringId).Slides
-                                .Single(slide => slide.Id == slideStringId);
-                            CurrentFolder = CurrentTactic.Folders.Single(folder => folder.Id == folderStringId);
-                        }
-
-                        await OnGameStateChanged!.Invoke();
-                    }
-                }));
-        this.tacticZoomService = tacticZoomService;
+        tacticExplorerService.OnTacticChanged += RefreshTactic;
     }
 
     public List<Icon> GetRedrawIcons()
@@ -155,7 +125,7 @@ public class TacticCanvasService : ITacticCanvasService, IDisposable
                 Type = IconType.CurveLine,
             };
             CurrentSlide.Icons.Add(drawableIcon);
-            await tacticRepository.CreateIcon(CurrentTactic, CurrentFolder.Id, CurrentSlide.Id, drawableIcon);
+            await tacticRepository.CreateIcon(drawableIcon);
         }
         else if (CircleSDF(pos, drawableIcon.Points.Last(), 5) is var dist && dist < 0)
         {
@@ -164,12 +134,7 @@ public class TacticCanvasService : ITacticCanvasService, IDisposable
         else
         {
             drawableIcon.Points.Add(pos);
-            await tacticRepository.UpdateIcon(
-                CurrentTactic,
-                CurrentFolder.Id,
-                CurrentSlide.Id,
-                CurrentSlide.Icons.IndexOf(drawableIcon),
-                drawableIcon);
+            await tacticRepository.UpdateIcon(CurrentSlide.Icons.IndexOf(drawableIcon), drawableIcon);
         }
 
         await UpdateTactic();
@@ -202,7 +167,7 @@ public class TacticCanvasService : ITacticCanvasService, IDisposable
         }
 
         CurrentSlide.Icons.Add(unit);
-        await tacticRepository.CreateIcon(CurrentTactic, CurrentFolder.Id, CurrentSlide.Id, unit);
+        await tacticRepository.CreateIcon(unit);
         await UpdateTactic();
     }
 
@@ -329,11 +294,11 @@ public class TacticCanvasService : ITacticCanvasService, IDisposable
 
         var icons = CurrentSlide.Icons.ToList();
 
-        if (EditMode == IconType.StraightLine && drawingShape)
+        if (EditMode == IconType.StraightLine && drawingShape && drawableIcon != null)
         {
             drawingShape = false;
             CurrentSlide.Icons.Add(drawableIcon);
-            await tacticRepository.CreateIcon(CurrentTactic, CurrentFolder.Id, CurrentSlide.Id, drawableIcon);
+            await tacticRepository.CreateIcon(drawableIcon);
             await UpdateTactic();
             return CurrentSlide.Icons;
         }
@@ -342,8 +307,7 @@ public class TacticCanvasService : ITacticCanvasService, IDisposable
         {
             isDragging = false;
             CurrentSlide.Icons.Add(draggingIcon);
-            await tacticRepository
-                .UpdateIcon(CurrentTactic, CurrentFolder.Id, CurrentSlide.Id, draggingIconIndex, draggingIcon);
+            await tacticRepository.UpdateIcon(draggingIconIndex, draggingIcon);
             await UpdateTactic();
             return CurrentSlide.Icons;
         }
@@ -374,13 +338,16 @@ public class TacticCanvasService : ITacticCanvasService, IDisposable
         }
     }
 
+    private async Task RefreshTactic()
+    {
+        if (OnGameStateChanged != null)
+        {
+            await OnGameStateChanged.Invoke();
+        }
+    }
+
     public async Task SetZoom(float zoomLevel)
     {
         await tacticZoomService.SetZoomLevel(zoomLevel);
-    }
-
-    public void Dispose()
-    {
-        connection.Dispose();
     }
 }

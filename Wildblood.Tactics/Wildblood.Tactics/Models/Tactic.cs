@@ -1,31 +1,30 @@
-﻿using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
+﻿namespace Wildblood.Tactics.Models;
+
 using System.Text.Json.Serialization;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 
-namespace Wildblood.Tactics.Models
+public class Tactic
 {
-    public class Tactic
-    {
-        [BsonId]
-        [BsonRepresentation(BsonType.ObjectId)]
-        [JsonPropertyName("_id")]
-        public string Id { get; set; }
+    [BsonId]
+    [BsonRepresentation(BsonType.ObjectId)]
+    [JsonPropertyName("_id")]
+    public required string Id { get; set; }
 
-        [BsonElement("name")]
-        [JsonPropertyName("name")]
-        public string Name { get; set; }
+    [BsonElement("name")]
+    [JsonPropertyName("name")]
+    public required string Name { get; set; }
 
-        // TODO kick it out 
-        [BsonElement("userId")]
-        [JsonPropertyName("userId")]
-        public string UserId { get; set; }
+    // TODO kick it out 
+    [BsonElement("userId")]
+    [JsonPropertyName("userId")]
+    public required string UserId { get; set; }
 
-        [BsonElement("folder")]
-        [JsonPropertyName("folder")]
-        public List<Folder> Folders { get; set; }
+    [BsonElement("folder")]
+    [JsonPropertyName("folder")]
+    public required List<Folder> Folders { get; set; }
 
-        [BsonElement("members")]
-        [JsonPropertyName("members")]
-        public List<MemberRole> Members { get; set; }
-    }
+    [BsonElement("members")]
+    [JsonPropertyName("members")]
+    public required List<MemberRole> Members { get; set; }
 }
