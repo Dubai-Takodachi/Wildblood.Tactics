@@ -27,6 +27,7 @@ public partial class TacticCanvas
     {
         if (firstRender)
         {
+            await JS.InvokeVoidAsync("unloadImages");
             await RefreshUI();
         }
     }

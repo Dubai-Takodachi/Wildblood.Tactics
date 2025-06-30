@@ -15,6 +15,12 @@ let zoom = 1.0; // Default zoom
 let panX = 0;
 let panY = 0;
 
+window.unloadImages = function () {
+    window.lastIcons = [];
+    currentBackground = null;
+    backgroundImage = null;
+}
+
 // Helper to get canvas center in logical coordinates
 function getCanvasCenter() {
     const logicalWidth = 960;
