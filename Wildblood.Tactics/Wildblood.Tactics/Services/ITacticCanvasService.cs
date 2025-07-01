@@ -7,6 +7,8 @@ public interface ITacticCanvasService
 {
     public event Func<Task>? OnGameStateChanged;
 
+    public event Func<Task>? OnSelectedUnitChanged;
+
     public Tactic CurrentTactic { get; }
 
     public Folder CurrentFolder { get; }

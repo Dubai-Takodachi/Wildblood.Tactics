@@ -6,7 +6,7 @@ using Microsoft.JSInterop;
 using Wildblood.Tactics.Entities;
 using Wildblood.Tactics.Services;
 
-public partial class TacticCanvas
+public partial class TacticCanvas : IAsyncDisposable
 {
     [Inject]
     private IJSRuntime JS { get; init; } = default!;
@@ -14,113 +14,116 @@ public partial class TacticCanvas
     [Inject]
     private ITacticCanvasService TacticCanvasService { get; init; } = default!;
 
-    private Point? panMouseStart;
-    private Point? panCanvasOrigin;
-    private bool isPanning = false;
+    private DotNetObjectReference<TacticCanvas>? _dotNetRef;
+    private bool _initialized = false;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        TacticCanvasService.OnGameStateChanged += RefreshUI;
+        _dotNetRef = DotNetObjectReference.Create(this);
+        // Subscribe to state changes for live updates
+        TacticCanvasService.OnGameStateChanged += RedrawIcons;
+        TacticCanvasService.OnSelectedUnitChanged += setSelectedUnit;
+    }
+
+    private async Task setSelectedUnit()
+    {
+        await JS.InvokeVoidAsync("pixiInterop.setSelectedUnit", TacticCanvasService.SelectedUnit);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (firstRender && !_initialized)
         {
-            await JS.InvokeVoidAsync("unloadImages");
-            await RefreshUI();
+            _initialized = true;
+            await JS.InvokeVoidAsync("pixiInterop.createApp", "tacticsCanvas");
+            if (TacticCanvasService.CurrentSlide.MapPath != null)
+            {
+                //await JS.InvokeVoidAsync("pixiInterop.setBackground", TacticCanvasService.CurrentSlide.MapPath);
+            }
+            await RedrawIcons();
         }
     }
 
-    private async Task RefreshUI()
+    private async Task RedrawIcons()
     {
-        var icons = TacticCanvasService.GetRedrawIcons();
-        await DrawIcons(icons);
-
-        var map = TacticCanvasService.GetMap();
-        await JS.InvokeVoidAsync("setBackground", map);
-
-        var zoomLevel = TacticCanvasService.ZoomLevel;
-        await JS.InvokeVoidAsync("setZoom", zoomLevel);
-
-        await InvokeAsync(StateHasChanged);
+        //var icons = TacticCanvasService.GetRedrawIcons();
+        //await JS.InvokeVoidAsync("pixiInterop.redrawAll", icons);
     }
 
-    private async Task MouseDown(MouseEventArgs args)
+    private async Task OnMouseDown(MouseEventArgs args)
     {
-        var pos = await JS.InvokeAsync<Point>(
-        "getLogicalMousePosition", "tacticsCanvas", args.ClientX, args.ClientY);
+        var pos = await JS.InvokeAsync<Point>("pixiInterop.getLogicalMousePosition", "tacticsCanvas", args.ClientX, args.ClientY);
 
         if (args.Button == 1)
         {
-            isPanning = true;
-            panMouseStart = new Point((float)args.ClientX, (float)args.ClientY);
-            panCanvasOrigin = await JS.InvokeAsync<Point>("getPan");
+            await JS.InvokeVoidAsync("pixiInterop.startPan", args.ClientX, args.ClientY);
             return;
         }
 
         var draggingIcon = await TacticCanvasService.CreateDraggingIcon(pos);
         if (draggingIcon != null)
         {
-            await JS.InvokeVoidAsync("startDrag", draggingIcon, pos.X, pos.Y);
+            await JS.InvokeVoidAsync("pixiInterop.startDrag", draggingIcon, pos.X, pos.Y);
             return;
         }
 
         await TacticCanvasService.CreateIcon(pos);
+        await RedrawIcons();
     }
 
-    private async Task MouseMove(MouseEventArgs args)
+    private async Task OnMouseMove(MouseEventArgs args)
     {
-        var pos = await JS
-            .InvokeAsync<Point>("getLogicalMousePosition", "tacticsCanvas", args.ClientX, args.ClientY);
+        var pos = await JS.InvokeAsync<Point>("pixiInterop.getLogicalMousePosition", "tacticsCanvas", args.ClientX, args.ClientY);
 
-        if (isPanning && panMouseStart != null && panCanvasOrigin != null)
+        if (await JS.InvokeAsync<bool>("pixiInterop.getPanning"))
         {
-            var dx = args.ClientX - panMouseStart.X;
-            var dy = args.ClientY - panMouseStart.Y;
-            var panX = panCanvasOrigin.X + dx;
-            var panY = panCanvasOrigin.Y + dy;
-
-            await JS.InvokeVoidAsync("setPan", panX, panY);
+            await JS.InvokeVoidAsync("pixiInterop.updatePan", args.ClientX, args.ClientY);
             return;
         }
 
         var icons = await TacticCanvasService.DrawingInteraction(pos);
-        await DrawIcons(icons);
-
-        icons = await TacticCanvasService.GrabbingInteraction(pos);
-
         if (icons != null)
         {
-            await JS.InvokeVoidAsync("dragIcon", pos.X, pos.Y, icons);
+            await JS.InvokeVoidAsync("pixiInterop.redrawAll", icons);
+        }
+
+        icons = await TacticCanvasService.GrabbingInteraction(pos);
+        if (icons != null)
+        {
+            await JS.InvokeVoidAsync("pixiInterop.dragIcon", pos.X, pos.Y, icons);
         }
     }
 
-    private async Task MouseUp(MouseEventArgs args)
+    private async Task OnMouseUp(MouseEventArgs args)
     {
-        if (isPanning && args.Button == 1)
+        if (await JS.InvokeAsync<bool>("pixiInterop.getPanning"))
         {
-            isPanning = false;
+            await JS.InvokeVoidAsync("pixiInterop.stopPan");
             return;
         }
 
         var icons = await TacticCanvasService.StopInteraction();
-        await DrawIcons(icons);
-
-        await JS.InvokeVoidAsync("stopDrag");
-    }
-
-    private async Task DrawIcons(List<Icon>? icons)
-    {
         if (icons != null)
         {
-            await JS.InvokeVoidAsync("draw", icons);
+            await JS.InvokeVoidAsync("pixiInterop.redrawAll", icons);
         }
+
+        await JS.InvokeVoidAsync("pixiInterop.stopDrag");
     }
 
-    private async Task MouseScroll(WheelEventArgs args)
+    private async Task OnMouseScroll(WheelEventArgs args)
     {
+        var newZoom = TacticCanvasService.ZoomLevel - (float)args.DeltaY * 0.001f;
+        await TacticCanvasService.SetZoom(newZoom);
+        await JS.InvokeVoidAsync("pixiInterop.setZoom", newZoom);
+    }
 
-        await TacticCanvasService.SetZoom(TacticCanvasService.ZoomLevel - (float)args.DeltaY * 0.001f);
+    public async ValueTask DisposeAsync()
+    {
+        if (_dotNetRef != null)
+        {
+            _dotNetRef.Dispose();
+        }
+        TacticCanvasService.OnGameStateChanged -= RedrawIcons;
     }
 }

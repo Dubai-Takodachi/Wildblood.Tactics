@@ -61,8 +61,6 @@
     {
         if (firstRender)
         {
-            
-            await JS.InvokeVoidAsync("setCanvasSize", "tacticsCanvas");
 
             // TODO: move to TacticTool?
             var imageFilePaths = Directory.EnumerateFiles(baseUnitPath, "*.*", SearchOption.AllDirectories)
@@ -72,7 +70,7 @@
             await JS.InvokeVoidAsync("preLoadImages", imageFilePaths);
             if (tacticsCanvasService.CurrentSlide.MapPath != null)
             {
-                await JS.InvokeVoidAsync("setBackground", tacticsCanvasService.CurrentSlide.MapPath);
+                // await JS.InvokeVoidAsync("setBackground", tacticsCanvasService.CurrentSlide.MapPath);
             }
         }
     }

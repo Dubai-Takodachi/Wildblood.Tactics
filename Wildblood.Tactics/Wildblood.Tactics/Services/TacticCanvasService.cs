@@ -7,6 +7,8 @@ public class TacticCanvasService : ITacticCanvasService
 {
     public event Func<Task>? OnGameStateChanged;
 
+    public event Func<Task>? OnSelectedUnitChanged;
+
     public Tactic CurrentTactic => tacticExplorerService.CurrentTactic;
 
     public Folder CurrentFolder => tacticExplorerService.CurrentFolder;
@@ -340,7 +342,10 @@ public class TacticCanvasService : ITacticCanvasService
 
     private async Task RefreshTool()
     {
-
+        if (OnSelectedUnitChanged != null)
+        {
+            await OnSelectedUnitChanged.Invoke();
+        }
     }
 
     public async Task SetZoom(float zoomLevel)
