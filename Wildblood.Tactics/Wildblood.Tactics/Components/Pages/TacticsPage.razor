@@ -23,14 +23,7 @@
 <div class="parent">
     <TacticCanvas/>
     <MudCard Style="grid-area: 1/2/6/3">
-        <div id="MapSelectionDiv">
-            <MudSelect T="string" Label="Maps" ValueChanged="MapChanged">
-                @foreach (var map in maps)
-                {
-                    <MudSelectItem Value="@map">@map</MudSelectItem>
-                }
-            </MudSelect>
-        </div>
+        <TacticMapSelector/>
         <TacticTool/>
         <div style="grid-area: 5/2/span 3/2; overflow-y: scroll; min-height:200px">
             <TacticExplorer/>
@@ -47,7 +40,6 @@
     [Parameter]
     public string? ID { get; set; }
 
-    private static string baseMapPath = "wwwroot/ConquerorsBladeData/Maps";
     private static string baseUnitPath = "wwwroot/ConquerorsBladeData/Units";
 
     private List<string> maps = new List<string>();
@@ -55,10 +47,6 @@
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
-        maps = Directory.EnumerateFiles(baseMapPath, "*", SearchOption.AllDirectories)
-            .Select(f => Path.GetFileName(f)
-            .Split('.')[0])
-            .ToList();
     }
 
     protected override async Task OnParametersSetAsync()
@@ -86,14 +74,6 @@
                 await JS.InvokeVoidAsync("setBackground", tacticsCanvasService.CurrentSlide.MapPath);
             }
         }
-    }
-
-    public async Task MapChanged(string map)
-    {
-        tacticsCanvasService.CurrentSlide.MapPath = map;
-        await JS.InvokeVoidAsync("setBackground", map);
-        await repo.UpdateMap(map);
-        await tacticsCanvasService.UpdateServerTactic();
     }
 
     private async Task ShowMemberList()

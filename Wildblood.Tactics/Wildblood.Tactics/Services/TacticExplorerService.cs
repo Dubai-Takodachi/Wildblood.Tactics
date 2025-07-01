@@ -24,7 +24,10 @@ public class TacticExplorerService : ITacticExplorerService
     private IMongoCollection<Tactic> tactics;
     private IDisposable connection;
 
-    public TacticExplorerService(IMongoDatabase mongoDatabase, IHubConnectionService hubConnectionService, IUserService userService)
+    public TacticExplorerService(
+        IMongoDatabase mongoDatabase,
+        IHubConnectionService hubConnectionService,
+        IUserService userService)
     {
         this.hubConnectionService = hubConnectionService;
         this.mongoDatabase = mongoDatabase;
