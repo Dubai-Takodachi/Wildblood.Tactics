@@ -1,22 +1,11 @@
 ﻿@page "/tactics/{ID}"
+
 @namespace Wildblood.Tactics.Components.Pages
-@using Microsoft.AspNetCore.SignalR
-@using Microsoft.AspNetCore.SignalR.Client
-@using MongoDB.Bson
-@using System.Text.Json
+
 @using Wildblood.Tactics.Components.MainPage
-@using Wildblood.Tactics.Entities
-@using MongoDB.Driver;
-@using Wildblood.Tactics.Models
-@using Icon = Wildblood.Tactics.Entities.Icon
-@using Wildblood.Tactics.Components.Layout
 @using Wildblood.Tactics.Services
-@inject IJSRuntime JS;
-@inject IDialogService DialogService;
-@inject NavigationManager NavigationManager
-@inject ITacticExplorerService repo;
-@inject ITacticCanvasService tacticsCanvasService;
-@inject IUserService userService;
+
+@inject ITacticExplorerService explorer;
 
 @rendermode InteractiveServer
 
@@ -28,9 +17,7 @@
         <div style="grid-area: 5/2/span 3/2; overflow-y: scroll; min-height:200px">
             <TacticExplorer/>
             <TacticZoom/>
-            <MudPaper>
-                <MudButton Color="Color.Primary" OnClick="ShowMemberList">Member List</MudButton>
-            </MudPaper>
+            <TacticMemberList/>
         </div>
     </MudCard>
 </div>
@@ -39,10 +26,6 @@
 
     [Parameter]
     public string? ID { get; set; }
-
-    private static string baseUnitPath = "wwwroot/ConquerorsBladeData/Units";
-
-    private List<string> maps = new List<string>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -53,48 +36,7 @@
     {
         if (ID != null)
         {
-            await repo.ChangeTactic(ID);
-        }
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-
-            // TODO: move to TacticTool?
-            var imageFilePaths = Directory.EnumerateFiles(baseUnitPath, "*.*", SearchOption.AllDirectories)
-                .Where(file => new[] { ".png", ".jpg", ".jpeg", ".gif", ".bmp" }.Contains(Path.GetExtension(file).ToLower()))
-                .Select(file => file.Replace("wwwroot", ""))
-                .ToList();
-            await JS.InvokeVoidAsync("preLoadImages", imageFilePaths);
-            if (tacticsCanvasService.CurrentSlide.MapPath != null)
-            {
-                // await JS.InvokeVoidAsync("setBackground", tacticsCanvasService.CurrentSlide.MapPath);
-            }
-        }
-    }
-
-    private async Task ShowMemberList()
-    {
-        if (!(await userService.CheckHasEditAcces(tacticsCanvasService.CurrentTactic)))
-        {
-            return;
-        }
-
-        var parameters = new DialogParameters<MemberListDialog>
-        {
-            { "Members", tacticsCanvasService.CurrentTactic.Members }
-        };
-
-        var dialog = await DialogService.ShowAsync<MemberListDialog>("Member List", parameters);
-        var result = (await dialog.Result)!.Data!;
-        var newMemberList = result as List<MemberRole>;
-
-        if (newMemberList != null)
-        {
-            tacticsCanvasService.CurrentTactic.Members = newMemberList;
-            await repo.UpdateMemberList(tacticsCanvasService.CurrentTactic, newMemberList);
+            await explorer.ChangeTactic(ID);
         }
     }
 }

@@ -6,7 +6,7 @@ using Microsoft.JSInterop;
 using Wildblood.Tactics.Entities;
 using Wildblood.Tactics.Services;
 
-public partial class TacticCanvas : IAsyncDisposable
+public partial class TacticCanvas : IDisposable
 {
     [Inject]
     private IJSRuntime JS { get; init; } = default!;
@@ -22,10 +22,10 @@ public partial class TacticCanvas : IAsyncDisposable
         _dotNetRef = DotNetObjectReference.Create(this);
         // Subscribe to state changes for live updates
         TacticCanvasService.OnGameStateChanged += RedrawIcons;
-        TacticCanvasService.OnSelectedUnitChanged += setSelectedUnit;
+        TacticCanvasService.OnSelectedUnitChanged += SetSelectedUnit;
     }
 
-    private async Task setSelectedUnit()
+    private async Task SetSelectedUnit()
     {
         await JS.InvokeVoidAsync("pixiInterop.setSelectedUnit", TacticCanvasService.SelectedUnit);
     }
@@ -118,12 +118,11 @@ public partial class TacticCanvas : IAsyncDisposable
         await JS.InvokeVoidAsync("pixiInterop.setZoom", newZoom);
     }
 
-    public async ValueTask DisposeAsync()
+    public void Dispose()
     {
-        if (_dotNetRef != null)
-        {
-            _dotNetRef.Dispose();
-        }
+        _dotNetRef?.Dispose();
+
         TacticCanvasService.OnGameStateChanged -= RedrawIcons;
+        TacticCanvasService.OnSelectedUnitChanged -= SetSelectedUnit;
     }
 }
