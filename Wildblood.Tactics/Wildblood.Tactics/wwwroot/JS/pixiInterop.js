@@ -48,17 +48,17 @@
     //    window.pixiInterop.bgSprite = null;
     //},
 
-    setBackground: function (imageUrl) {
+    setBackground: async function (imageUrl) {
         const app = window.pixiInterop.app;
         if (!app) return;
         if (window.pixiInterop.bgSprite) {
             app.stage.removeChild(window.pixiInterop.bgSprite);
         }
-        const bg = PIXI.Sprite.from(imageUrl);
+        const texture = await PIXI.Assets.load("ConquerorsBladeData/Maps/" + imageUrl + ".png");
+        const bg = new PIXI.Sprite(texture);
         bg.width = app.screen.width;
         bg.height = app.screen.height;
-        bg.zIndex = -1;
-        app.stage.addChildAt(bg, 0);
+        this.mainContainer.addChild(bg);
         window.pixiInterop.bgSprite = bg;
     },
 

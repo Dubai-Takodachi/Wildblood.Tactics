@@ -29,6 +29,6 @@ public partial class TacticMapSelector
 
     private async Task UpdateBackground()
     {
-        await JS.InvokeVoidAsync("setBackground", TacticMapSelectorService.CurrentMap);
+        await JS.InvokeVoidAsync("pixiInterop.setBackground", TacticMapSelectorService.CurrentMap);
     }
 }
