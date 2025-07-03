@@ -11,6 +11,8 @@ public partial class TacticCanvas : IDisposable
     [Inject]
     private IJSRuntime JS { get; init; } = default!;
 
+    private IJSObjectReference? _pixiModule;
+
     [Inject]
     private ITacticCanvasService TacticCanvasService { get; init; } = default!;
 
@@ -20,25 +22,25 @@ public partial class TacticCanvas : IDisposable
     protected override async Task OnInitializedAsync()
     {
         _dotNetRef = DotNetObjectReference.Create(this);
-        // Subscribe to state changes for live updates
         TacticCanvasService.OnGameStateChanged += RedrawIcons;
         TacticCanvasService.OnSelectedUnitChanged += SetSelectedUnit;
     }
 
     private async Task SetSelectedUnit()
     {
-        await JS.InvokeVoidAsync("pixiInterop.setSelectedUnit", TacticCanvasService.SelectedUnit);
+        await JS.InvokeVoidAsync("default.setSelectedUnit", TacticCanvasService.SelectedUnit);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && !_initialized)
         {
+            _pixiModule = await JS.InvokeAsync<IJSObjectReference>("import", "/js/pixiInterop.js");
             _initialized = true;
-            await JS.InvokeVoidAsync("pixiInterop.createApp", "tacticsCanvas");
+            await _pixiModule.InvokeVoidAsync("default.createApp", "tacticsCanvas");
             if (TacticCanvasService.CurrentSlide.MapPath != null)
             {
-                //await JS.InvokeVoidAsync("pixiInterop.setBackground", TacticCanvasService.CurrentSlide.MapPath);
+                await _pixiModule.InvokeVoidAsync("default.setBackground", TacticCanvasService.CurrentSlide.MapPath);
             }
             await RedrawIcons();
         }
@@ -46,24 +48,24 @@ public partial class TacticCanvas : IDisposable
 
     private async Task RedrawIcons()
     {
-        //var icons = TacticCanvasService.GetRedrawIcons();
-        //await JS.InvokeVoidAsync("pixiInterop.redrawAll", icons);
+        var icons = TacticCanvasService.GetRedrawIcons();
+        await JS.InvokeVoidAsync("PixiInterop.redrawAll", icons);
     }
 
     private async Task OnMouseDown(MouseEventArgs args)
     {
-        var pos = await JS.InvokeAsync<Point>("pixiInterop.getLogicalMousePosition", "tacticsCanvas", args.ClientX, args.ClientY);
+        var pos = await JS.InvokeAsync<Point>("PixiInterop.getLogicalMousePosition", "tacticsCanvas", args.ClientX, args.ClientY);
 
         if (args.Button == 1)
         {
-            await JS.InvokeVoidAsync("pixiInterop.startPan", args.ClientX, args.ClientY);
+            await JS.InvokeVoidAsync("PixiInterop.startPan", args.ClientX, args.ClientY);
             return;
         }
 
         var draggingIcon = await TacticCanvasService.CreateDraggingIcon(pos);
         if (draggingIcon != null)
         {
-            await JS.InvokeVoidAsync("pixiInterop.startDrag", draggingIcon, pos.X, pos.Y);
+            await JS.InvokeVoidAsync("PixiInterop.startDrag", draggingIcon, pos.X, pos.Y);
             return;
         }
 
@@ -73,49 +75,49 @@ public partial class TacticCanvas : IDisposable
 
     private async Task OnMouseMove(MouseEventArgs args)
     {
-        var pos = await JS.InvokeAsync<Point>("pixiInterop.getLogicalMousePosition", "tacticsCanvas", args.ClientX, args.ClientY);
+        var pos = await JS.InvokeAsync<Point>("PixiInterop.getLogicalMousePosition", "tacticsCanvas", args.ClientX, args.ClientY);
 
-        if (await JS.InvokeAsync<bool>("pixiInterop.getPanning"))
+        if (await JS.InvokeAsync<bool>("PixiInterop.getPanning"))
         {
-            await JS.InvokeVoidAsync("pixiInterop.updatePan", args.ClientX, args.ClientY);
+            await JS.InvokeVoidAsync("PixiInterop.updatePan", args.ClientX, args.ClientY);
             return;
         }
 
         var icons = await TacticCanvasService.DrawingInteraction(pos);
         if (icons != null)
         {
-            await JS.InvokeVoidAsync("pixiInterop.redrawAll", icons);
+            await JS.InvokeVoidAsync("PixiInterop.redrawAll", icons);
         }
 
         icons = await TacticCanvasService.GrabbingInteraction(pos);
         if (icons != null)
         {
-            await JS.InvokeVoidAsync("pixiInterop.dragIcon", pos.X, pos.Y, icons);
+            await JS.InvokeVoidAsync("PixiInterop.dragIcon", pos.X, pos.Y, icons);
         }
     }
 
     private async Task OnMouseUp(MouseEventArgs args)
     {
-        if (await JS.InvokeAsync<bool>("pixiInterop.getPanning"))
+        if (await JS.InvokeAsync<bool>("PixiInterop.getPanning"))
         {
-            await JS.InvokeVoidAsync("pixiInterop.stopPan");
+            await JS.InvokeVoidAsync("PixiInterop.stopPan");
             return;
         }
 
         var icons = await TacticCanvasService.StopInteraction();
         if (icons != null)
         {
-            await JS.InvokeVoidAsync("pixiInterop.redrawAll", icons);
+            await JS.InvokeVoidAsync("PixiInterop.redrawAll", icons);
         }
 
-        await JS.InvokeVoidAsync("pixiInterop.stopDrag");
+        await JS.InvokeVoidAsync("PixiInterop.stopDrag");
     }
 
     private async Task OnMouseScroll(WheelEventArgs args)
     {
         var newZoom = TacticCanvasService.ZoomLevel - (float)args.DeltaY * 0.001f;
         await TacticCanvasService.SetZoom(newZoom);
-        await JS.InvokeVoidAsync("pixiInterop.setZoom", newZoom);
+        await JS.InvokeVoidAsync("PixiInterop.setZoom", newZoom);
     }
 
     public void Dispose()
