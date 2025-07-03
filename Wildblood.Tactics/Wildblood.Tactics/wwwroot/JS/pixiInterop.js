@@ -9,6 +9,8 @@
     panOrigin: { x: 0, y: 0 },
     currentIcon: null,
     mainContainer: null,
+    dragging: false,
+    dragOffset: { x: 0, y: 0 },
 
     createApp: async function (canvasId) {
         if (window.pixiInterop.app) {
@@ -18,9 +20,10 @@
         window.pixiInterop.app = new PIXI.Application();
         await window.pixiInterop.app.init({ background: '#FFFFFF', resizeTo: parent })
         parent.appendChild(window.pixiInterop.app.canvas)
-
         this.mainContainer = new PIXI.Container();
         window.pixiInterop.app.stage.addChild(this.mainContainer);
+
+        this.app.canvas.addEventListener("click", this.containerOnClick.bind(this));
 
         window.pixiInterop.iconMap = {};
         window.pixiInterop.bgSprite = null;
@@ -30,13 +33,31 @@
     },
 
     setSelectedUnit: function (unit) {
-        currentIcon = "/ConquerorsBladeData/Units/" + unit;
+        this.currentIcon = "ConquerorsBladeData/Units/" + unit;
     },
 
-    containerOnClick: function (event) {
-        console.log("Container clicked", event);
+    containerOnClick: async function (event) {
+        let x = event.offsetX;
+        let y = event.offsetY;
+        let spriteContainer = new PIXI.Container();
+        spriteContainer.x = x;
+        spriteContainer.y = y;
+
+        this.mainContainer.addChild(spriteContainer);
+        let texture = await PIXI.Assets.load(this.currentIcon)
+        let sprite = new PIXI.Sprite(texture);
+        sprite.eventMode = "static";
+        sprite.cursor = "pointer";
+        sprite.on("pointerdown", (event, sprite) => this.spritePointerDown(event, sprite))
+        spriteContainer.addChild(sprite);
     },
 
+    spritePointerDown: function (event, sprite) {
+        this.dragging = true;
+        this.dragOffset.x = event.data.global.x - sprite.x;
+        this.dragOffset.y = event.data.global.y - sprite.y;
+        sprite.alpha = 0.7;
+    },
 
 
     //destroyApp: function () {
