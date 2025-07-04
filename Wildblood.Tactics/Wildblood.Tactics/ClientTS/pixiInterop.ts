@@ -16,6 +16,8 @@ namespace PixiInterop {
     let iconContainer: PIXI.Container = new PIXI.Container();
     let dragging: boolean = false;
     let dragOffset: { x: number; y: number } = { x: 0, y: 0 };
+    let ImageCache: Record<string, PIXI.Texture> = {};
+    let wasDragging: boolean = false;
 
     export async function createApp(canvasId: string): Promise<void> {
         if (app) {
@@ -45,7 +47,10 @@ namespace PixiInterop {
     }
 
     async function containerOnClick(event: MouseEvent): Promise<void> {
-        if (!currentIcon) return;
+        if (!currentIcon || wasDragging) {
+            wasDragging = false;
+            return;
+        }
         const x = event.offsetX;
         const y = event.offsetY;
 
@@ -77,28 +82,34 @@ namespace PixiInterop {
         let dragging = false;
         let offset = { x: 0, y: 0 };
 
+        function onPointerMove(event: PointerEvent) {
+            if (dragging) {
+                // Koordinaten relativ zum Canvas berechnen
+                const rect = app.canvas.getBoundingClientRect();
+                const x = event.clientX - rect.left;
+                const y = event.clientY - rect.top;
+                sprite.x = x - offset.x;
+                sprite.y = y - offset.y;
+            }
+        }
+
+        // Handler für das Loslassen
+        function onPointerUp() {
+            dragging = false;
+            wasDragging = true;
+            sprite.alpha = 1.0;
+            window.removeEventListener('pointermove', onPointerMove);
+            window.removeEventListener('pointerup', onPointerUp);
+        }
+
         sprite.on('pointerdown', (event: PIXI.FederatedPointerEvent) => {
             dragging = true;
             offset.x = event.global.x - sprite.x;
             offset.y = event.global.y - sprite.y;
             sprite.alpha = 0.7;
-        });
-
-        sprite.on('pointerup', () => {
-            dragging = false;
-            sprite.alpha = 1.0;
-        });
-
-        sprite.on('pointerupoutside', () => {
-            dragging = false;
-            sprite.alpha = 1.0;
-        });
-
-        sprite.on('pointermove', (event: PIXI.FederatedPointerEvent) => {
-            if (dragging) {
-                sprite.x = event.global.x - offset.x;
-                sprite.y = event.global.y - offset.y;
-            }
+            // Globale Events hinzufügen
+            window.addEventListener('pointermove', onPointerMove);
+            window.addEventListener('pointerup', onPointerUp);
         });
     }
 
@@ -167,7 +178,15 @@ namespace PixiInterop {
     };
 
     async function drawUnit(icon: Icon): Promise<PIXI.Sprite> {
-        const texture = await PIXI.Assets.load(icon.filePath);
+        let texture: PIXI.Texture;
+
+        if (!ImageCache[icon.filePath]) {
+            texture = await PIXI.Assets.load(icon.filePath);
+            ImageCache[icon.filePath] = texture;
+        }
+        else {
+            texture = ImageCache[icon.filePath];  
+        }
         const sprite = new PIXI.Sprite(texture);
         sprite.width = icon.points[1].x - icon.points[0].x;
         sprite.height = icon.points[1].y - icon.points[0].y;
@@ -216,6 +235,15 @@ namespace PixiInterop {
         sprite.y = spritePosY;
 
         return sprite;
+    }
+
+    export async function preLoadImages(imagePaths: string[]): Promise<void> {
+        for (let path of imagePaths) {
+            if (!ImageCache[path]) {
+                const texture = await PIXI.Assets.load(path);
+                ImageCache[path] = texture;
+            }
+        }
     }
 
     // Add more exported functions as needed, e.g. for panning, zoom, icon management, etc.

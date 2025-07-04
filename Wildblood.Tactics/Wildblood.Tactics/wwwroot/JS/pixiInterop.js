@@ -24,6 +24,8 @@ var PixiInterop;
     let iconContainer = new PIXI.Container();
     let dragging = false;
     let dragOffset = { x: 0, y: 0 };
+    let ImageCache = {};
+    let wasDragging = false;
     function createApp(canvasId) {
         return __awaiter(this, void 0, void 0, function* () {
             if (app) {
@@ -53,8 +55,10 @@ var PixiInterop;
     PixiInterop.setSelectedUnit = setSelectedUnit;
     function containerOnClick(event) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!currentIcon)
+            if (!currentIcon || wasDragging) {
+                wasDragging = false;
                 return;
+            }
             const x = event.offsetX;
             const y = event.offsetY;
             const icon = {
@@ -80,26 +84,47 @@ var PixiInterop;
         sprite.cursor = 'pointer';
         let dragging = false;
         let offset = { x: 0, y: 0 };
+        function onPointerMove(event) {
+            if (dragging) {
+                // Koordinaten relativ zum Canvas berechnen
+                const rect = app.canvas.getBoundingClientRect();
+                const x = event.clientX - rect.left;
+                const y = event.clientY - rect.top;
+                sprite.x = x - offset.x;
+                sprite.y = y - offset.y;
+            }
+        }
+        // Handler f�r das Loslassen
+        function onPointerUp() {
+            dragging = false;
+            wasDragging = true;
+            sprite.alpha = 1.0;
+            window.removeEventListener('pointermove', onPointerMove);
+            window.removeEventListener('pointerup', onPointerUp);
+        }
         sprite.on('pointerdown', (event) => {
             dragging = true;
             offset.x = event.global.x - sprite.x;
             offset.y = event.global.y - sprite.y;
             sprite.alpha = 0.7;
+            // Globale Events hinzuf�gen
+            window.addEventListener('pointermove', onPointerMove);
+            window.addEventListener('pointerup', onPointerUp);
         });
-        sprite.on('pointerup', () => {
-            dragging = false;
-            sprite.alpha = 1.0;
-        });
-        sprite.on('pointerupoutside', () => {
-            dragging = false;
-            sprite.alpha = 1.0;
-        });
-        sprite.on('pointermove', (event) => {
-            if (dragging) {
-                sprite.x = event.global.x - offset.x;
-                sprite.y = event.global.y - offset.y;
-            }
-        });
+        //sprite.on('pointerup', () => {
+        //    dragging = false;
+        //    sprite.alpha = 1.0;
+        //});
+        //sprite.on('pointerupoutside', () => {
+        //    dragging = false;
+        //    sprite.alpha = 1.0;
+        //});
+        //sprite.on('pointermove', (event: PIXI.FederatedPointerEvent) => {
+        //    if (dragging) {
+        //        sprite.x = event.global.x - offset.x;
+        //        sprite.y = event.global.y - offset.y;
+        //    }
+        //});
     }
     function setBackground(imageUrl) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -150,7 +175,14 @@ var PixiInterop;
     };
     function drawUnit(icon) {
         return __awaiter(this, void 0, void 0, function* () {
-            const texture = yield PIXI.Assets.load(icon.filePath);
+            let texture;
+            if (!ImageCache[icon.filePath]) {
+                texture = yield PIXI.Assets.load(icon.filePath);
+                ImageCache[icon.filePath] = texture;
+            }
+            else {
+                texture = ImageCache[icon.filePath];
+            }
             const sprite = new PIXI.Sprite(texture);
             sprite.width = icon.points[1].x - icon.points[0].x;
             sprite.height = icon.points[1].y - icon.points[0].y;
@@ -200,6 +232,17 @@ var PixiInterop;
             return sprite;
         });
     }
+    function preLoadImages(imagePaths) {
+        return __awaiter(this, void 0, void 0, function* () {
+            for (let path of imagePaths) {
+                if (!ImageCache[path]) {
+                    const texture = yield PIXI.Assets.load(path);
+                    ImageCache[path] = texture;
+                }
+            }
+        });
+    }
+    PixiInterop.preLoadImages = preLoadImages;
     // Add more exported functions as needed, e.g. for panning, zoom, icon management, etc.
 })(PixiInterop || (PixiInterop = {}));
 export default PixiInterop;

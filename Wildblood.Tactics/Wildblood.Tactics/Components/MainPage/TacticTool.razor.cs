@@ -9,6 +9,8 @@ public partial class TacticTool
     [Inject]
     private IJSRuntime JS { get; init; } = default!;
 
+    private IJSObjectReference pixiModule = null!;
+
     [Inject]
     private ITacticToolService TacticToolService { get; init; } = default!;
 
@@ -21,6 +23,7 @@ public partial class TacticTool
     protected override void OnInitialized()
     {
         TacticToolService.OnToolChanged += RefreshUI;
+
     }
 
     private async Task RefreshUI()
@@ -32,12 +35,16 @@ public partial class TacticTool
     {
         if (firstRender)
         {
+            pixiModule = await JS.InvokeAsync<IJSObjectReference>(
+                "import",
+                "/js/pixiInterop.js");
+
             var imageFilePaths = Directory.EnumerateFiles(baseUnitPath, "*.*", SearchOption.AllDirectories)
                 .Where(file => new[] { ".png", ".jpg", ".jpeg", ".gif", ".bmp" }.Contains(Path.GetExtension(file).ToLower()))
-                .Select(file => file.Replace("wwwroot", string.Empty))
+                .Select(file => file.Replace("wwwroot/", string.Empty))
                 .ToList();
 
-            await JS.InvokeVoidAsync("preLoadImages", imageFilePaths);
+            await pixiModule.InvokeVoidAsync("default.preLoadImages", imageFilePaths);
         }
     }
 
