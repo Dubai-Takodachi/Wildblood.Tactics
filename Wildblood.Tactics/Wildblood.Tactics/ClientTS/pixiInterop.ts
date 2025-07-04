@@ -3,8 +3,8 @@
 import * as PIXI from '../lib/pixi.mjs';
 
 namespace PixiInterop {
-    let app: PIXI.Application | null = null;
-    let iconMap: Record<string | number, PIXI.Sprite> = {};
+    let app: PIXI.Application;
+    let iconMap: Record<string, PIXI.Container> = {};
     let bgSprite: PIXI.Sprite | null = null;
     let pan: { x: number; y: number } = { x: 0, y: 0 };
     let zoom: number = 1;
@@ -12,7 +12,8 @@ namespace PixiInterop {
     let panStart: { x: number; y: number } = { x: 0, y: 0 };
     let panOrigin: { x: number; y: number } = { x: 0, y: 0 };
     let currentIcon: string | null = null;
-    let mainContainer: PIXI.Container | null = null;
+    let mainContainer: PIXI.Container = new PIXI.Container();
+    let iconContainer: PIXI.Container = new PIXI.Container();
     let dragging: boolean = false;
     let dragOffset: { x: number; y: number } = { x: 0, y: 0 };
 
@@ -27,6 +28,7 @@ namespace PixiInterop {
         parent.appendChild(app.canvas);
 
         mainContainer = new PIXI.Container();
+        mainContainer.addChild(iconContainer);
         app.stage.addChild(mainContainer);
 
         app.canvas.addEventListener("click", containerOnClick);
@@ -43,20 +45,29 @@ namespace PixiInterop {
     }
 
     async function containerOnClick(event: MouseEvent): Promise<void> {
-        if (!mainContainer || !currentIcon) return;
+        if (!currentIcon) return;
         const x = event.offsetX;
         const y = event.offsetY;
+
+        const icon: Icon = {
+            points: [{ x, y }, { x: x + 40, y: y + 40 },],
+            type: "Unit",
+            filePath: currentIcon,
+            color: "#ffffff",
+        };
+
+        const sprite = await drawUnit(icon);
+
         const spriteContainer = new PIXI.Container();
+        spriteContainer.addChild(sprite);
         spriteContainer.x = x;
         spriteContainer.y = y;
 
-        mainContainer.addChild(spriteContainer);
-        const texture = await PIXI.Assets.load(currentIcon);
-        const sprite = new PIXI.Sprite(texture);
+        iconMap[crypto.randomUUID()] = spriteContainer;
         sprite.eventMode = "static";
         sprite.cursor = "pointer";
         makeSpriteDraggable(sprite);
-        spriteContainer.addChild(sprite);
+        drawIcons();
     }
 
     function makeSpriteDraggable(sprite: PIXI.Sprite): void {
@@ -92,8 +103,7 @@ namespace PixiInterop {
     }
 
     export async function setBackground(imageUrl: string): Promise<void> {
-        if (!app || !mainContainer) return;
-        if (bgSprite) {
+        if (bgSprite && app) {
             app.stage.removeChild(bgSprite);
         }
         const texture = await PIXI.Assets.load("ConquerorsBladeData/Maps/" + imageUrl + ".png");
@@ -102,6 +112,110 @@ namespace PixiInterop {
         bg.height = app.screen.height;
         mainContainer.addChild(bg);
         bgSprite = bg;
+    }
+
+    type Point = {
+        x: number;
+        y: number;
+    };
+
+    type IconType = "Unit" | "StraightLine" | "Box" | "CurveLine";
+
+    type Icon = {
+        points: Point[];
+        type: IconType;
+        filePath: string;
+        color: string;
+    };
+
+    export async function redrawIcons(icons: Record <string, Icon>): Promise<void> {
+        iconMap = {}; // clear previous icons
+
+        for (const key in icons) {
+            if (Object.prototype.hasOwnProperty.call(icons, key)) {
+                const icon = icons[key];
+                const sprite = await drawIcon[icon.type](icon);
+
+                const spriteContainer = new PIXI.Container();
+                spriteContainer.x = sprite.x;
+                spriteContainer.y = sprite.y;
+
+                spriteContainer.addChild(sprite);
+
+                iconMap[key] = spriteContainer;
+            }
+        }
+
+        drawIcons();
+    }
+
+    function drawIcons(): void {
+        iconContainer.removeChildren();
+        for (const key in iconMap) {
+            if (Object.prototype.hasOwnProperty.call(iconMap, key)) {
+                const iconContainer = iconMap[key];
+                mainContainer.addChild(iconContainer);
+            }
+        }
+    }
+
+    const drawIcon: Record<IconType, (icon: Icon) => Promise<PIXI.Sprite>> = {
+        Unit: (unit) => { return drawUnit(unit) },
+        StraightLine: (straightLine) => { return drawStraightLine(straightLine) },
+        Box: (box) => { return drawBox(box) },
+        CurveLine: (curveLine) => { return drawCurveLine(curveLine) }
+    };
+
+    async function drawUnit(icon: Icon): Promise<PIXI.Sprite> {
+        const texture = await PIXI.Assets.load(icon.filePath);
+        const sprite = new PIXI.Sprite(texture);
+        sprite.width = icon.points[1].x - icon.points[0].x;
+        sprite.height = icon.points[1].y - icon.points[0].y;
+        return sprite;
+    }
+
+    async function drawStraightLine(icon: Icon): Promise<PIXI.Sprite> {
+        const graphics = new PIXI.Graphics();
+        var spritePosX = Math.min(icon.points[0].x, icon.points[1].x);
+        var spritePosY = Math.min(icon.points[0].y, icon.points[1].y)
+        graphics.moveTo(icon.points[0].x - spritePosX, icon.points[0].y - spritePosY);
+        graphics.lineTo(icon.points[1].x - spritePosX, icon.points[1].y - spritePosY);
+        app.stage.addChild(graphics);
+
+        const texture = app.renderer.generateTexture(graphics);
+        const sprite = new PIXI.Sprite(texture);
+        sprite.x = spritePosX;
+        sprite.y = spritePosY;
+
+        return sprite;
+    }
+
+    async function drawBox(icon: Icon): Promise<PIXI.Sprite> {
+        const graphics = new PIXI.Graphics()
+            .setFillStyle(icon.color)
+            .filletRect(0, 0, icon.points[1].x - icon.points[0].x, icon.points[1].y - icon.points[0].y, 0);
+        const texture = app.renderer.generateTexture(graphics);
+        const sprite = new PIXI.Sprite(texture);
+        sprite.x = icon.points[0].x;
+        sprite.y = icon.points[0].y;
+        return sprite;
+    }
+
+    async function drawCurveLine(icon: Icon): Promise<PIXI.Sprite> {
+        // TODO: actual curve
+        const graphics = new PIXI.Graphics();
+        var spritePosX = Math.min(icon.points[0].x, icon.points[1].x);
+        var spritePosY = Math.min(icon.points[0].y, icon.points[1].y)
+        graphics.moveTo(icon.points[0].x - spritePosX, icon.points[0].y - spritePosY);
+        graphics.lineTo(icon.points[1].x - spritePosX, icon.points[1].y - spritePosY);
+        app.stage.addChild(graphics);
+
+        const texture = app.renderer.generateTexture(graphics);
+        const sprite = new PIXI.Sprite(texture);
+        sprite.x = spritePosX;
+        sprite.y = spritePosY;
+
+        return sprite;
     }
 
     // Add more exported functions as needed, e.g. for panning, zoom, icon management, etc.

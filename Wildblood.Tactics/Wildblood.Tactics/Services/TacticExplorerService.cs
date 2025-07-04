@@ -104,6 +104,11 @@ public class TacticExplorerService : ITacticExplorerService
         var update = Builders<Tactic>.Update
             .Set(t => t.Folders[nav.FolderIndex!.Value].Slides[nav.SlideIndex!.Value].MapPath, mapPath);
         await tactics.UpdateOneAsync(CreateFilter(CurrentTactic), update);
+
+        if (OnTacticChanged != null)
+        {
+            await OnTacticChanged.Invoke();
+        }
     }
 
     public async Task CreateIcon(Icon unit)
@@ -244,8 +249,6 @@ public class TacticExplorerService : ITacticExplorerService
 
         await UpdateServer();
     }
-
-
 
     public async Task UpdateMemberList(Tactic tactic, List<MemberRole> members)
     {

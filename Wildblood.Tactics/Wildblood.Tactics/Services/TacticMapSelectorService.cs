@@ -2,8 +2,6 @@
 
 public class TacticMapSelectorService : ITacticMapSelectorService
 {
-    public event Func<Task>? OnMapChanged;
-
     public string CurrentMap => tacticExplorerService.CurrentSlide.MapPath ?? string.Empty;
 
     public List<string> Maps { get; private set; }
@@ -29,11 +27,6 @@ public class TacticMapSelectorService : ITacticMapSelectorService
             tacticExplorerService.CurrentSlide.MapPath = map;
             await tacticExplorerService.UpdateMap(CurrentMap);
             await tacticExplorerService.UpdateServer();
-        }
-
-        if (OnMapChanged != null)
-        {
-            await OnMapChanged.Invoke();
         }
     }
 }

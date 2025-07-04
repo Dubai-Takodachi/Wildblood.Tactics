@@ -19,16 +19,10 @@ public partial class TacticMapSelector
     {
         await base.OnInitializedAsync();
         maps = TacticMapSelectorService.Maps.ToList();
-        TacticMapSelectorService.OnMapChanged += UpdateBackground;
     }
 
     public async Task MapChanged(string map)
     {
         await TacticMapSelectorService.UpdateCurrentMap(map);
-    }
-
-    private async Task UpdateBackground()
-    {
-        await JS.InvokeVoidAsync("pixiInterop.setBackground", TacticMapSelectorService.CurrentMap);
     }
 }

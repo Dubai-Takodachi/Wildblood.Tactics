@@ -11,37 +11,41 @@ public partial class TacticCanvas : IDisposable
     [Inject]
     private IJSRuntime JS { get; init; } = default!;
 
-    private IJSObjectReference? _pixiModule;
+    private IJSObjectReference pixiModule = null!;
 
     [Inject]
     private ITacticCanvasService TacticCanvasService { get; init; } = default!;
 
-    private DotNetObjectReference<TacticCanvas>? _dotNetRef;
-    private bool _initialized = false;
-
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        _dotNetRef = DotNetObjectReference.Create(this);
         TacticCanvasService.OnGameStateChanged += RedrawIcons;
         TacticCanvasService.OnSelectedUnitChanged += SetSelectedUnit;
     }
 
     private async Task SetSelectedUnit()
     {
-        await JS.InvokeVoidAsync("default.setSelectedUnit", TacticCanvasService.SelectedUnit);
+        await pixiModule.InvokeVoidAsync(
+            "default.setSelectedUnit",
+            TacticCanvasService.SelectedUnit);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && !_initialized)
+        if (firstRender)
         {
-            _pixiModule = await JS.InvokeAsync<IJSObjectReference>("import", "/js/pixiInterop.js");
-            _initialized = true;
-            await _pixiModule.InvokeVoidAsync("default.createApp", "tacticsCanvas");
+            pixiModule = await JS.InvokeAsync<IJSObjectReference>(
+                "import",
+                "/js/pixiInterop.js");
+
+            await pixiModule.InvokeVoidAsync("default.createApp", "tacticsCanvas");
+
             if (TacticCanvasService.CurrentSlide.MapPath != null)
             {
-                await _pixiModule.InvokeVoidAsync("default.setBackground", TacticCanvasService.CurrentSlide.MapPath);
+                await pixiModule.InvokeVoidAsync(
+                    "default.setBackground",
+                    TacticCanvasService.CurrentSlide.MapPath);
             }
+
             await RedrawIcons();
         }
     }
@@ -49,7 +53,19 @@ public partial class TacticCanvas : IDisposable
     private async Task RedrawIcons()
     {
         var icons = TacticCanvasService.GetRedrawIcons();
-        await JS.InvokeVoidAsync("PixiInterop.redrawAll", icons);
+        if (icons != null)
+        {
+            await pixiModule.InvokeVoidAsync(
+                "default.redrawIcons",
+                TacticCanvasService.CurrentSlide.Icons);
+        }
+
+        if (TacticCanvasService.CurrentSlide.MapPath != null)
+        {
+            await pixiModule.InvokeVoidAsync(
+                "default.setBackground",
+                TacticCanvasService.CurrentSlide.MapPath);
+        }
     }
 
     private async Task OnMouseDown(MouseEventArgs args)
@@ -122,8 +138,6 @@ public partial class TacticCanvas : IDisposable
 
     public void Dispose()
     {
-        _dotNetRef?.Dispose();
-
         TacticCanvasService.OnGameStateChanged -= RedrawIcons;
         TacticCanvasService.OnSelectedUnitChanged -= SetSelectedUnit;
     }

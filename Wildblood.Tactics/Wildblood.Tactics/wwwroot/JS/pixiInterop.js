@@ -11,7 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import * as PIXI from '../lib/pixi.mjs';
 var PixiInterop;
 (function (PixiInterop) {
-    let app = null;
+    let app;
     let iconMap = {};
     let bgSprite = null;
     let pan = { x: 0, y: 0 };
@@ -20,7 +20,8 @@ var PixiInterop;
     let panStart = { x: 0, y: 0 };
     let panOrigin = { x: 0, y: 0 };
     let currentIcon = null;
-    let mainContainer = null;
+    let mainContainer = new PIXI.Container();
+    let iconContainer = new PIXI.Container();
     let dragging = false;
     let dragOffset = { x: 0, y: 0 };
     function createApp(canvasId) {
@@ -35,6 +36,7 @@ var PixiInterop;
             yield app.init({ background: '#FFFFFF', resizeTo: parent });
             parent.appendChild(app.canvas);
             mainContainer = new PIXI.Container();
+            mainContainer.addChild(iconContainer);
             app.stage.addChild(mainContainer);
             app.canvas.addEventListener("click", containerOnClick);
             iconMap = {};
@@ -51,20 +53,26 @@ var PixiInterop;
     PixiInterop.setSelectedUnit = setSelectedUnit;
     function containerOnClick(event) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!mainContainer || !currentIcon)
+            if (!currentIcon)
                 return;
             const x = event.offsetX;
             const y = event.offsetY;
+            const icon = {
+                points: [{ x, y }, { x: x + 40, y: y + 40 },],
+                type: "Unit",
+                filePath: currentIcon,
+                color: "#ffffff",
+            };
+            const sprite = yield drawUnit(icon);
             const spriteContainer = new PIXI.Container();
+            spriteContainer.addChild(sprite);
             spriteContainer.x = x;
             spriteContainer.y = y;
-            mainContainer.addChild(spriteContainer);
-            const texture = yield PIXI.Assets.load(currentIcon);
-            const sprite = new PIXI.Sprite(texture);
+            iconMap[crypto.randomUUID()] = spriteContainer;
             sprite.eventMode = "static";
             sprite.cursor = "pointer";
             makeSpriteDraggable(sprite);
-            spriteContainer.addChild(sprite);
+            drawIcons();
         });
     }
     function makeSpriteDraggable(sprite) {
@@ -95,9 +103,7 @@ var PixiInterop;
     }
     function setBackground(imageUrl) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!app || !mainContainer)
-                return;
-            if (bgSprite) {
+            if (bgSprite && app) {
                 app.stage.removeChild(bgSprite);
             }
             const texture = yield PIXI.Assets.load("ConquerorsBladeData/Maps/" + imageUrl + ".png");
@@ -109,6 +115,92 @@ var PixiInterop;
         });
     }
     PixiInterop.setBackground = setBackground;
+    function redrawIcons(icons) {
+        return __awaiter(this, void 0, void 0, function* () {
+            iconMap = {}; // clear previous icons
+            for (const key in icons) {
+                if (Object.prototype.hasOwnProperty.call(icons, key)) {
+                    const icon = icons[key];
+                    const sprite = yield drawIcon[icon.type](icon);
+                    const spriteContainer = new PIXI.Container();
+                    spriteContainer.x = sprite.x;
+                    spriteContainer.y = sprite.y;
+                    spriteContainer.addChild(sprite);
+                    iconMap[key] = spriteContainer;
+                }
+            }
+            drawIcons();
+        });
+    }
+    PixiInterop.redrawIcons = redrawIcons;
+    function drawIcons() {
+        iconContainer.removeChildren();
+        for (const key in iconMap) {
+            if (Object.prototype.hasOwnProperty.call(iconMap, key)) {
+                const iconContainer = iconMap[key];
+                mainContainer.addChild(iconContainer);
+            }
+        }
+    }
+    const drawIcon = {
+        Unit: (unit) => { return drawUnit(unit); },
+        StraightLine: (straightLine) => { return drawStraightLine(straightLine); },
+        Box: (box) => { return drawBox(box); },
+        CurveLine: (curveLine) => { return drawCurveLine(curveLine); }
+    };
+    function drawUnit(icon) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const texture = yield PIXI.Assets.load(icon.filePath);
+            const sprite = new PIXI.Sprite(texture);
+            sprite.width = icon.points[1].x - icon.points[0].x;
+            sprite.height = icon.points[1].y - icon.points[0].y;
+            return sprite;
+        });
+    }
+    function drawStraightLine(icon) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const graphics = new PIXI.Graphics();
+            var spritePosX = Math.min(icon.points[0].x, icon.points[1].x);
+            var spritePosY = Math.min(icon.points[0].y, icon.points[1].y);
+            graphics.moveTo(icon.points[0].x - spritePosX, icon.points[0].y - spritePosY);
+            graphics.lineTo(icon.points[1].x - spritePosX, icon.points[1].y - spritePosY);
+            app.stage.addChild(graphics);
+            const texture = app.renderer.generateTexture(graphics);
+            const sprite = new PIXI.Sprite(texture);
+            sprite.x = spritePosX;
+            sprite.y = spritePosY;
+            return sprite;
+        });
+    }
+    function drawBox(icon) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const graphics = new PIXI.Graphics()
+                .setFillStyle(icon.color)
+                .filletRect(0, 0, icon.points[1].x - icon.points[0].x, icon.points[1].y - icon.points[0].y, 0);
+            const texture = app.renderer.generateTexture(graphics);
+            const sprite = new PIXI.Sprite(texture);
+            sprite.x = icon.points[0].x;
+            sprite.y = icon.points[0].y;
+            return sprite;
+        });
+    }
+    function drawCurveLine(icon) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // TODO: actual curve
+            const graphics = new PIXI.Graphics();
+            var spritePosX = Math.min(icon.points[0].x, icon.points[1].x);
+            var spritePosY = Math.min(icon.points[0].y, icon.points[1].y);
+            graphics.moveTo(icon.points[0].x - spritePosX, icon.points[0].y - spritePosY);
+            graphics.lineTo(icon.points[1].x - spritePosX, icon.points[1].y - spritePosY);
+            app.stage.addChild(graphics);
+            const texture = app.renderer.generateTexture(graphics);
+            const sprite = new PIXI.Sprite(texture);
+            sprite.x = spritePosX;
+            sprite.y = spritePosY;
+            return sprite;
+        });
+    }
     // Add more exported functions as needed, e.g. for panning, zoom, icon management, etc.
 })(PixiInterop || (PixiInterop = {}));
 export default PixiInterop;
+//# sourceMappingURL=pixiInterop.js.map
