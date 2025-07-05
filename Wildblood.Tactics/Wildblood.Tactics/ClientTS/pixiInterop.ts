@@ -1,6 +1,7 @@
 /// <reference types="pixi.js" />
 
 import * as PIXI from '../lib/pixi.mjs';
+import * as Tools from './tools-types';
 
 namespace PixiInterop {
     let app: PIXI.Application;
@@ -18,6 +19,7 @@ namespace PixiInterop {
     let dragOffset: { x: number; y: number } = { x: 0, y: 0 };
     let ImageCache: Record<string, PIXI.Texture> = {};
     let wasDragging: boolean = false;
+    let currentTool: Tools.ToolOptions;
 
     export async function createApp(canvasId: string): Promise<void> {
         if (app) {

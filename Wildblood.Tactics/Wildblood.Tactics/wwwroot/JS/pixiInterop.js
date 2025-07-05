@@ -26,6 +26,7 @@ var PixiInterop;
     let dragOffset = { x: 0, y: 0 };
     let ImageCache = {};
     let wasDragging = false;
+    let currentTool;
     function createApp(canvasId) {
         return __awaiter(this, void 0, void 0, function* () {
             if (app) {
@@ -111,20 +112,6 @@ var PixiInterop;
             window.addEventListener('pointermove', onPointerMove);
             window.addEventListener('pointerup', onPointerUp);
         });
-        //sprite.on('pointerup', () => {
-        //    dragging = false;
-        //    sprite.alpha = 1.0;
-        //});
-        //sprite.on('pointerupoutside', () => {
-        //    dragging = false;
-        //    sprite.alpha = 1.0;
-        //});
-        //sprite.on('pointermove', (event: PIXI.FederatedPointerEvent) => {
-        //    if (dragging) {
-        //        sprite.x = event.global.x - offset.x;
-        //        sprite.y = event.global.y - offset.y;
-        //    }
-        //});
     }
     function setBackground(imageUrl) {
         return __awaiter(this, void 0, void 0, function* () {

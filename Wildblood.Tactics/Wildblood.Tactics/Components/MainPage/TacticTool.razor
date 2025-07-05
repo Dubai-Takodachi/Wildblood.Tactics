@@ -8,7 +8,7 @@
                     @foreach (var unit in IconMapping.FileNameByIconType)
                     {
                         <MudPaper Class="ma-1" @onclick="@(async (args) => await SelectedUnit(unit.Key))">
-                            <img src="@unit.Value" helazorBight="40" width="40" />
+                            <img src="@(IconMapping.BlazorBasePath + unit.Value)" helazorBight="40" width="40" />
                         </MudPaper>
                     }
                 </MudPaper>
