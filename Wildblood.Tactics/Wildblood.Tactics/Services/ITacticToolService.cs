@@ -1,20 +1,14 @@
 ﻿namespace Wildblood.Tactics.Services;
 
+using Wildblood.Tactics.Models.Tools;
+
 public interface ITacticToolService
 {
     public event Func<Task>? OnToolChanged;
 
-    public IconType EditMode { get; }
+    public ToolOptions AllOptions { get; }
 
-    public List<string> Units { get; }
+    public ToolOptions CurrentOptions { get; }
 
-    public string SelectedUnit { get; }
-
-    public string SelectedColorValue { get; }
-
-    public Task ChangeEditMode(IconType editMode);
-
-    public Task ChangeUnit(string unit);
-
-    public Task ChangeColor(string color);
+    public Task PatchTool(ToolOptions newOptions);
 }

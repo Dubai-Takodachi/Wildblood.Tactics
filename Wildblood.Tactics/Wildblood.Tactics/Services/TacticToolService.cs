@@ -1,32 +1,35 @@
 ﻿namespace Wildblood.Tactics.Services;
 
+using Wildblood.Tactics.Models.Tools;
+
 public class TacticToolService : ITacticToolService
 {
     public event Func<Task>? OnToolChanged;
 
-    public List<string> Units { get; init; }
+    public ToolOptions AllOptions { get; private set; }
 
-    public IconType EditMode { get; private set; }
-
-    public string SelectedUnit { get; private set; }
-
-    public string SelectedColorValue { get; private set; }
+    public ToolOptions CurrentOptions { get; private set; }
 
     public TacticToolService()
     {
-        Units = Directory.EnumerateFiles(baseUnitPath, "*", SearchOption.AllDirectories)
-            .Select(f => Path.GetFileName(f))
-            .ToList();
-
-        SelectedUnit = Units[0];
-        SelectedColorValue = "#ffffff";
+        AllOptions = CreateDefaultOptions();
+        CurrentOptions = CreateCurrentToolOptions();
     }
 
-    private static string baseUnitPath = "wwwroot/ConquerorsBladeData/Units";
-
-    public async Task ChangeEditMode(IconType editMode)
+    public async Task PatchTool(ToolOptions newOptions)
     {
-        EditMode = editMode;
+        AllOptions = AllOptions with
+        {
+            Tool = newOptions?.Tool ?? AllOptions.Tool,
+            IconOptions = newOptions?.IconOptions ?? AllOptions.IconOptions,
+            LineDrawOptions = newOptions?.LineDrawOptions ?? AllOptions.LineDrawOptions,
+            CurveDrawOptions = newOptions?.CurveDrawOptions ?? AllOptions.CurveDrawOptions,
+            FreeDrawOptions = newOptions?.FreeDrawOptions ?? AllOptions.FreeDrawOptions,
+            ShapeOptions = newOptions?.ShapeOptions ?? AllOptions.ShapeOptions,
+            TextOptions = newOptions?.TextOptions ?? AllOptions.TextOptions,
+        };
+
+        CurrentOptions = CreateCurrentToolOptions();
 
         if (OnToolChanged != null)
         {
@@ -34,23 +37,64 @@ public class TacticToolService : ITacticToolService
         }
     }
 
-    public async Task ChangeUnit(string unit)
+    private ToolOptions CreateCurrentToolOptions()
     {
-        SelectedUnit = unit;
+        var currentBase = new ToolOptions { Tool = AllOptions.Tool };
 
-        if (OnToolChanged != null)
+        return AllOptions.Tool switch
         {
-            await OnToolChanged.Invoke();
-        }
+            ToolType.AddIcon => currentBase with { IconOptions = AllOptions.IconOptions },
+            ToolType.DrawLine => currentBase with { LineDrawOptions = AllOptions.LineDrawOptions },
+            ToolType.DrawCurve => currentBase with { CurveDrawOptions = AllOptions.CurveDrawOptions },
+            ToolType.DrawFree => currentBase with { FreeDrawOptions = AllOptions.FreeDrawOptions },
+            ToolType.AddText => currentBase with { TextOptions = AllOptions.TextOptions },
+            _ => currentBase,
+        };
     }
 
-    public async Task ChangeColor(string color)
+    private static ToolOptions CreateDefaultOptions()
     {
-        SelectedColorValue = color;
-
-        if (OnToolChanged != null)
+        var defaultLineOptions = new LineOptions
         {
-            await OnToolChanged.Invoke();
-        }
+            Color = "#000000",
+            LineStyle = LineStyle.Normal,
+            Thickness = 5,
+            LineEnd = LineEnd.Arrow,
+            EndSize = 20,
+        };
+
+        var defaultTextOptions = new TextOptions
+        {
+            Text = string.Empty,
+            Size = 40,
+            Color = "#000000",
+            HasBackground = false,
+            BackgroundColor = "#ffffff",
+        };
+
+        return new ToolOptions
+        {
+            Tool = ToolType.AddIcon,
+            IconOptions = new IconOptions
+            {
+                IconSize = 40,
+                IconType = IconType.Azaps,
+                LabelOptions = defaultTextOptions,
+            },
+            LineDrawOptions = defaultLineOptions,
+            CurveDrawOptions = defaultLineOptions,
+            FreeDrawOptions = defaultLineOptions,
+            ShapeOptions = new ShapeOptions
+            {
+                ShapeType = ShapeType.Circle,
+                OutlineColor = "#ff0000",
+                OutlineStyle = LineStyle.Normal,
+                OutlineThickness = 5,
+                OutlineTransparancy = 0,
+                FillColor = "#ff0000",
+                FillTransparancy = 20,
+            },
+            TextOptions = defaultTextOptions,
+        };
     }
 }

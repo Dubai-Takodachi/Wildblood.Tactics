@@ -1,30 +1,31 @@
-﻿<MudPaper style="grid-area:2/2/span 3/2">
+﻿@using Wildblood.Tactics.Mappings
+
+<MudPaper style="grid-area:2/2/span 3/2">
     <MudTabs MinimumTabWidth="20px">
-        <MudTabPanel Icon="@swordsIcon" @onclick="() => ChangeTool(IconType.Unit)">
+        <MudTabPanel Icon="@swordsIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.AddIcon)">
             <div>
-                @*Unit*@
                 <MudPaper Class="flex-wrap d-flex" Width="300px">
-                    @foreach (var unit in TacticToolService.Units)
+                    @foreach (var unit in IconMapping.FileNameByIconType)
                     {
-                        <MudPaper Class="ma-1" @onclick="@(async (args) => await SelectedUnit(unit))">
-                            <img src="/ConquerorsBladeData/Units/@unit" height="40" width="40" />
+                        <MudPaper Class="ma-1" @onclick="@(async (args) => await SelectedUnit(unit.Key))">
+                            <img src="@unit.Value" helazorBight="40" width="40" />
                         </MudPaper>
                     }
                 </MudPaper>
             </div>
         </MudTabPanel>
-        <MudTabPanel Icon="@vectorLineIcon" @onclick="() => ChangeTool(IconType.StraightLine)">
+        <MudTabPanel Icon="@vectorLineIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.DrawLine)">
             <MudPaper>
                 <MudColorPicker Label="Line Color"
-                                Text="@TacticToolService.SelectedColorValue"
-                                TextChanged="OnColorChanged" />
+                                Text="@AllOptions.LineDrawOptions!.Color"
+                                TextChanged="OnLineColorChanged" />
             </MudPaper>
         </MudTabPanel>
-        <MudTabPanel Icon="@curveIcon" @onclick="() => ChangeTool(IconType.CurveLine)">
+        <MudTabPanel Icon="@curveIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.DrawCurve)">
             <MudPaper>
                 <MudColorPicker Label="Line Color"
-                                Text="@TacticToolService.SelectedColorValue"
-                                TextChanged="OnColorChanged" />
+                                Text="@AllOptions.CurveDrawOptions!.Color"
+                                TextChanged="OnCurveColorChanged" />
             </MudPaper>
         </MudTabPanel>
     </MudTabs>

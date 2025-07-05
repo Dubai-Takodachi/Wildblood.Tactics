@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using Wildblood.Tactics.Entities;
+using Wildblood.Tactics.Mappings;
 using Wildblood.Tactics.Services;
 
 public partial class TacticCanvas : IDisposable
@@ -19,14 +20,14 @@ public partial class TacticCanvas : IDisposable
     protected override void OnInitialized()
     {
         TacticCanvasService.OnGameStateChanged += RedrawIcons;
-        TacticCanvasService.OnSelectedUnitChanged += SetSelectedUnit;
+        TacticCanvasService.OnToolChanged += SetSelectedUnit;
     }
 
     private async Task SetSelectedUnit()
     {
         await pixiModule.InvokeVoidAsync(
             "default.setSelectedUnit",
-            TacticCanvasService.SelectedUnit);
+            IconMapping.FileNameByIconType[TacticCanvasService.CurrentOptions.IconOptions!.IconType]);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -68,67 +69,6 @@ public partial class TacticCanvas : IDisposable
         }
     }
 
-    private async Task OnMouseDown(MouseEventArgs args)
-    {
-        var pos = await JS.InvokeAsync<Point>("PixiInterop.getLogicalMousePosition", "tacticsCanvas", args.ClientX, args.ClientY);
-
-        if (args.Button == 1)
-        {
-            await JS.InvokeVoidAsync("PixiInterop.startPan", args.ClientX, args.ClientY);
-            return;
-        }
-
-        var draggingIcon = await TacticCanvasService.CreateDraggingIcon(pos);
-        if (draggingIcon != null)
-        {
-            await JS.InvokeVoidAsync("PixiInterop.startDrag", draggingIcon, pos.X, pos.Y);
-            return;
-        }
-
-        await TacticCanvasService.CreateIcon(pos);
-        await RedrawIcons();
-    }
-
-    private async Task OnMouseMove(MouseEventArgs args)
-    {
-        var pos = await JS.InvokeAsync<Point>("PixiInterop.getLogicalMousePosition", "tacticsCanvas", args.ClientX, args.ClientY);
-
-        if (await JS.InvokeAsync<bool>("PixiInterop.getPanning"))
-        {
-            await JS.InvokeVoidAsync("PixiInterop.updatePan", args.ClientX, args.ClientY);
-            return;
-        }
-
-        var icons = await TacticCanvasService.DrawingInteraction(pos);
-        if (icons != null)
-        {
-            await JS.InvokeVoidAsync("PixiInterop.redrawAll", icons);
-        }
-
-        icons = await TacticCanvasService.GrabbingInteraction(pos);
-        if (icons != null)
-        {
-            await JS.InvokeVoidAsync("PixiInterop.dragIcon", pos.X, pos.Y, icons);
-        }
-    }
-
-    private async Task OnMouseUp(MouseEventArgs args)
-    {
-        if (await JS.InvokeAsync<bool>("PixiInterop.getPanning"))
-        {
-            await JS.InvokeVoidAsync("PixiInterop.stopPan");
-            return;
-        }
-
-        var icons = await TacticCanvasService.StopInteraction();
-        if (icons != null)
-        {
-            await JS.InvokeVoidAsync("PixiInterop.redrawAll", icons);
-        }
-
-        await JS.InvokeVoidAsync("PixiInterop.stopDrag");
-    }
-
     private async Task OnMouseScroll(WheelEventArgs args)
     {
         var newZoom = TacticCanvasService.ZoomLevel - (float)args.DeltaY * 0.001f;
@@ -139,6 +79,6 @@ public partial class TacticCanvas : IDisposable
     public void Dispose()
     {
         TacticCanvasService.OnGameStateChanged -= RedrawIcons;
-        TacticCanvasService.OnSelectedUnitChanged -= SetSelectedUnit;
+        TacticCanvasService.OnToolChanged -= SetSelectedUnit;
     }
 }

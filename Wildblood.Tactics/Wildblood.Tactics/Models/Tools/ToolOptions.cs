@@ -2,7 +2,7 @@
 
 public record ToolOptions
 {
-    public required ToolType Tool { get; init; }
+    public ToolType? Tool { get; init; }
 
     public IconOptions? IconOptions { get; init; }
 
@@ -13,4 +13,6 @@ public record ToolOptions
     public LineOptions? CurveDrawOptions { get; init; }
 
     public ShapeOptions? ShapeOptions { get; init; }
+
+    public TextOptions? TextOptions { get; init; }
 }
