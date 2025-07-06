@@ -1,4 +1,5 @@
 ﻿@using Wildblood.Tactics.Mappings
+@using Wildblood.Tactics.Models.Tools
 
 <MudPaper style="grid-area:2/2/span 3/2">
     <MudTabs MinimumTabWidth="20px">
@@ -16,16 +17,62 @@
         </MudTabPanel>
         <MudTabPanel Icon="@vectorLineIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.DrawLine)">
             <MudPaper>
-                <MudColorPicker Label="Line Color"
-                                Text="@AllOptions.LineDrawOptions!.Color"
-                                TextChanged="OnLineColorChanged" />
+                <MudColorPicker Label="Line Color" Text="@AllOptions.LineDrawOptions!.Color" TextChanged="OnLineColorChanged" />
+                <MudToggleGroup T="LineStyle" Color="Color.Success" ValueChanged="OnLineStyleChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
+                    <MudToggleItem Value="@LineStyle.Normal">
+                        <MudIcon Icon="@solidLine" />
+                    </MudToggleItem>
+                    <MudToggleItem Value="@LineStyle.Dashed">
+                        <MudIcon Icon="@dashedLine" />
+                    </MudToggleItem>
+                    <MudToggleItem Value="@LineStyle.Dotted">
+                        <MudIcon Icon="@dottetLine" />
+                    </MudToggleItem>
+                </MudToggleGroup>
+                <MudToggleGroup T="LineEnd" Color="Color.Success" ValueChanged="OnLineEndChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
+                    <MudToggleItem Value="@LineEnd.Normal">
+                        <MudIcon Icon="@solidLine"/>
+                    </MudToggleItem>
+                    <MudToggleItem Value="@LineEnd.Arrow">
+                        <MudIcon Icon="@arrowHead"/>
+                    </MudToggleItem>
+                    <MudToggleItem Value="@LineEnd.Flat">
+                        <MudIcon Icon="@straightArrow" />
+                    </MudToggleItem>
+                </MudToggleGroup>
             </MudPaper>
         </MudTabPanel>
         <MudTabPanel Icon="@curveIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.DrawCurve)">
             <MudPaper>
-                <MudColorPicker Label="Line Color"
-                                Text="@AllOptions.CurveDrawOptions!.Color"
-                                TextChanged="OnCurveColorChanged" />
+                <MudColorPicker Label="Line Color" Text="@AllOptions.CurveDrawOptions!.Color" TextChanged="OnCurveColorChanged" />
+                <MudToggleGroup T="LineStyle" Color="Color.Success" ValueChanged="OnLineStyleChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
+                    <MudToggleItem Value="@LineStyle.Normal">
+                        <MudIcon Icon="@solidLine" />
+                    </MudToggleItem>
+                    <MudToggleItem Value="@LineStyle.Dashed">
+                        <MudIcon Icon="@dashedLine" />
+                    </MudToggleItem>
+                    <MudToggleItem Value="@LineStyle.Dotted">
+                        <MudIcon Icon="@dottetLine" />
+                    </MudToggleItem>
+                </MudToggleGroup>
+                <MudToggleGroup T="LineEnd" Color="Color.Success" ValueChanged="OnLineEndChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
+                    <MudToggleItem Value="@LineEnd.Normal">
+                        <MudIcon Icon="@solidLine" />
+                    </MudToggleItem>
+                    <MudToggleItem Value="@LineEnd.Arrow">
+                        <MudIcon Icon="@arrowHead" />
+                    </MudToggleItem>
+                    <MudToggleItem Value="@LineEnd.Flat">
+                        <MudIcon Icon="@straightArrow" />
+                    </MudToggleItem>
+                </MudToggleGroup>
+            </MudPaper>
+
+        </MudTabPanel>
+        <MudTabPanel Icon="@Icons.Material.Outlined.Rectangle" @onclick="() => ChangeTool(Models.Tools.ToolType.AddShape)">
+            <MudPaper>
+
             </MudPaper>
         </MudTabPanel>
     </MudTabs>

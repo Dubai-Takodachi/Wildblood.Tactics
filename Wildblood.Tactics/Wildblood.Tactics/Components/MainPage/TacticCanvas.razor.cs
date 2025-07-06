@@ -25,9 +25,9 @@ public partial class TacticCanvas : IDisposable
 
     private async Task SetSelectedUnit()
     {
-        await pixiModule.InvokeVoidAsync(
-            "default.setSelectedUnit",
-            IconMapping.FileNameByIconType[TacticCanvasService.CurrentOptions.IconOptions!.IconType]);
+        // await pixiModule.InvokeVoidAsync(
+        //    "default.setSelectedUnit",
+        //    IconMapping.FileNameByIconType[TacticCanvasService.CurrentOptions.IconOptions!.IconType]);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
