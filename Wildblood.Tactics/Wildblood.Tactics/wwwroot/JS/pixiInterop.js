@@ -9,7 +9,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import * as PIXI from '../lib/pixi.mjs';
+import * as Tools from './tools-types.js';
 import * as Interactions from './interaction.js';
+import * as Draw from './draw-entity.js';
 var PixiInterop;
 (function (PixiInterop) {
     let app;
@@ -24,17 +26,18 @@ var PixiInterop;
     let iconContainer = new PIXI.Container();
     let dragging = false;
     let dragOffset = { x: 0, y: 0 };
-    let ImageCache = {};
     let wasDragging = false;
     let currentTool;
-    let iconFileNamesByType;
     let interactionHandler = null;
+    let entities = [];
+    let temporaryEntities = [];
+    let drawnSpriteByEntityId = {};
     function createApp(iconNames) {
         return __awaiter(this, void 0, void 0, function* () {
             if (app) {
                 app.destroy(true, { children: true });
             }
-            iconFileNamesByType = iconNames;
+            Draw.init(iconNames);
             const parent = document.getElementById("tacticsCanvasContainer");
             if (!parent)
                 return;
@@ -79,39 +82,42 @@ var PixiInterop;
     }
     PixiInterop.setToolOptions = setToolOptions;
     const createInteractionHandler = {
-        DrawLine: () => {
+        [Tools.ToolType.DrawLine]: () => {
             if (!currentTool.lineDrawOptions)
                 return null;
-            return new Interactions.DrawLineTool(mainContainer, currentTool.lineDrawOptions);
+            return new Interactions.DrawLineTool(entities, temporaryEntities, currentTool.lineDrawOptions, updateEntity);
         },
-        AddIcon: function () {
+        [Tools.ToolType.AddIcon]: function () {
             return null;
         },
-        Move: function () {
+        [Tools.ToolType.Move]: function () {
             return null;
         },
-        Resize: function () {
+        [Tools.ToolType.Resize]: function () {
             return null;
         },
-        DrawFree: function () {
+        [Tools.ToolType.DrawFree]: function () {
             return null;
         },
-        DrawCurve: function () {
+        [Tools.ToolType.DrawCurve]: function () {
             return null;
         },
-        AddText: function () {
+        [Tools.ToolType.AddText]: function () {
             return null;
         },
-        Undo: function () {
+        [Tools.ToolType.AddShape]: function () {
             return null;
         },
-        Redo: function () {
+        [Tools.ToolType.Undo]: function () {
             return null;
         },
-        Clear: function () {
+        [Tools.ToolType.Redo]: function () {
             return null;
         },
-        Erase: function () {
+        [Tools.ToolType.Clear]: function () {
+            return null;
+        },
+        [Tools.ToolType.Erase]: function () {
             return null;
         }
     };
@@ -130,16 +136,31 @@ var PixiInterop;
                 iconType: (_b = currentTool.iconOptions) === null || _b === void 0 ? void 0 : _b.iconType,
                 color: "#ffffff",
             };
-            const sprite = yield drawUnit(icon);
-            const spriteContainer = new PIXI.Container();
-            spriteContainer.addChild(sprite);
-            spriteContainer.x = x;
-            spriteContainer.y = y;
-            iconMap[crypto.randomUUID()] = spriteContainer;
-            sprite.eventMode = "static";
-            sprite.cursor = "pointer";
-            makeSpriteDraggable(sprite);
+            ////const sprite = await drawUnit(icon);
+            ////const spriteContainer = new PIXI.Container();
+            ////spriteContainer.addChild(sprite);
+            ////spriteContainer.x = x;
+            ////spriteContainer.y = y;
+            ////iconMap[crypto.randomUUID()] = spriteContainer;
+            ////sprite.eventMode = "static";
+            ////sprite.cursor = "pointer";
+            ////makeSpriteDraggable(sprite);
             drawIcons();
+        });
+    }
+    function updateEntity(entity) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const graphic = yield Draw.drawEntity(entity);
+            if (graphic) {
+                if (drawnSpriteByEntityId[entity.id]) {
+                    iconContainer.removeChild(drawnSpriteByEntityId[entity.id]);
+                }
+                const sprite = new PIXI.Sprite(app.renderer.generateTexture(graphic));
+                sprite.x = entity.position.x;
+                sprite.y = entity.position.y;
+                drawnSpriteByEntityId[entity.id] = sprite;
+                iconContainer.addChild(sprite);
+            }
         });
     }
     function makeSpriteDraggable(sprite) {
@@ -189,24 +210,21 @@ var PixiInterop;
         });
     }
     PixiInterop.setBackground = setBackground;
-    function redrawIcons(icons) {
-        return __awaiter(this, void 0, void 0, function* () {
-            iconMap = {}; // clear previous icons
-            for (const key in icons) {
-                if (Object.prototype.hasOwnProperty.call(icons, key)) {
-                    const icon = icons[key];
-                    const sprite = yield drawIcon[icon.type](icon);
-                    const spriteContainer = new PIXI.Container();
-                    spriteContainer.x = sprite.x;
-                    spriteContainer.y = sprite.y;
-                    spriteContainer.addChild(sprite);
-                    iconMap[key] = spriteContainer;
-                }
-            }
-            drawIcons();
-        });
-    }
-    PixiInterop.redrawIcons = redrawIcons;
+    ////export async function redrawIcons(icons: Record <string, Icon>): Promise<void> {
+    ////    iconMap = {}; // clear previous icons
+    ////    for (const key in icons) {
+    ////        if (Object.prototype.hasOwnProperty.call(icons, key)) {
+    ////            const icon = icons[key];
+    ////            const sprite = await drawIcon[icon.type](icon);
+    ////            const spriteContainer = new PIXI.Container();
+    ////            spriteContainer.x = sprite.x;
+    ////            spriteContainer.y = sprite.y;
+    ////            spriteContainer.addChild(sprite);
+    ////            iconMap[key] = spriteContainer;
+    ////        }
+    ////    }
+    ////    drawIcons();
+    ////}
     function drawIcons() {
         iconContainer.removeChildren();
         for (const key in iconMap) {
@@ -215,28 +233,6 @@ var PixiInterop;
                 mainContainer.addChild(iconContainer);
             }
         }
-    }
-    const drawIcon = {
-        Unit: (unit) => { return drawUnit(unit); },
-        StraightLine: (straightLine) => { return drawStraightLine(straightLine); },
-        Box: (box) => { return drawBox(box); },
-        CurveLine: (curveLine) => { return drawCurveLine(curveLine); }
-    };
-    function drawUnit(icon) {
-        return __awaiter(this, void 0, void 0, function* () {
-            let texture;
-            if (!ImageCache[icon.iconType]) {
-                texture = yield PIXI.Assets.load("ConquerorsBladeData/Units/" + icon.iconType);
-                ImageCache[icon.iconType] = texture;
-            }
-            else {
-                texture = ImageCache[icon.iconType];
-            }
-            const sprite = new PIXI.Sprite(texture);
-            sprite.width = icon.points[1].x - icon.points[0].x;
-            sprite.height = icon.points[1].y - icon.points[0].y;
-            return sprite;
-        });
     }
     function drawStraightLine(icon) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -281,18 +277,6 @@ var PixiInterop;
             return sprite;
         });
     }
-    function preLoadIcons() {
-        return __awaiter(this, void 0, void 0, function* () {
-            for (const key in iconFileNamesByType) {
-                const value = iconFileNamesByType[key];
-                if (!ImageCache[key]) {
-                    const texture = yield PIXI.Assets.load("ConquerorsBladeData/Units/" + value);
-                    ImageCache[key] = texture;
-                }
-            }
-        });
-    }
-    PixiInterop.preLoadIcons = preLoadIcons;
     // Add more exported functions as needed, e.g. for panning, zoom, icon management, etc.
 })(PixiInterop || (PixiInterop = {}));
 export default PixiInterop;

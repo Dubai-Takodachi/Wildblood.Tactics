@@ -2,159 +2,97 @@ import * as PIXI from '../lib/pixi.mjs';
 import * as Tools from './tools-types.js';
 
 export interface IToolHandler {
-    onPointerDown(event: PointerEvent): void;
-    onPointerMove?(event: PointerEvent): void;
-    onPointerUp?(event: PointerEvent): void;
+    onPointerDown(event: PointerEvent): Promise<void>;
+    onPointerMove?(event: PointerEvent): Promise<void>;
+    onPointerUp?(event: PointerEvent): Promise<void>;
 }
 
 export class DrawLineTool implements IToolHandler {
-    private container: PIXI.Container;
+    private entities: Tools.Entity[];
+    private temporaryEntities: Tools.Entity[];
     private lineOptions: Tools.LineOptions;
     private start: { x: number; y: number } | null = null;
-    private previewGraphics: PIXI.Graphics | null = null;
+    private previewEntity: Tools.Entity | null = null;
+    private addEntityCallback: (entity: Tools.Entity) => Promise<void>;
 
-    constructor(container: PIXI.Container, lineOptions: Tools.LineOptions) {
-        this.container = container;
+    constructor(entities: Tools.Entity[], temporaryEntities: Tools.Entity[], lineOptions: Tools.LineOptions, updateCallback: (entity: Tools.Entity) => Promise<void>) {
+        this.entities = entities;
+        this.temporaryEntities = temporaryEntities;
         this.lineOptions = lineOptions;
+        this.addEntityCallback = updateCallback;
+
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
         this.onPointerUp = this.onPointerUp.bind(this);
     }
 
-    onPointerDown(event: PointerEvent) {
+    async onPointerDown(event: PointerEvent) {
         const pos = this.getLocalPos(event);
         this.start = pos;
     }
 
-    onPointerMove(event: PointerEvent) {
+    async onPointerMove(event: PointerEvent) {
         if (!this.start) return;
 
         const pos = this.getLocalPos(event);
 
-        // Remove old preview
-        if (this.previewGraphics) {
-            this.container.removeChild(this.previewGraphics);
-            this.previewGraphics.destroy(); // clean up GPU memory
-            this.previewGraphics = null;
+        if (this.previewEntity) {
+            const index = this.temporaryEntities.indexOf(this.previewEntity);
+            if (index !== -1) {
+                this.temporaryEntities.splice(index, 1);
+            }
+            this.previewEntity = null;
         }
 
-        // Draw new preview line
-        this.previewGraphics = this.drawLine(pos.x, pos.y);
-        this.container.addChild(this.previewGraphics);
+        this.previewEntity = this.createLine(pos.x, pos.y);
+        if (this.previewEntity)
+            this.temporaryEntities.push(this.previewEntity);
     }
 
-    onPointerUp(event: PointerEvent) {
+    async onPointerUp(event: PointerEvent) {
         if (!this.start) return;
 
-        if (this.previewGraphics) {
-            this.container.removeChild(this.previewGraphics);
-            this.previewGraphics.destroy();
-            this.previewGraphics = null;
+        if (this.previewEntity) {
+            const index = this.temporaryEntities.indexOf(this.previewEntity);
+            if (index !== -1) {
+                this.temporaryEntities.splice(index, 1);
+            }
+            this.previewEntity = null;
         }
 
         const pos = this.getLocalPos(event);
-        const line = this.drawLine(pos.x, pos.y);
-        this.container.addChild(line);
+        const line = this.createLine(pos.x, pos.y);
+        if (line)
+            await this.addEntityCallback(line);
         this.start = null;
     }
 
-    private drawLine(x: number, y: number): PIXI.Graphics {
-        const g = new PIXI.Graphics();
-        if (!this.start) return g;
+    private createLine(x: number, y: number): Tools.Entity | null {
+        if (!this.start) return null;
 
-        if (this.lineOptions.lineStyle === Tools.LineStyle.Normal) {
-            g.moveTo(this.start.x, this.start.y)
-                .lineTo(x, y)
-                .stroke({ width: this.lineOptions.thickness, color: this.lineOptions.color })
-        } else if (this.lineOptions.lineStyle === Tools.LineStyle.Dotted) {
-            const dx = x - this.start.x;
-            const dy = y - this.start.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            const dots = Math.floor((distance / this.lineOptions.thickness) / 4);
+        const position: Tools.Point = {
+            x: Math.min(this.start!.x, x),
+            y: Math.min(this.start!.y, y)
+        };
 
-            const stepDistX = dx / dots;
-            const stepDistY = dy / dots;
-
-            for (let i = 0; i < dots; i++) {
-                const stepX = this.start.x + stepDistX * i;
-                const stepY = this.start.y + stepDistY * i;
-                g.circle(stepX, stepY, this.lineOptions.thickness)
-                    .fill(this.lineOptions.color);
-            }
-        } else if (this.lineOptions.lineStyle === Tools.LineStyle.Dashed) {
-            const dashLength = this.lineOptions.thickness * 3;
-            const gapLength = this.lineOptions.thickness;
-            const dx = x - this.start.x;
-            const dy = y - this.start.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            const dashCount = Math.floor(distance / (dashLength + gapLength));
-
-            const stepX = dx / dashCount;
-            const stepY = dy / dashCount;
-
-            const dashX = (dashLength / (dashLength + gapLength)) * stepX;
-            const dashY = (dashLength / (dashLength + gapLength)) * stepY;
-
-            for (let i = 0; i < dashCount; i++) {
-                const x1 = this.start.x + i * stepX;
-                const y1 = this.start.y + i * stepY;
-                const x2 = x1 + dashX;
-                const y2 = y1 + dashY;
-
-                g.moveTo(x1, y1)
-                    .lineTo(x2, y2)
-                    .stroke({ width: this.lineOptions.thickness, color: this.lineOptions.color });
-            }
+        let line: Tools.Entity = {
+            id: crypto.randomUUID(),
+            toolType: Tools.ToolType.DrawLine,
+            position: {
+                x: Math.min(this.start!.x, x),
+                y: Math.min(this.start!.y, y),
+            },
+            path: [
+                { x: this.start.x - position.x, y: this.start.y - position.y },
+                { x: x - position.x, y: y - position.y }],
+            lineEnd: this.lineOptions.lineEnd,
+            lineStyle: this.lineOptions.lineStyle,
+            primarySize: this.lineOptions.thickness,
+            secondarySize: this.lineOptions.endSize,
+            primaryColor: this.lineOptions.color,
         }
 
-        if (this.lineOptions.lineEnd === Tools.LineEnd.Arrow) {
-            const headLength = this.lineOptions.endSize;
-            const angle = Math.atan2(y - this.start.y, x - this.start.x);
-
-            const arrowAngle1 = angle - Math.PI / 6; // 30 degrees
-            const arrowAngle2 = angle + Math.PI / 6;
-
-            const arrowPoint1 = {
-                x: x - headLength * Math.cos(arrowAngle1),
-                y: y - headLength * Math.sin(arrowAngle1),
-            };
-
-            const arrowPoint2 = {
-                x: x - headLength * Math.cos(arrowAngle2),
-                y: y - headLength * Math.sin(arrowAngle2),
-            };
-
-            g.moveTo(x, y)
-                .lineTo(arrowPoint1.x, arrowPoint1.y)
-                .moveTo(x, y)
-                .lineTo(arrowPoint2.x, arrowPoint2.y)
-                .stroke({ width: this.lineOptions.thickness, color: this.lineOptions.color })
-        } else if (this.lineOptions.lineEnd === Tools.LineEnd.Flat) {
-            const headLength = this.lineOptions.endSize;
-            const angle = Math.atan2(y - this.start.y, x - this.start.x);
-
-            const arrowAngle1 = angle - Math.PI / 2; // 45 degrees
-            const arrowAngle2 = angle + Math.PI / 2;
-
-            const arrowPoint1 = {
-                x: x - headLength * Math.cos(arrowAngle1),
-                y: y - headLength * Math.sin(arrowAngle1),
-            };
-
-            const arrowPoint2 = {
-                x: x - headLength * Math.cos(arrowAngle2),
-                y: y - headLength * Math.sin(arrowAngle2),
-            };
-
-            g.moveTo(x, y);
-            g.lineTo(arrowPoint1.x, arrowPoint1.y);
-
-            g.moveTo(x, y);
-            g.lineTo(arrowPoint2.x, arrowPoint2.y);
-            g.stroke({ width: this.lineOptions.thickness, color: this.lineOptions.color })
-        }
-
-        return g;
+        return line;
     }
 
     private getLocalPos(event: PointerEvent): { x: number; y: number } {

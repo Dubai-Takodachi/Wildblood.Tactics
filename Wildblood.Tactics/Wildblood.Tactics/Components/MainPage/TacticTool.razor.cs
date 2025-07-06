@@ -2,7 +2,6 @@
 
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
-using System.Runtime.CompilerServices;
 using Wildblood.Tactics.Models.Tools;
 using Wildblood.Tactics.Services;
 
@@ -28,9 +27,6 @@ public partial class TacticTool
     private static string straightArrow = "<svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\r\n  <!-- Diagonale Linie -->\r\n  <line x1=\"2\" y1=\"22\" x2=\"22\" y2=\"2\" stroke=\"white\" stroke-width=\"2\" stroke-linecap=\"round\" />\r\n\r\n  <!-- Querlinie (90° zur Diagonale, also gedreht) -->\r\n  <line x1=\"-3\" y1=\"0\" x2=\"3\" y2=\"0\" stroke=\"white\" stroke-width=\"2\" stroke-linecap=\"round\"\r\n        transform=\"translate(22 2) rotate(45)\" />\r\n</svg>\r\n";
     private ToolOptions AllOptions => TacticToolService.AllOptions;
 
-    private LineStyle SelectedLineStyle;
-    private LineEnd SelectedLineEnd;
-
     protected override void OnInitialized()
     {
         TacticToolService.OnToolChanged += RefreshUI;
@@ -55,8 +51,6 @@ public partial class TacticTool
                     .Contains(Path.GetExtension(file).ToLower()))
                 .Select(file => file.Replace("wwwroot/", string.Empty))
                 .ToList();
-
-            await pixiModule.InvokeVoidAsync("default.preLoadIcons");
         }
     }
 

@@ -55,9 +55,9 @@ public partial class TacticCanvas : IDisposable
         var icons = TacticCanvasService.GetRedrawIcons();
         if (icons != null)
         {
-            await pixiModule.InvokeVoidAsync(
-                "default.redrawIcons",
-                TacticCanvasService.CurrentSlide.Icons);
+            ////await pixiModule.InvokeVoidAsync(
+            ////    "default.redrawIcons",
+            ////    TacticCanvasService.CurrentSlide.Icons);
         }
 
         if (TacticCanvasService.CurrentSlide.MapPath != null)

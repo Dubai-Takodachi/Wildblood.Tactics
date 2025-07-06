@@ -3,6 +3,7 @@
 import * as PIXI from '../lib/pixi.mjs';
 import * as Tools from './tools-types.js';
 import * as Interactions from './interaction.js';
+import * as Draw from './draw-entity.js';
 
 namespace PixiInterop {
     let app: PIXI.Application;
@@ -17,17 +18,18 @@ namespace PixiInterop {
     let iconContainer: PIXI.Container = new PIXI.Container();
     let dragging: boolean = false;
     let dragOffset: { x: number; y: number } = { x: 0, y: 0 };
-    let ImageCache: Record<string, PIXI.Texture> = {};
     let wasDragging: boolean = false;
     let currentTool: Tools.ToolOptions;
-    let iconFileNamesByType: Record<string, string>;
     let interactionHandler: Interactions.IToolHandler | null = null;
+    let entities: Tools.Entity[] = [];
+    let temporaryEntities: Tools.Entity[] = [];
+    let drawnSpriteByEntityId: Record<string, PIXI.Sprite> = {};
 
     export async function createApp(iconNames: Record<string, string>): Promise<void> {
         if (app) {
             app.destroy(true, { children: true });
         }
-        iconFileNamesByType = iconNames;
+        Draw.init(iconNames);
         const parent = document.getElementById("tacticsCanvasContainer");
         if (!parent) return;
         app = new PIXI.Application();
@@ -75,38 +77,41 @@ namespace PixiInterop {
     }
 
     const createInteractionHandler: Record<Tools.ToolType, () => Interactions.IToolHandler | null> = {
-        DrawLine: () => {
+        [Tools.ToolType.DrawLine]: () => {
             if (!currentTool.lineDrawOptions) return null;
-            return new Interactions.DrawLineTool(mainContainer, currentTool.lineDrawOptions);
+            return new Interactions.DrawLineTool(entities, temporaryEntities, currentTool.lineDrawOptions, updateEntity);
         },
-        AddIcon: function(): Interactions.IToolHandler | null {
+        [Tools.ToolType.AddIcon]: function(): Interactions.IToolHandler | null {
             return null;
         },
-        Move: function(): Interactions.IToolHandler | null {
+        [Tools.ToolType.Move]: function(): Interactions.IToolHandler | null {
             return null;
         },
-        Resize: function(): Interactions.IToolHandler | null {
+        [Tools.ToolType.Resize]: function(): Interactions.IToolHandler | null {
             return null;
         },
-        DrawFree: function(): Interactions.IToolHandler | null {
+        [Tools.ToolType.DrawFree]: function(): Interactions.IToolHandler | null {
             return null;
         },
-        DrawCurve: function(): Interactions.IToolHandler | null {
+        [Tools.ToolType.DrawCurve]: function(): Interactions.IToolHandler | null {
             return null;
         },
-        AddText: function(): Interactions.IToolHandler | null {
+        [Tools.ToolType.AddText]: function(): Interactions.IToolHandler | null {
             return null;
         },
-        Undo: function(): Interactions.IToolHandler | null {
+        [Tools.ToolType.AddShape]: function (): Interactions.IToolHandler | null {
             return null;
         },
-        Redo: function(): Interactions.IToolHandler | null {
+        [Tools.ToolType.Undo]: function(): Interactions.IToolHandler | null {
             return null;
         },
-        Clear: function(): Interactions.IToolHandler | null {
+        [Tools.ToolType.Redo]: function(): Interactions.IToolHandler | null {
             return null;
         },
-        Erase: function(): Interactions.IToolHandler | null {
+        [Tools.ToolType.Clear]: function(): Interactions.IToolHandler | null {
+            return null;
+        },
+        [Tools.ToolType.Erase]: function(): Interactions.IToolHandler | null {
             return null;
         }
     };
@@ -126,18 +131,40 @@ namespace PixiInterop {
             color: "#ffffff",
         };
 
-        const sprite = await drawUnit(icon);
+        ////const sprite = await drawUnit(icon);
 
-        const spriteContainer = new PIXI.Container();
-        spriteContainer.addChild(sprite);
-        spriteContainer.x = x;
-        spriteContainer.y = y;
+        ////const spriteContainer = new PIXI.Container();
+        ////spriteContainer.addChild(sprite);
+        ////spriteContainer.x = x;
+        ////spriteContainer.y = y;
 
-        iconMap[crypto.randomUUID()] = spriteContainer;
-        sprite.eventMode = "static";
-        sprite.cursor = "pointer";
-        makeSpriteDraggable(sprite);
+        ////iconMap[crypto.randomUUID()] = spriteContainer;
+        ////sprite.eventMode = "static";
+        ////sprite.cursor = "pointer";
+        ////makeSpriteDraggable(sprite);
         drawIcons();
+    }
+
+
+    ////TODOS:
+    //// - draw preview
+    //// - load entites from server
+    //// - save entities to server
+    //// - other ToolTypes
+    //// - cleanup
+    async function updateEntity(entity: Tools.Entity): Promise<void> {
+        const graphic = await Draw.drawEntity(entity);
+        if (graphic) {
+            if (drawnSpriteByEntityId[entity.id]) {
+                iconContainer.removeChild(drawnSpriteByEntityId[entity.id]);
+            }
+
+            const sprite = new PIXI.Sprite(app.renderer.generateTexture(graphic));
+            sprite.x = entity.position.x;
+            sprite.y = entity.position.y;
+            drawnSpriteByEntityId[entity.id] = sprite;
+            iconContainer.addChild(sprite);
+        }
     }
 
     function makeSpriteDraggable(sprite: PIXI.Sprite): void {
@@ -189,40 +216,35 @@ namespace PixiInterop {
         bgSprite = bg;
     }
 
-    type Point = {
-        x: number;
-        y: number;
-    };
-
     type IconType = "Unit" | "StraightLine" | "Box" | "CurveLine";
 
     type Icon = {
-        points: Point[];
+        points: Tools.Point[];
         type: IconType;
         iconType: string;
         color: string;
     };
 
-    export async function redrawIcons(icons: Record <string, Icon>): Promise<void> {
-        iconMap = {}; // clear previous icons
+    ////export async function redrawIcons(icons: Record <string, Icon>): Promise<void> {
+    ////    iconMap = {}; // clear previous icons
 
-        for (const key in icons) {
-            if (Object.prototype.hasOwnProperty.call(icons, key)) {
-                const icon = icons[key];
-                const sprite = await drawIcon[icon.type](icon);
+    ////    for (const key in icons) {
+    ////        if (Object.prototype.hasOwnProperty.call(icons, key)) {
+    ////            const icon = icons[key];
+    ////            const sprite = await drawIcon[icon.type](icon);
 
-                const spriteContainer = new PIXI.Container();
-                spriteContainer.x = sprite.x;
-                spriteContainer.y = sprite.y;
+    ////            const spriteContainer = new PIXI.Container();
+    ////            spriteContainer.x = sprite.x;
+    ////            spriteContainer.y = sprite.y;
 
-                spriteContainer.addChild(sprite);
+    ////            spriteContainer.addChild(sprite);
 
-                iconMap[key] = spriteContainer;
-            }
-        }
+    ////            iconMap[key] = spriteContainer;
+    ////        }
+    ////    }
 
-        drawIcons();
-    }
+    ////    drawIcons();
+    ////}
 
     function drawIcons(): void {
         iconContainer.removeChildren();
@@ -232,29 +254,6 @@ namespace PixiInterop {
                 mainContainer.addChild(iconContainer);
             }
         }
-    }
-
-    const drawIcon: Record<IconType, (icon: Icon) => Promise<PIXI.Sprite>> = {
-        Unit: (unit) => { return drawUnit(unit) },
-        StraightLine: (straightLine) => { return drawStraightLine(straightLine) },
-        Box: (box) => { return drawBox(box) },
-        CurveLine: (curveLine) => { return drawCurveLine(curveLine) }
-    };
-
-    async function drawUnit(icon: Icon): Promise<PIXI.Sprite> {
-        let texture: PIXI.Texture;
-
-        if (!ImageCache[icon.iconType]) {
-            texture = await PIXI.Assets.load("ConquerorsBladeData/Units/" + icon.iconType);
-            ImageCache[icon.iconType] = texture;
-        }
-        else {
-            texture = ImageCache[icon.iconType];
-        }
-        const sprite = new PIXI.Sprite(texture);
-        sprite.width = icon.points[1].x - icon.points[0].x;
-        sprite.height = icon.points[1].y - icon.points[0].y;
-        return sprite;
     }
 
     async function drawStraightLine(icon: Icon): Promise<PIXI.Sprite> {
@@ -299,16 +298,6 @@ namespace PixiInterop {
         sprite.y = spritePosY;
 
         return sprite;
-    }
-
-    export async function preLoadIcons(): Promise<void> {
-        for (const key in iconFileNamesByType) {
-            const value = iconFileNamesByType[key];
-            if (!ImageCache[key]) {
-                const texture = await PIXI.Assets.load("ConquerorsBladeData/Units/" + value);
-                ImageCache[key] = texture;
-            }
-        }
     }
 
     // Add more exported functions as needed, e.g. for panning, zoom, icon management, etc.

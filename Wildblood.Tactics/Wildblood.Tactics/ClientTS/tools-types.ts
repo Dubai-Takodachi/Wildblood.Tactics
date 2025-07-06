@@ -1,7 +1,31 @@
-export type ToolType = 'AddIcon' | 'Move' | 'Resize' | 'DrawFree' | 'DrawLine' | 'DrawCurve' | 'AddText' | 'Undo' | 'Redo' | 'Clear' | 'Erase';
+export enum ToolType { AddIcon, Move, Resize, DrawFree, DrawLine, DrawCurve, AddText, AddShape, Undo, Redo, Clear, Erase };
 export enum LineStyle { Normal, Dashed, Dotted };
 export enum LineEnd { Normal, Arrow, Flat };
-export type ShapeType = 'Square' | 'Circle';
+export enum ShapeType { Square, Circle };
+
+export type Point = {
+    x: number;
+    y: number;
+};
+
+export interface Entity {
+    id: string;
+    toolType: ToolType;
+    position: Point;
+    path?: Point[];
+    iconType?: string;
+    lineStyle?: LineStyle;
+    lineEnd?: LineEnd;
+    shapeType?: ShapeType;
+    primarySize?: number;
+    secondarySize?: number;
+    primaryTransparencyPercent?: number;
+    secondaryTransparencyPercent?: number;
+    primaryColor?: string;
+    secondaryColor?: string;
+    text?: string;
+    hasBackground?: boolean;
+}
 
 export interface ToolOptions {
     tool?: ToolType;
