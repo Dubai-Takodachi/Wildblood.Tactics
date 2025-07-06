@@ -12,6 +12,7 @@ public enum ToolType
     DrawLine,
     DrawCurve,
     AddText,
+    AddShape,
     Undo,
     Redo,
     Clear,
