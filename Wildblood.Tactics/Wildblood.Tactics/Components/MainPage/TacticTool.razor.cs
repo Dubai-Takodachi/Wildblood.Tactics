@@ -48,7 +48,7 @@ public partial class TacticTool
                 .Select(file => file.Replace("wwwroot/", string.Empty))
                 .ToList();
 
-            await pixiModule.InvokeVoidAsync("default.preLoadImages", imageFilePaths);
+            await pixiModule.InvokeVoidAsync("default.preLoadIcons");
         }
     }
 

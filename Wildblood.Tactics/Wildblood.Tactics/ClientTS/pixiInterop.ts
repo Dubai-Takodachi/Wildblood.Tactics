@@ -1,7 +1,8 @@
 /// <reference types="pixi.js" />
 
 import * as PIXI from '../lib/pixi.mjs';
-import * as Tools from './tools-types';
+import * as Tools from './tools-types.js';
+import * as Interactions from './interaction.js';
 
 namespace PixiInterop {
     let app: PIXI.Application;
@@ -12,7 +13,6 @@ namespace PixiInterop {
     let isPanning: boolean = false;
     let panStart: { x: number; y: number } = { x: 0, y: 0 };
     let panOrigin: { x: number; y: number } = { x: 0, y: 0 };
-    let currentIcon: string | null = null;
     let mainContainer: PIXI.Container = new PIXI.Container();
     let iconContainer: PIXI.Container = new PIXI.Container();
     let dragging: boolean = false;
@@ -20,11 +20,14 @@ namespace PixiInterop {
     let ImageCache: Record<string, PIXI.Texture> = {};
     let wasDragging: boolean = false;
     let currentTool: Tools.ToolOptions;
+    let iconFileNamesByType: Record<string, string>;
+    let interactionHandler: Interactions.IToolHandler | null = null;
 
-    export async function createApp(canvasId: string): Promise<void> {
+    export async function createApp(iconNames: Record<string, string>): Promise<void> {
         if (app) {
             app.destroy(true, { children: true });
         }
+        iconFileNamesByType = iconNames;
         const parent = document.getElementById("tacticsCanvasContainer");
         if (!parent) return;
         app = new PIXI.Application();
@@ -44,12 +47,72 @@ namespace PixiInterop {
         isPanning = false;
     }
 
-    export function setSelectedUnit(unit: string): void {
-        currentIcon = "ConquerorsBladeData/Units/" + unit;
+    export function setToolOptions(options: Tools.ToolOptions): void {
+        if (interactionHandler?.onPointerDown) {
+            app.canvas.removeEventListener("pointerdown", interactionHandler.onPointerDown);
+        }
+        if (interactionHandler?.onPointerMove) {
+            app.canvas.removeEventListener("pointermove", interactionHandler.onPointerMove);
+        }
+        if (interactionHandler?.onPointerUp) {
+            app.canvas.removeEventListener("pointerup", interactionHandler.onPointerUp);
+        }
+
+        currentTool = options;
+
+        if (currentTool.tool)
+            interactionHandler = createInteractionHandler[currentTool.tool]?.();
+
+        if (interactionHandler?.onPointerDown) {
+            app.canvas.addEventListener("pointerdown", interactionHandler.onPointerDown);
+        }
+        if (interactionHandler?.onPointerMove) {
+            app.canvas.addEventListener("pointermove", interactionHandler.onPointerMove);
+        }
+        if (interactionHandler?.onPointerUp) {
+            app.canvas.addEventListener("pointerup", interactionHandler.onPointerUp);
+        }
     }
 
+    const createInteractionHandler: Record<Tools.ToolType, () => Interactions.IToolHandler | null> = {
+        DrawLine: () => {
+            if (!currentTool.lineDrawOptions) return null;
+            return new Interactions.DrawLineTool(mainContainer, currentTool.lineDrawOptions);
+        },
+        AddIcon: function(): Interactions.IToolHandler | null {
+            return null;
+        },
+        Move: function(): Interactions.IToolHandler | null {
+            return null;
+        },
+        Resize: function(): Interactions.IToolHandler | null {
+            return null;
+        },
+        DrawFree: function(): Interactions.IToolHandler | null {
+            return null;
+        },
+        DrawCurve: function(): Interactions.IToolHandler | null {
+            return null;
+        },
+        AddText: function(): Interactions.IToolHandler | null {
+            return null;
+        },
+        Undo: function(): Interactions.IToolHandler | null {
+            return null;
+        },
+        Redo: function(): Interactions.IToolHandler | null {
+            return null;
+        },
+        Clear: function(): Interactions.IToolHandler | null {
+            return null;
+        },
+        Erase: function(): Interactions.IToolHandler | null {
+            return null;
+        }
+    };
+
     async function containerOnClick(event: MouseEvent): Promise<void> {
-        if (!currentIcon || wasDragging) {
+        if (!currentTool.iconOptions?.iconType || wasDragging) {
             wasDragging = false;
             return;
         }
@@ -59,7 +122,7 @@ namespace PixiInterop {
         const icon: Icon = {
             points: [{ x, y }, { x: x + 40, y: y + 40 },],
             type: "Unit",
-            filePath: currentIcon,
+            iconType: currentTool.iconOptions?.iconType,
             color: "#ffffff",
         };
 
@@ -80,7 +143,6 @@ namespace PixiInterop {
     function makeSpriteDraggable(sprite: PIXI.Sprite): void {
         sprite.eventMode = 'static';
         sprite.cursor = 'pointer';
-
         let dragging = false;
         let offset = { x: 0, y: 0 };
 
@@ -137,7 +199,7 @@ namespace PixiInterop {
     type Icon = {
         points: Point[];
         type: IconType;
-        filePath: string;
+        iconType: string;
         color: string;
     };
 
@@ -182,12 +244,12 @@ namespace PixiInterop {
     async function drawUnit(icon: Icon): Promise<PIXI.Sprite> {
         let texture: PIXI.Texture;
 
-        if (!ImageCache[icon.filePath]) {
-            texture = await PIXI.Assets.load(icon.filePath);
-            ImageCache[icon.filePath] = texture;
+        if (!ImageCache[icon.iconType]) {
+            texture = await PIXI.Assets.load("ConquerorsBladeData/Units/" + icon.iconType);
+            ImageCache[icon.iconType] = texture;
         }
         else {
-            texture = ImageCache[icon.filePath];  
+            texture = ImageCache[icon.iconType];
         }
         const sprite = new PIXI.Sprite(texture);
         sprite.width = icon.points[1].x - icon.points[0].x;
@@ -239,11 +301,12 @@ namespace PixiInterop {
         return sprite;
     }
 
-    export async function preLoadImages(imagePaths: string[]): Promise<void> {
-        for (let path of imagePaths) {
-            if (!ImageCache[path]) {
-                const texture = await PIXI.Assets.load(path);
-                ImageCache[path] = texture;
+    export async function preLoadIcons(): Promise<void> {
+        for (const key in iconFileNamesByType) {
+            const value = iconFileNamesByType[key];
+            if (!ImageCache[key]) {
+                const texture = await PIXI.Assets.load("ConquerorsBladeData/Units/" + value);
+                ImageCache[key] = texture;
             }
         }
     }

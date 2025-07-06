@@ -1,1 +1,1 @@
-{"version":3,"file":"tools-types.js","sourceRoot":"","sources":["../../ClientTS/tools-types.ts"],"names":[],"mappings":""}
+{"version":3,"file":"tools-types.js","sourceRoot":"","sources":["../../ClientTS/tools-types.ts"],"names":[],"mappings":"AACA,MAAM,CAAN,IAAY,SAAoC;AAAhD,WAAY,SAAS;IAAG,6CAAM,CAAA;IAAE,6CAAM,CAAA;IAAE,6CAAM,CAAA;AAAC,CAAC,EAApC,SAAS,KAAT,SAAS,QAA2B;AAAA,CAAC;AACjD,MAAM,CAAN,IAAY,OAA+B;AAA3C,WAAY,OAAO;IAAG,yCAAM,CAAA;IAAE,uCAAK,CAAA;IAAE,qCAAI,CAAA;AAAC,CAAC,EAA/B,OAAO,KAAP,OAAO,QAAwB;AAAA,CAAC"}

@@ -9,6 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import * as PIXI from '../lib/pixi.mjs';
+import * as Interactions from './interaction.js';
 var PixiInterop;
 (function (PixiInterop) {
     let app;
@@ -19,7 +20,6 @@ var PixiInterop;
     let isPanning = false;
     let panStart = { x: 0, y: 0 };
     let panOrigin = { x: 0, y: 0 };
-    let currentIcon = null;
     let mainContainer = new PIXI.Container();
     let iconContainer = new PIXI.Container();
     let dragging = false;
@@ -27,11 +27,14 @@ var PixiInterop;
     let ImageCache = {};
     let wasDragging = false;
     let currentTool;
-    function createApp(canvasId) {
+    let iconFileNamesByType;
+    let interactionHandler = null;
+    function createApp(iconNames) {
         return __awaiter(this, void 0, void 0, function* () {
             if (app) {
                 app.destroy(true, { children: true });
             }
+            iconFileNamesByType = iconNames;
             const parent = document.getElementById("tacticsCanvasContainer");
             if (!parent)
                 return;
@@ -50,13 +53,72 @@ var PixiInterop;
         });
     }
     PixiInterop.createApp = createApp;
-    function setSelectedUnit(unit) {
-        currentIcon = "ConquerorsBladeData/Units/" + unit;
+    function setToolOptions(options) {
+        var _a;
+        if (interactionHandler === null || interactionHandler === void 0 ? void 0 : interactionHandler.onPointerDown) {
+            app.canvas.removeEventListener("pointerdown", interactionHandler.onPointerDown);
+        }
+        if (interactionHandler === null || interactionHandler === void 0 ? void 0 : interactionHandler.onPointerMove) {
+            app.canvas.removeEventListener("pointermove", interactionHandler.onPointerMove);
+        }
+        if (interactionHandler === null || interactionHandler === void 0 ? void 0 : interactionHandler.onPointerUp) {
+            app.canvas.removeEventListener("pointerup", interactionHandler.onPointerUp);
+        }
+        currentTool = options;
+        if (currentTool.tool)
+            interactionHandler = (_a = createInteractionHandler[currentTool.tool]) === null || _a === void 0 ? void 0 : _a.call(createInteractionHandler);
+        if (interactionHandler === null || interactionHandler === void 0 ? void 0 : interactionHandler.onPointerDown) {
+            app.canvas.addEventListener("pointerdown", interactionHandler.onPointerDown);
+        }
+        if (interactionHandler === null || interactionHandler === void 0 ? void 0 : interactionHandler.onPointerMove) {
+            app.canvas.addEventListener("pointermove", interactionHandler.onPointerMove);
+        }
+        if (interactionHandler === null || interactionHandler === void 0 ? void 0 : interactionHandler.onPointerUp) {
+            app.canvas.addEventListener("pointerup", interactionHandler.onPointerUp);
+        }
     }
-    PixiInterop.setSelectedUnit = setSelectedUnit;
+    PixiInterop.setToolOptions = setToolOptions;
+    const createInteractionHandler = {
+        DrawLine: () => {
+            if (!currentTool.lineDrawOptions)
+                return null;
+            return new Interactions.DrawLineTool(mainContainer, currentTool.lineDrawOptions);
+        },
+        AddIcon: function () {
+            return null;
+        },
+        Move: function () {
+            return null;
+        },
+        Resize: function () {
+            return null;
+        },
+        DrawFree: function () {
+            return null;
+        },
+        DrawCurve: function () {
+            return null;
+        },
+        AddText: function () {
+            return null;
+        },
+        Undo: function () {
+            return null;
+        },
+        Redo: function () {
+            return null;
+        },
+        Clear: function () {
+            return null;
+        },
+        Erase: function () {
+            return null;
+        }
+    };
     function containerOnClick(event) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!currentIcon || wasDragging) {
+            var _a, _b;
+            if (!((_a = currentTool.iconOptions) === null || _a === void 0 ? void 0 : _a.iconType) || wasDragging) {
                 wasDragging = false;
                 return;
             }
@@ -65,7 +127,7 @@ var PixiInterop;
             const icon = {
                 points: [{ x, y }, { x: x + 40, y: y + 40 },],
                 type: "Unit",
-                filePath: currentIcon,
+                iconType: (_b = currentTool.iconOptions) === null || _b === void 0 ? void 0 : _b.iconType,
                 color: "#ffffff",
             };
             const sprite = yield drawUnit(icon);
@@ -163,12 +225,12 @@ var PixiInterop;
     function drawUnit(icon) {
         return __awaiter(this, void 0, void 0, function* () {
             let texture;
-            if (!ImageCache[icon.filePath]) {
-                texture = yield PIXI.Assets.load(icon.filePath);
-                ImageCache[icon.filePath] = texture;
+            if (!ImageCache[icon.iconType]) {
+                texture = yield PIXI.Assets.load("ConquerorsBladeData/Units/" + icon.iconType);
+                ImageCache[icon.iconType] = texture;
             }
             else {
-                texture = ImageCache[icon.filePath];
+                texture = ImageCache[icon.iconType];
             }
             const sprite = new PIXI.Sprite(texture);
             sprite.width = icon.points[1].x - icon.points[0].x;
@@ -219,17 +281,18 @@ var PixiInterop;
             return sprite;
         });
     }
-    function preLoadImages(imagePaths) {
+    function preLoadIcons() {
         return __awaiter(this, void 0, void 0, function* () {
-            for (let path of imagePaths) {
-                if (!ImageCache[path]) {
-                    const texture = yield PIXI.Assets.load(path);
-                    ImageCache[path] = texture;
+            for (const key in iconFileNamesByType) {
+                const value = iconFileNamesByType[key];
+                if (!ImageCache[key]) {
+                    const texture = yield PIXI.Assets.load("ConquerorsBladeData/Units/" + value);
+                    ImageCache[key] = texture;
                 }
             }
         });
     }
-    PixiInterop.preLoadImages = preLoadImages;
+    PixiInterop.preLoadIcons = preLoadIcons;
     // Add more exported functions as needed, e.g. for panning, zoom, icon management, etc.
 })(PixiInterop || (PixiInterop = {}));
 export default PixiInterop;

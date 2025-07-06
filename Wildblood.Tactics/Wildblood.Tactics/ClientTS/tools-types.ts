@@ -1,7 +1,6 @@
 export type ToolType = 'AddIcon' | 'Move' | 'Resize' | 'DrawFree' | 'DrawLine' | 'DrawCurve' | 'AddText' | 'Undo' | 'Redo' | 'Clear' | 'Erase';
-export type IconType = 'Azaps' | 'BlueShields' | 'CamelLancers' | 'Claymores' | 'Cocos' | 'DaggerAxeLancers' | 'DemenseSpearmen' | 'Falconetti' | 'Fortes' | 'HalberdierSergeant' | 'Halberdiers' | 'Hussars' | 'ImperialArquebusiers' | 'ImperialPikeMen' | 'ImperialSpearGuard' | 'IronReaper' | 'IroncapScouts' | 'JavSergeants' | 'Kriegsbruders' | 'Lionroarcrew' | 'MaceSergeants' | 'Martes' | 'MenAtArms' | 'Modao' | 'Monastics' | 'Myrmillos' | 'Namkahn' | 'OnnaMusha' | 'OrochiSamurai' | 'Outrider' | 'PalaceGuards' | 'Percevals' | 'PrefectureGuards' | 'PrefecturePikemen' | 'QueensKnights' | 'RattanArchers' | 'RattanMarksmen' | 'RattanPikemen' | 'Selemchids' | 'Shenji' | 'Siladars' | 'Siphonarioi' | 'SonsOfFenrir' | 'SunwardPhalanx' | 'WuweiPikes' | 'WuxingPikemen' | 'Xuanjia' | 'YanyuedaoCavalry' | 'Zweihander';
-export type LineStyle = 'Normal' | 'Dashed' | 'Dotted';
-export type LineEnd = 'Normal' | 'Arrow' | 'Flat';
+export enum LineStyle { Normal, Dashed, Dotted };
+export enum LineEnd { Normal, Arrow, Flat };
 export type ShapeType = 'Square' | 'Circle';
 
 export interface ToolOptions {
@@ -15,7 +14,7 @@ export interface ToolOptions {
 }
 
 export interface IconOptions {
-    iconType: IconType;
+    iconType: string;
     iconSize: number;
     labelOptions: TextOptions;
 }

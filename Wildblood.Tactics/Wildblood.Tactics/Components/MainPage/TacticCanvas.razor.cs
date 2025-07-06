@@ -3,7 +3,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
-using Wildblood.Tactics.Entities;
 using Wildblood.Tactics.Mappings;
 using Wildblood.Tactics.Services;
 
@@ -26,8 +25,8 @@ public partial class TacticCanvas : IDisposable
     private async Task SetSelectedUnit()
     {
         await pixiModule.InvokeVoidAsync(
-            "default.setSelectedUnit",
-            IconMapping.FileNameByIconType[TacticCanvasService.CurrentOptions.IconOptions!.IconType]);
+            "default.setToolOptions",
+            TacticCanvasService.CurrentOptions);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -38,7 +37,7 @@ public partial class TacticCanvas : IDisposable
                 "import",
                 "/js/pixiInterop.js");
 
-            await pixiModule.InvokeVoidAsync("default.createApp", "tacticsCanvas");
+            await pixiModule.InvokeVoidAsync("default.createApp", IconMapping.FileNameByIconType);
 
             if (TacticCanvasService.CurrentSlide.MapPath != null)
             {
