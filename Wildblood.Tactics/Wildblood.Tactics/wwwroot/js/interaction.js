@@ -3,18 +3,39 @@ import * as Tools from './tools-types.js';
 export class DrawLineTool {
     constructor(container, lineOptions) {
         this.start = null;
+        this.previewGraphics = null;
         this.container = container;
         this.lineOptions = lineOptions;
         this.onPointerDown = this.onPointerDown.bind(this);
+        this.onPointerMove = this.onPointerMove.bind(this);
         this.onPointerUp = this.onPointerUp.bind(this);
     }
     onPointerDown(event) {
         const pos = this.getLocalPos(event);
         this.start = pos;
     }
+    onPointerMove(event) {
+        if (!this.start)
+            return;
+        const pos = this.getLocalPos(event);
+        // Remove old preview
+        if (this.previewGraphics) {
+            this.container.removeChild(this.previewGraphics);
+            this.previewGraphics.destroy(); // clean up GPU memory
+            this.previewGraphics = null;
+        }
+        // Draw new preview line
+        this.previewGraphics = this.drawLine(pos.x, pos.y);
+        this.container.addChild(this.previewGraphics);
+    }
     onPointerUp(event) {
         if (!this.start)
             return;
+        if (this.previewGraphics) {
+            this.container.removeChild(this.previewGraphics);
+            this.previewGraphics.destroy();
+            this.previewGraphics = null;
+        }
         const pos = this.getLocalPos(event);
         const line = this.drawLine(pos.x, pos.y);
         this.container.addChild(line);
@@ -33,13 +54,13 @@ export class DrawLineTool {
             const dx = x - this.start.x;
             const dy = y - this.start.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
-            const dots = Math.floor(distance / this.lineOptions.thickness);
-            const stepX = dx / dots;
-            const stepY = dy / dots;
+            const dots = Math.floor((distance / this.lineOptions.thickness) / 4);
+            const stepDistX = dx / dots;
+            const stepDistY = dy / dots;
             for (let i = 0; i < dots; i++) {
-                const x = this.start.x + stepX * i;
-                const y = this.start.y + stepY * i;
-                g.circle(x, y, this.lineOptions.thickness)
+                const stepX = this.start.x + stepDistX * i;
+                const stepY = this.start.y + stepDistY * i;
+                g.circle(stepX, stepY, this.lineOptions.thickness)
                     .fill(this.lineOptions.color);
             }
         }
@@ -65,7 +86,7 @@ export class DrawLineTool {
             }
         }
         if (this.lineOptions.lineEnd === Tools.LineEnd.Arrow) {
-            const headLength = 10;
+            const headLength = this.lineOptions.endSize;
             const angle = Math.atan2(y - this.start.y, x - this.start.x);
             const arrowAngle1 = angle - Math.PI / 6; // 30 degrees
             const arrowAngle2 = angle + Math.PI / 6;
@@ -77,16 +98,17 @@ export class DrawLineTool {
                 x: x - headLength * Math.cos(arrowAngle2),
                 y: y - headLength * Math.sin(arrowAngle2),
             };
-            g.moveTo(x, y);
-            g.lineTo(arrowPoint1.x, arrowPoint1.y);
-            g.moveTo(x, y);
-            g.lineTo(arrowPoint2.x, arrowPoint2.y);
+            g.moveTo(x, y)
+                .lineTo(arrowPoint1.x, arrowPoint1.y)
+                .moveTo(x, y)
+                .lineTo(arrowPoint2.x, arrowPoint2.y)
+                .stroke({ width: this.lineOptions.thickness, color: this.lineOptions.color });
         }
         else if (this.lineOptions.lineEnd === Tools.LineEnd.Flat) {
-            const headLength = 10;
+            const headLength = this.lineOptions.endSize;
             const angle = Math.atan2(y - this.start.y, x - this.start.x);
-            const arrowAngle1 = angle - Math.PI / 4; // 45 degrees
-            const arrowAngle2 = angle + Math.PI / 4;
+            const arrowAngle1 = angle - Math.PI / 2; // 45 degrees
+            const arrowAngle2 = angle + Math.PI / 2;
             const arrowPoint1 = {
                 x: x - headLength * Math.cos(arrowAngle1),
                 y: y - headLength * Math.sin(arrowAngle1),
@@ -99,6 +121,7 @@ export class DrawLineTool {
             g.lineTo(arrowPoint1.x, arrowPoint1.y);
             g.moveTo(x, y);
             g.lineTo(arrowPoint2.x, arrowPoint2.y);
+            g.stroke({ width: this.lineOptions.thickness, color: this.lineOptions.color });
         }
         return g;
     }

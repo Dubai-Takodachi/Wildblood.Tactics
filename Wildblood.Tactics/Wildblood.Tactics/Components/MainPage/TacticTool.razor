@@ -45,7 +45,7 @@
         <MudTabPanel Icon="@curveIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.DrawCurve)">
             <MudPaper>
                 <MudColorPicker Label="Line Color" Text="@AllOptions.CurveDrawOptions!.Color" TextChanged="OnCurveColorChanged" />
-                <MudToggleGroup T="LineStyle" Color="Color.Success" ValueChanged="OnLineStyleChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
+                <MudToggleGroup T="LineStyle" Color="Color.Success" ValueChanged="OnCurveStyleChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
                     <MudToggleItem Value="@LineStyle.Normal">
                         <MudIcon Icon="@solidLine" />
                     </MudToggleItem>
@@ -56,7 +56,7 @@
                         <MudIcon Icon="@dottetLine" />
                     </MudToggleItem>
                 </MudToggleGroup>
-                <MudToggleGroup T="LineEnd" Color="Color.Success" ValueChanged="OnLineEndChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
+                <MudToggleGroup T="LineEnd" Color="Color.Success" ValueChanged="OnCurveEndChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
                     <MudToggleItem Value="@LineEnd.Normal">
                         <MudIcon Icon="@solidLine" />
                     </MudToggleItem>

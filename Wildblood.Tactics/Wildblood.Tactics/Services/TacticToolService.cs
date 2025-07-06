@@ -59,7 +59,7 @@ public class TacticToolService : ITacticToolService
             Color = "#000000",
             LineStyle = LineStyle.Normal,
             Thickness = 5,
-            LineEnd = LineEnd.Arrow,
+            LineEnd = LineEnd.Normal,
             EndSize = 20,
         };
 

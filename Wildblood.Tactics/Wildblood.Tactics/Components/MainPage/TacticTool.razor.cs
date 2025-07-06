@@ -90,6 +90,16 @@ public partial class TacticTool
         await UpdateTool(lineOptions: AllOptions.LineDrawOptions! with { LineStyle = lineStyle });
     }
 
+    private async Task OnCurveEndChange(LineEnd lineEnd)
+    {
+        await UpdateTool(lineOptions: AllOptions.CurveDrawOptions! with { LineEnd = lineEnd });
+    }
+
+    private async Task OnCurveStyleChange(LineStyle lineStyle)
+    {
+        await UpdateTool(lineOptions: AllOptions.CurveDrawOptions! with { LineStyle = lineStyle });
+    }
+
     private async Task UpdateTool(
         ToolType? toolType = null,
         IconOptions? iconOptions = null,

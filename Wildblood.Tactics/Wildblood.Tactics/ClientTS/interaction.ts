@@ -11,11 +11,13 @@ export class DrawLineTool implements IToolHandler {
     private container: PIXI.Container;
     private lineOptions: Tools.LineOptions;
     private start: { x: number; y: number } | null = null;
+    private previewGraphics: PIXI.Graphics | null = null;
 
     constructor(container: PIXI.Container, lineOptions: Tools.LineOptions) {
         this.container = container;
         this.lineOptions = lineOptions;
         this.onPointerDown = this.onPointerDown.bind(this);
+        this.onPointerMove = this.onPointerMove.bind(this);
         this.onPointerUp = this.onPointerUp.bind(this);
     }
 
@@ -24,8 +26,32 @@ export class DrawLineTool implements IToolHandler {
         this.start = pos;
     }
 
+    onPointerMove(event: PointerEvent) {
+        if (!this.start) return;
+
+        const pos = this.getLocalPos(event);
+
+        // Remove old preview
+        if (this.previewGraphics) {
+            this.container.removeChild(this.previewGraphics);
+            this.previewGraphics.destroy(); // clean up GPU memory
+            this.previewGraphics = null;
+        }
+
+        // Draw new preview line
+        this.previewGraphics = this.drawLine(pos.x, pos.y);
+        this.container.addChild(this.previewGraphics);
+    }
+
     onPointerUp(event: PointerEvent) {
         if (!this.start) return;
+
+        if (this.previewGraphics) {
+            this.container.removeChild(this.previewGraphics);
+            this.previewGraphics.destroy();
+            this.previewGraphics = null;
+        }
+
         const pos = this.getLocalPos(event);
         const line = this.drawLine(pos.x, pos.y);
         this.container.addChild(line);
@@ -39,20 +65,20 @@ export class DrawLineTool implements IToolHandler {
         if (this.lineOptions.lineStyle === Tools.LineStyle.Normal) {
             g.moveTo(this.start.x, this.start.y)
                 .lineTo(x, y)
-                .stroke({ width: this.lineOptions.thickness, color: this.lineOptions.color });
+                .stroke({ width: this.lineOptions.thickness, color: this.lineOptions.color })
         } else if (this.lineOptions.lineStyle === Tools.LineStyle.Dotted) {
             const dx = x - this.start.x;
             const dy = y - this.start.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
-            const dots = Math.floor(distance / this.lineOptions.thickness);
+            const dots = Math.floor((distance / this.lineOptions.thickness) / 4);
 
-            const stepX = dx / dots;
-            const stepY = dy / dots;
+            const stepDistX = dx / dots;
+            const stepDistY = dy / dots;
 
             for (let i = 0; i < dots; i++) {
-                const x = this.start.x + stepX * i;
-                const y = this.start.y + stepY * i;
-                g.circle(x, y, this.lineOptions.thickness)
+                const stepX = this.start.x + stepDistX * i;
+                const stepY = this.start.y + stepDistY * i;
+                g.circle(stepX, stepY, this.lineOptions.thickness)
                     .fill(this.lineOptions.color);
             }
         } else if (this.lineOptions.lineStyle === Tools.LineStyle.Dashed) {
@@ -82,7 +108,7 @@ export class DrawLineTool implements IToolHandler {
         }
 
         if (this.lineOptions.lineEnd === Tools.LineEnd.Arrow) {
-            const headLength = 10;
+            const headLength = this.lineOptions.endSize;
             const angle = Math.atan2(y - this.start.y, x - this.start.x);
 
             const arrowAngle1 = angle - Math.PI / 6; // 30 degrees
@@ -98,17 +124,17 @@ export class DrawLineTool implements IToolHandler {
                 y: y - headLength * Math.sin(arrowAngle2),
             };
 
-            g.moveTo(x, y);
-            g.lineTo(arrowPoint1.x, arrowPoint1.y);
-
-            g.moveTo(x, y);
-            g.lineTo(arrowPoint2.x, arrowPoint2.y);
+            g.moveTo(x, y)
+                .lineTo(arrowPoint1.x, arrowPoint1.y)
+                .moveTo(x, y)
+                .lineTo(arrowPoint2.x, arrowPoint2.y)
+                .stroke({ width: this.lineOptions.thickness, color: this.lineOptions.color })
         } else if (this.lineOptions.lineEnd === Tools.LineEnd.Flat) {
-            const headLength = 10;
+            const headLength = this.lineOptions.endSize;
             const angle = Math.atan2(y - this.start.y, x - this.start.x);
 
-            const arrowAngle1 = angle - Math.PI / 4; // 45 degrees
-            const arrowAngle2 = angle + Math.PI / 4;
+            const arrowAngle1 = angle - Math.PI / 2; // 45 degrees
+            const arrowAngle2 = angle + Math.PI / 2;
 
             const arrowPoint1 = {
                 x: x - headLength * Math.cos(arrowAngle1),
@@ -125,6 +151,7 @@ export class DrawLineTool implements IToolHandler {
 
             g.moveTo(x, y);
             g.lineTo(arrowPoint2.x, arrowPoint2.y);
+            g.stroke({ width: this.lineOptions.thickness, color: this.lineOptions.color })
         }
 
         return g;
