@@ -23,7 +23,7 @@ var PixiInterop;
     let panStart = { x: 0, y: 0 };
     let panOrigin = { x: 0, y: 0 };
     let mainContainer = new PIXI.Container();
-    let iconContainer = new PIXI.Container();
+    let entityContainer = new PIXI.Container();
     let dragging = false;
     let dragOffset = { x: 0, y: 0 };
     let wasDragging = false;
@@ -47,9 +47,8 @@ var PixiInterop;
             yield app.init({ background: '#FFFFFF', resizeTo: parent });
             parent.appendChild(app.canvas);
             mainContainer = new PIXI.Container();
-            mainContainer.addChild(iconContainer);
+            mainContainer.addChild(entityContainer);
             app.stage.addChild(mainContainer);
-            app.canvas.addEventListener("click", containerOnClick);
             iconMap = {};
             bgSprite = null;
             pan = { x: 0, y: 0 };
@@ -87,7 +86,7 @@ var PixiInterop;
         [Tools.ToolType.DrawLine]: () => {
             if (!currentTool.lineDrawOptions)
                 return null;
-            return new Interactions.DrawLineTool(currentEntities, temporaryEntities, currentTool.lineDrawOptions, updateEntity);
+            return new Interactions.DrawLineTool(currentEntities, temporaryEntities, currentTool.lineDrawOptions, addEntityOnServer);
         },
         [Tools.ToolType.AddIcon]: function () {
             return null;
@@ -123,108 +122,37 @@ var PixiInterop;
             return null;
         }
     };
-    function containerOnClick(event) {
-        return __awaiter(this, void 0, void 0, function* () {
-            var _a, _b;
-            if (!((_a = currentTool.iconOptions) === null || _a === void 0 ? void 0 : _a.iconType) || wasDragging) {
-                wasDragging = false;
-                return;
-            }
-            const x = event.offsetX;
-            const y = event.offsetY;
-            const icon = {
-                points: [{ x, y }, { x: x + 40, y: y + 40 },],
-                type: "Unit",
-                iconType: (_b = currentTool.iconOptions) === null || _b === void 0 ? void 0 : _b.iconType,
-                color: "#ffffff",
-            };
-            ////const sprite = await drawUnit(icon);
-            ////const spriteContainer = new PIXI.Container();
-            ////spriteContainer.addChild(sprite);
-            ////spriteContainer.x = x;
-            ////spriteContainer.y = y;
-            ////iconMap[crypto.randomUUID()] = spriteContainer;
-            ////sprite.eventMode = "static";
-            ////sprite.cursor = "pointer";
-            ////makeSpriteDraggable(sprite);
-            drawIcons();
-        });
-    }
     ////TODOS:
     //// - draw preview
-    //// - load entites from server
-    //// - save entities to server
     //// - other ToolTypes
-    //// - cleanup
-    function updateEntity(entity) {
+    function addEntityOnServer(entity) {
         return __awaiter(this, void 0, void 0, function* () {
             const graphic = yield Draw.drawEntity(entity);
             if (graphic) {
-                if (drawnSpriteByEntityId[entity.id]) {
-                    iconContainer.removeChild(drawnSpriteByEntityId[entity.id]);
-                }
-                const sprite = new PIXI.Sprite(app.renderer.generateTexture(graphic));
-                sprite.x = entity.position.x;
-                sprite.y = entity.position.y;
-                currentEntities[entity.id] = entity;
-                drawnSpriteByEntityId[entity.id] = sprite;
-                iconContainer.addChild(sprite);
-                yield updateServerEntities([entity]);
+                yield updateSpecificServerEntities([entity]);
             }
         });
     }
-    function updateEntity2(entity) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const graphic = yield Draw.drawEntity(entity);
-            if (graphic) {
-                if (drawnSpriteByEntityId[entity.id]) {
-                    iconContainer.removeChild(drawnSpriteByEntityId[entity.id]);
-                }
-                const sprite = new PIXI.Sprite(app.renderer.generateTexture(graphic));
-                sprite.x = entity.position.x;
-                sprite.y = entity.position.y;
-                currentEntities[entity.id] = entity;
-                drawnSpriteByEntityId[entity.id] = sprite;
-                iconContainer.addChild(sprite);
-            }
-        });
-    }
-    function updateServerEntities(entities) {
+    function updateSpecificServerEntities(entities) {
         return __awaiter(this, void 0, void 0, function* () {
             dotNetObjRef.invokeMethodAsync('UpdateServerEntities', entities);
         });
     }
-    function makeSpriteDraggable(sprite) {
-        sprite.eventMode = 'static';
-        sprite.cursor = 'pointer';
-        let dragging = false;
-        let offset = { x: 0, y: 0 };
-        function onPointerMove(event) {
-            if (dragging) {
-                // Koordinaten relativ zum Canvas berechnen
-                const rect = app.canvas.getBoundingClientRect();
-                const x = event.clientX - rect.left;
-                const y = event.clientY - rect.top;
-                sprite.x = x - offset.x;
-                sprite.y = y - offset.y;
+    function drawEntityToScreen(entity) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const graphic = yield Draw.drawEntity(entity);
+            if (graphic) {
+                if (drawnSpriteByEntityId[entity.id]) {
+                    entityContainer.removeChild(drawnSpriteByEntityId[entity.id]);
+                    drawnSpriteByEntityId[entity.id].destroy();
+                }
+                const sprite = new PIXI.Sprite(app.renderer.generateTexture(graphic));
+                sprite.x = entity.position.x;
+                sprite.y = entity.position.y;
+                currentEntities[entity.id] = entity;
+                drawnSpriteByEntityId[entity.id] = sprite;
+                entityContainer.addChild(sprite);
             }
-        }
-        // Handler f�r das Loslassen
-        function onPointerUp() {
-            dragging = false;
-            wasDragging = true;
-            sprite.alpha = 1.0;
-            window.removeEventListener('pointermove', onPointerMove);
-            window.removeEventListener('pointerup', onPointerUp);
-        }
-        sprite.on('pointerdown', (event) => {
-            dragging = true;
-            offset.x = event.global.x - sprite.x;
-            offset.y = event.global.y - sprite.y;
-            sprite.alpha = 0.7;
-            // Globale Events hinzuf�gen
-            window.addEventListener('pointermove', onPointerMove);
-            window.addEventListener('pointerup', onPointerUp);
         });
     }
     function setBackground(imageUrl) {
@@ -243,68 +171,35 @@ var PixiInterop;
     PixiInterop.setBackground = setBackground;
     function redrawEntities(entities) {
         return __awaiter(this, void 0, void 0, function* () {
-            for (const entity of entities) {
-                if (!currentEntities[entity.id]
-                    || (JSON.stringify(currentEntities[entity.id]) === JSON.stringify(entity)) === false) {
-                    updateEntity2(entity);
-                }
-            }
+            removeOutdatedEntities(entities);
+            updateExistingEntities(entities);
         });
     }
     PixiInterop.redrawEntities = redrawEntities;
-    function drawIcons() {
-        iconContainer.removeChildren();
-        for (const key in iconMap) {
-            if (Object.prototype.hasOwnProperty.call(iconMap, key)) {
-                const iconContainer = iconMap[key];
-                mainContainer.addChild(iconContainer);
+    function removeOutdatedEntities(newCurrentEntities) {
+        const currentIds = Object.keys(currentEntities);
+        for (const id of currentIds) {
+            let isStillExisting = false;
+            for (const entity of newCurrentEntities) {
+                if (entity.id === id)
+                    isStillExisting = true;
+            }
+            if (isStillExisting === false) {
+                entityContainer.removeChild(drawnSpriteByEntityId[id]);
+                drawnSpriteByEntityId[id].destroy();
+                delete drawnSpriteByEntityId[id];
+                delete currentEntities[id];
             }
         }
     }
-    function drawStraightLine(icon) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const graphics = new PIXI.Graphics();
-            var spritePosX = Math.min(icon.points[0].x, icon.points[1].x);
-            var spritePosY = Math.min(icon.points[0].y, icon.points[1].y);
-            graphics.moveTo(icon.points[0].x - spritePosX, icon.points[0].y - spritePosY);
-            graphics.lineTo(icon.points[1].x - spritePosX, icon.points[1].y - spritePosY);
-            app.stage.addChild(graphics);
-            const texture = app.renderer.generateTexture(graphics);
-            const sprite = new PIXI.Sprite(texture);
-            sprite.x = spritePosX;
-            sprite.y = spritePosY;
-            return sprite;
-        });
+    function updateExistingEntities(newCurrentEntities) {
+        for (const entity of newCurrentEntities) {
+            if (!currentEntities[entity.id]
+                || (JSON.stringify(currentEntities[entity.id]) === JSON.stringify(entity)) === false) {
+                drawEntityToScreen(entity);
+            }
+        }
     }
-    function drawBox(icon) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const graphics = new PIXI.Graphics()
-                .setFillStyle(icon.color)
-                .filletRect(0, 0, icon.points[1].x - icon.points[0].x, icon.points[1].y - icon.points[0].y, 0);
-            const texture = app.renderer.generateTexture(graphics);
-            const sprite = new PIXI.Sprite(texture);
-            sprite.x = icon.points[0].x;
-            sprite.y = icon.points[0].y;
-            return sprite;
-        });
-    }
-    function drawCurveLine(icon) {
-        return __awaiter(this, void 0, void 0, function* () {
-            // TODO: actual curve
-            const graphics = new PIXI.Graphics();
-            var spritePosX = Math.min(icon.points[0].x, icon.points[1].x);
-            var spritePosY = Math.min(icon.points[0].y, icon.points[1].y);
-            graphics.moveTo(icon.points[0].x - spritePosX, icon.points[0].y - spritePosY);
-            graphics.lineTo(icon.points[1].x - spritePosX, icon.points[1].y - spritePosY);
-            app.stage.addChild(graphics);
-            const texture = app.renderer.generateTexture(graphics);
-            const sprite = new PIXI.Sprite(texture);
-            sprite.x = spritePosX;
-            sprite.y = spritePosY;
-            return sprite;
-        });
-    }
-    // Add more exported functions as needed, e.g. for panning, zoom, icon management, etc.
 })(PixiInterop || (PixiInterop = {}));
 export default PixiInterop;
 //# sourceMappingURL=pixiInterop.js.map
