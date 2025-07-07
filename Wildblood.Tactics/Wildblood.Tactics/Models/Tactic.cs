@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-public class Tactic
+public record Tactic
 {
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
@@ -15,7 +15,7 @@ public class Tactic
     [JsonPropertyName("name")]
     public required string Name { get; set; }
 
-    // TODO kick it out 
+    // TODO kick it out
     [BsonElement("userId")]
     [JsonPropertyName("userId")]
     public required string UserId { get; set; }

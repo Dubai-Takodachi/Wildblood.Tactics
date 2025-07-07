@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
 using Wildblood.Tactics.Entities;
 
-public record Slide
+public class Slide
 {
     [BsonId]
     [BsonElement("_id")]
@@ -19,8 +19,7 @@ public record Slide
     [JsonPropertyName("mapPath")]
     public string? MapPath { get; set; }
 
-    [BsonElement("Icon")]
-    [JsonPropertyName("icon")]
-    public required List<Icon> Icons { get; set; }
-
+    [BsonElement("Entity")]
+    [JsonPropertyName("Entity")]
+    public required List<Entity> Entities { get; set; }
 }

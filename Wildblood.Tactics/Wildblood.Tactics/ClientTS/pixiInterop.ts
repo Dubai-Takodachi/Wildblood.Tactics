@@ -21,14 +21,22 @@ namespace PixiInterop {
     let wasDragging: boolean = false;
     let currentTool: Tools.ToolOptions;
     let interactionHandler: Interactions.IToolHandler | null = null;
-    let entities: Tools.Entity[] = [];
+    let currentEntities: Record<string, Tools.Entity> = {};
     let temporaryEntities: Tools.Entity[] = [];
     let drawnSpriteByEntityId: Record<string, PIXI.Sprite> = {};
+    let dotNetObjRef: DotNetObjectReference;
 
-    export async function createApp(iconNames: Record<string, string>): Promise<void> {
+    interface DotNetObjectReference {
+        invokeMethodAsync<T = any>(methodIdentifier: string, ...args: any[]): Promise<T>;
+    }
+
+    export async function createApp(
+            dotNetRef: DotNetObjectReference,
+            iconNames: Record<string, string>): Promise<void> {
         if (app) {
             app.destroy(true, { children: true });
         }
+        dotNetObjRef = dotNetRef;
         Draw.init(iconNames);
         const parent = document.getElementById("tacticsCanvasContainer");
         if (!parent) return;
@@ -79,7 +87,7 @@ namespace PixiInterop {
     const createInteractionHandler: Record<Tools.ToolType, () => Interactions.IToolHandler | null> = {
         [Tools.ToolType.DrawLine]: () => {
             if (!currentTool.lineDrawOptions) return null;
-            return new Interactions.DrawLineTool(entities, temporaryEntities, currentTool.lineDrawOptions, updateEntity);
+            return new Interactions.DrawLineTool(currentEntities, temporaryEntities, currentTool.lineDrawOptions, updateEntity);
         },
         [Tools.ToolType.AddIcon]: function(): Interactions.IToolHandler | null {
             return null;
@@ -148,8 +156,7 @@ namespace PixiInterop {
 
     ////TODOS:
     //// - draw preview
-    //// - load entites from server
-    //// - save entities to server
+    //// - proper server handling  (when not in server list -> remove from container)
     //// - other ToolTypes
     //// - cleanup
     async function updateEntity(entity: Tools.Entity): Promise<void> {
@@ -162,9 +169,32 @@ namespace PixiInterop {
             const sprite = new PIXI.Sprite(app.renderer.generateTexture(graphic));
             sprite.x = entity.position.x;
             sprite.y = entity.position.y;
+            currentEntities[entity.id] = entity;
+            drawnSpriteByEntityId[entity.id] = sprite;
+            iconContainer.addChild(sprite);
+
+            await updateServerEntities([entity]);
+        }
+    }
+
+    async function updateEntity2(entity: Tools.Entity): Promise<void> {
+        const graphic = await Draw.drawEntity(entity);
+        if (graphic) {
+            if (drawnSpriteByEntityId[entity.id]) {
+                iconContainer.removeChild(drawnSpriteByEntityId[entity.id]);
+            }
+
+            const sprite = new PIXI.Sprite(app.renderer.generateTexture(graphic));
+            sprite.x = entity.position.x;
+            sprite.y = entity.position.y;
+            currentEntities[entity.id] = entity;
             drawnSpriteByEntityId[entity.id] = sprite;
             iconContainer.addChild(sprite);
         }
+    }
+
+    async function updateServerEntities(entities: Tools.Entity[]): Promise<void> {
+        dotNetObjRef.invokeMethodAsync('UpdateServerEntities', entities);
     }
 
     function makeSpriteDraggable(sprite: PIXI.Sprite): void {
@@ -225,26 +255,14 @@ namespace PixiInterop {
         color: string;
     };
 
-    ////export async function redrawIcons(icons: Record <string, Icon>): Promise<void> {
-    ////    iconMap = {}; // clear previous icons
-
-    ////    for (const key in icons) {
-    ////        if (Object.prototype.hasOwnProperty.call(icons, key)) {
-    ////            const icon = icons[key];
-    ////            const sprite = await drawIcon[icon.type](icon);
-
-    ////            const spriteContainer = new PIXI.Container();
-    ////            spriteContainer.x = sprite.x;
-    ////            spriteContainer.y = sprite.y;
-
-    ////            spriteContainer.addChild(sprite);
-
-    ////            iconMap[key] = spriteContainer;
-    ////        }
-    ////    }
-
-    ////    drawIcons();
-    ////}
+    export async function redrawEntities(entities: Tools.Entity[]): Promise<void> {
+        for (const entity of entities) {
+            if (!currentEntities[entity.id]
+                || (JSON.stringify(currentEntities[entity.id]) === JSON.stringify(entity)) === false) {
+                updateEntity2(entity);
+            }
+        }
+    }
 
     function drawIcons(): void {
         iconContainer.removeChildren();

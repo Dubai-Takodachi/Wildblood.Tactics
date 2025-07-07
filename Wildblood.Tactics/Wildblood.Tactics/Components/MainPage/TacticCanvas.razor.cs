@@ -3,6 +3,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
+using Wildblood.Tactics.Entities;
 using Wildblood.Tactics.Mappings;
 using Wildblood.Tactics.Services;
 
@@ -16,10 +17,20 @@ public partial class TacticCanvas : IDisposable
     [Inject]
     private ITacticCanvasService TacticCanvasService { get; init; } = default!;
 
+    private DotNetObjectReference<TacticCanvas> objectReference = null!;
+
     protected override void OnInitialized()
     {
+        objectReference = DotNetObjectReference.Create(this);
+
         TacticCanvasService.OnGameStateChanged += RedrawIcons;
         TacticCanvasService.OnToolChanged += SetSelectedUnit;
+    }
+
+    [JSInvokable]
+    public void UpdateServerEntities(Entity[] entities)
+    {
+        TacticCanvasService.UpdateServerEntites(entities);
     }
 
     private async Task SetSelectedUnit()
@@ -37,7 +48,10 @@ public partial class TacticCanvas : IDisposable
                 "import",
                 "/js/pixiInterop.js");
 
-            await pixiModule.InvokeVoidAsync("default.createApp", IconMapping.FileNameByIconType);
+            await pixiModule.InvokeVoidAsync(
+                "default.createApp",
+                objectReference,
+                IconMapping.FileNameByIconType);
 
             if (TacticCanvasService.CurrentSlide.MapPath != null)
             {
@@ -52,12 +66,12 @@ public partial class TacticCanvas : IDisposable
 
     private async Task RedrawIcons()
     {
-        var icons = TacticCanvasService.GetRedrawIcons();
+        var icons = TacticCanvasService.GetRedrawEntities();
         if (icons != null)
         {
-            ////await pixiModule.InvokeVoidAsync(
-            ////    "default.redrawIcons",
-            ////    TacticCanvasService.CurrentSlide.Icons);
+            await pixiModule.InvokeVoidAsync(
+                "default.redrawEntities",
+                TacticCanvasService.CurrentSlide.Entities);
         }
 
         if (TacticCanvasService.CurrentSlide.MapPath != null)
@@ -77,6 +91,8 @@ public partial class TacticCanvas : IDisposable
 
     public void Dispose()
     {
+        objectReference.Dispose();
+
         TacticCanvasService.OnGameStateChanged -= RedrawIcons;
         TacticCanvasService.OnToolChanged -= SetSelectedUnit;
     }

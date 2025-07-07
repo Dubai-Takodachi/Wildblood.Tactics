@@ -4,9 +4,8 @@ using System.Text.Json;
 using Microsoft.AspNetCore.SignalR.Client;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using Wildblood.Tactics.Entities;
 using Wildblood.Tactics.Models;
-
-using Icon = Wildblood.Tactics.Entities.Icon;
 
 public class TacticExplorerService : ITacticExplorerService
 {
@@ -111,7 +110,7 @@ public class TacticExplorerService : ITacticExplorerService
         }
     }
 
-    public async Task CreateIcon(Icon unit)
+    public async Task UpdateEntities(List<Entity> entities)
     {
         if (!await userService.CheckHasEditAcces(CurrentTactic))
         {
@@ -120,20 +119,7 @@ public class TacticExplorerService : ITacticExplorerService
 
         var nav = GetNavigation(CurrentTactic, CurrentFolder.Id, CurrentSlide.Id);
         var update = Builders<Tactic>.Update
-            .Push(t => t.Folders[nav.FolderIndex!.Value].Slides[nav.SlideIndex!.Value].Icons, unit);
-        await tactics.UpdateOneAsync(CreateFilter(CurrentTactic), update);
-    }
-
-    public async Task UpdateIcon(int iconId, Icon icon)
-    {
-        if (!await userService.CheckHasEditAcces(CurrentTactic))
-        {
-            return;
-        }
-
-        var nav = GetNavigation(CurrentTactic, CurrentFolder.Id, CurrentSlide.Id);
-        var update = Builders<Tactic>.Update
-            .Set(t => t.Folders[nav.FolderIndex!.Value].Slides[nav.SlideIndex!.Value].Icons[iconId], icon);
+            .Set(t => t.Folders[nav.FolderIndex!.Value].Slides[nav.SlideIndex!.Value].Entities, entities);
         await tactics.UpdateOneAsync(CreateFilter(CurrentTactic), update);
     }
 
@@ -187,7 +173,7 @@ public class TacticExplorerService : ITacticExplorerService
             Id = ObjectId.GenerateNewId().ToString(),
             Name = "New Slide",
             MapPath = null,
-            Icons = [],
+            Entities = [],
         };
 
         var nav = GetNavigation(tactic, folderId);

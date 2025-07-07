@@ -22,9 +22,11 @@ public interface ITacticCanvasService
 
     public Task UpdateServerTactic();
 
-    public List<Icon> GetRedrawIcons();
+    public List<Entity> GetRedrawEntities();
 
     public string GetMap();
 
     public Task SetZoom(float zoomLevel);
+
+    public Task UpdateServerEntites(Entity[] entities);
 }

@@ -4,8 +4,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Wildblood.Tactics.Models;
 
-public class HubConnectionService
-    : IHubConnectionService, IAsyncDisposable
+public class HubConnectionService : IHubConnectionService, IAsyncDisposable
 {
     private HubConnection hubConnection;
 

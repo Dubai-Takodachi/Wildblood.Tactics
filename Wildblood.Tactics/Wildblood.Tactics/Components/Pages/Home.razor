@@ -28,7 +28,7 @@
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
-        if (user.Identity?.IsAuthenticated == true) 
+        if (user.Identity?.IsAuthenticated == true)
         {
             var userId = user.FindFirst(c => c.Type == "sub")?.Value ?? user.FindFirst(c => c.Type == "nameidentifier")?.Value ?? user.Identity.Name;
             var tactic = CreateTacticDocument(userId, user.Identity.Name);
@@ -40,33 +40,31 @@
 
     private Tactic CreateTacticDocument(string user, string userName) {
         return new Tactic
-            {
-                Id = ObjectId.GenerateNewId().ToString(),
-                Name = "New Tactic",
-                UserId = user,
-                Folders = new List<Folder> {
-                    new Folder {
-                        Id = ObjectId.GenerateNewId().ToString(),
-                        Name = "Folder 1",
-                        Slides = new List<Slide> {
-                            new Slide {
-                                Id = ObjectId.GenerateNewId().ToString(),
-                                Name = "Slide 1",
-                                Icons = new List<Icon>(),
-                            }
+        {
+            Id = ObjectId.GenerateNewId().ToString(),
+            Name = "New Tactic",
+            UserId = user,
+            Folders = new List<Folder> {
+                new Folder {
+                    Id = ObjectId.GenerateNewId().ToString(),
+                    Name = "Folder 1",
+                    Slides = new List<Slide> {
+                        new Slide {
+                            Id = ObjectId.GenerateNewId().ToString(),
+                            Name = "Slide 1",
+                            Entities = new List<Entity>(),
                         }
                     }
-                },
-                Members = new List<MemberRole>
+                }
+            },
+            Members = new List<MemberRole>
+            {
+                new MemberRole
                 {
-                    new MemberRole
-                    {
-                        Name = userName,
-                        Roles = Role.Owner,
-                    }
-                },
-               
-            };
-
+                    Name = userName,
+                    Roles = Role.Owner,
+                }
+            },
+        };
     }
 }

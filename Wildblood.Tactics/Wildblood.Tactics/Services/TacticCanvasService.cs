@@ -41,9 +41,9 @@ public class TacticCanvasService : ITacticCanvasService
         tacticToolService.OnToolChanged += RefreshTool;
     }
 
-    public List<Icon> GetRedrawIcons()
+    public List<Entity> GetRedrawEntities()
     {
-        return CurrentSlide.Icons;
+        return CurrentSlide.Entities;
     }
 
     public string GetMap()
@@ -92,5 +92,17 @@ public class TacticCanvasService : ITacticCanvasService
     public async Task SetZoom(float zoomLevel)
     {
         await tacticZoomService.SetZoomLevel(zoomLevel);
+    }
+
+    public async Task UpdateServerEntites(Entity[] entities)
+    {
+        var combined = CurrentSlide.Entities
+            .Where(e => !entities.Any(x => x.Id == e.Id))
+            .Concat(entities)
+            .ToList();
+
+        await tacticExplorerService.UpdateEntities(combined);
+        CurrentSlide.Entities = combined;
+        await UpdateTactic();
     }
 }

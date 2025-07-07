@@ -8,14 +8,14 @@ export interface IToolHandler {
 }
 
 export class DrawLineTool implements IToolHandler {
-    private entities: Tools.Entity[];
+    private entities: Record<string, Tools.Entity>;
     private temporaryEntities: Tools.Entity[];
     private lineOptions: Tools.LineOptions;
     private start: { x: number; y: number } | null = null;
     private previewEntity: Tools.Entity | null = null;
     private addEntityCallback: (entity: Tools.Entity) => Promise<void>;
 
-    constructor(entities: Tools.Entity[], temporaryEntities: Tools.Entity[], lineOptions: Tools.LineOptions, updateCallback: (entity: Tools.Entity) => Promise<void>) {
+    constructor(entities: Record<string, Tools.Entity>, temporaryEntities: Tools.Entity[], lineOptions: Tools.LineOptions, updateCallback: (entity: Tools.Entity) => Promise<void>) {
         this.entities = entities;
         this.temporaryEntities = temporaryEntities;
         this.lineOptions = lineOptions;

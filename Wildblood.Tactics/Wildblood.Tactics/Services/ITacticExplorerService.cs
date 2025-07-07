@@ -19,9 +19,7 @@ public interface ITacticExplorerService
 
     public Task UpdateMap(string mapPath);
 
-    public Task CreateIcon(Icon unit);
-
-    public Task UpdateIcon(int iconId, Icon icon);
+    public Task UpdateEntities(List<Entity> entities);
 
     public Folder? GetFolder(Tactic tactic, string folderId);
 

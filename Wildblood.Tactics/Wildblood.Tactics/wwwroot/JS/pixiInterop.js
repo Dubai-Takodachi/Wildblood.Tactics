@@ -29,14 +29,16 @@ var PixiInterop;
     let wasDragging = false;
     let currentTool;
     let interactionHandler = null;
-    let entities = [];
+    let currentEntities = {};
     let temporaryEntities = [];
     let drawnSpriteByEntityId = {};
-    function createApp(iconNames) {
+    let dotNetObjRef;
+    function createApp(dotNetRef, iconNames) {
         return __awaiter(this, void 0, void 0, function* () {
             if (app) {
                 app.destroy(true, { children: true });
             }
+            dotNetObjRef = dotNetRef;
             Draw.init(iconNames);
             const parent = document.getElementById("tacticsCanvasContainer");
             if (!parent)
@@ -85,7 +87,7 @@ var PixiInterop;
         [Tools.ToolType.DrawLine]: () => {
             if (!currentTool.lineDrawOptions)
                 return null;
-            return new Interactions.DrawLineTool(entities, temporaryEntities, currentTool.lineDrawOptions, updateEntity);
+            return new Interactions.DrawLineTool(currentEntities, temporaryEntities, currentTool.lineDrawOptions, updateEntity);
         },
         [Tools.ToolType.AddIcon]: function () {
             return null;
@@ -148,6 +150,12 @@ var PixiInterop;
             drawIcons();
         });
     }
+    ////TODOS:
+    //// - draw preview
+    //// - load entites from server
+    //// - save entities to server
+    //// - other ToolTypes
+    //// - cleanup
     function updateEntity(entity) {
         return __awaiter(this, void 0, void 0, function* () {
             const graphic = yield Draw.drawEntity(entity);
@@ -158,9 +166,32 @@ var PixiInterop;
                 const sprite = new PIXI.Sprite(app.renderer.generateTexture(graphic));
                 sprite.x = entity.position.x;
                 sprite.y = entity.position.y;
+                currentEntities[entity.id] = entity;
+                drawnSpriteByEntityId[entity.id] = sprite;
+                iconContainer.addChild(sprite);
+                yield updateServerEntities([entity]);
+            }
+        });
+    }
+    function updateEntity2(entity) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const graphic = yield Draw.drawEntity(entity);
+            if (graphic) {
+                if (drawnSpriteByEntityId[entity.id]) {
+                    iconContainer.removeChild(drawnSpriteByEntityId[entity.id]);
+                }
+                const sprite = new PIXI.Sprite(app.renderer.generateTexture(graphic));
+                sprite.x = entity.position.x;
+                sprite.y = entity.position.y;
+                currentEntities[entity.id] = entity;
                 drawnSpriteByEntityId[entity.id] = sprite;
                 iconContainer.addChild(sprite);
             }
+        });
+    }
+    function updateServerEntities(entities) {
+        return __awaiter(this, void 0, void 0, function* () {
+            dotNetObjRef.invokeMethodAsync('UpdateServerEntities', entities);
         });
     }
     function makeSpriteDraggable(sprite) {
@@ -210,21 +241,17 @@ var PixiInterop;
         });
     }
     PixiInterop.setBackground = setBackground;
-    ////export async function redrawIcons(icons: Record <string, Icon>): Promise<void> {
-    ////    iconMap = {}; // clear previous icons
-    ////    for (const key in icons) {
-    ////        if (Object.prototype.hasOwnProperty.call(icons, key)) {
-    ////            const icon = icons[key];
-    ////            const sprite = await drawIcon[icon.type](icon);
-    ////            const spriteContainer = new PIXI.Container();
-    ////            spriteContainer.x = sprite.x;
-    ////            spriteContainer.y = sprite.y;
-    ////            spriteContainer.addChild(sprite);
-    ////            iconMap[key] = spriteContainer;
-    ////        }
-    ////    }
-    ////    drawIcons();
-    ////}
+    function redrawEntities(entities) {
+        return __awaiter(this, void 0, void 0, function* () {
+            for (const entity of entities) {
+                if (!currentEntities[entity.id]
+                    || (JSON.stringify(currentEntities[entity.id]) === JSON.stringify(entity)) === false) {
+                    updateEntity2(entity);
+                }
+            }
+        });
+    }
+    PixiInterop.redrawEntities = redrawEntities;
     function drawIcons() {
         iconContainer.removeChildren();
         for (const key in iconMap) {
