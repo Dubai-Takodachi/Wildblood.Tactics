@@ -5,7 +5,7 @@
     <MudTabs MinimumTabWidth="20px">
         <MudTabPanel Icon="@swordsIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.AddIcon)">
             <div>
-                <MudPaper Class="flex-wrap d-flex" Width="300px">
+                <MudPaper Class="flex-wrap d-flex" Width="100%">
                     @foreach (var unit in IconMapping.FileNameByIconType)
                     {
                         <MudPaper Class="ma-1" @onclick="@(async (args) => await SelectedUnit(unit.Key))">
@@ -17,8 +17,9 @@
         </MudTabPanel>
         <MudTabPanel Icon="@vectorLineIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.DrawLine)">
             <MudPaper>
-                <MudColorPicker Label="Line Color" Text="@AllOptions.LineDrawOptions!.Color" TextChanged="OnLineColorChanged" />
-                <MudToggleGroup T="LineStyle" Color="Color.Success" ValueChanged="OnLineStyleChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
+                <MudColorPicker Label="Line Color" Text="@AllOptions.LineDrawOptions!.Color" TextChanged="OnLineColorChanged" Class="my-6" />
+                <MudText>Select Line Style:</MudText>
+                <MudToggleGroup T="LineStyle" Color="Color.Success" Value="cosmeticLineStyle" ValueChanged="OnLineStyleChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
                     <MudToggleItem Value="@LineStyle.Normal">
                         <MudIcon Icon="@solidLine" />
                     </MudToggleItem>
@@ -29,7 +30,8 @@
                         <MudIcon Icon="@dottetLine" />
                     </MudToggleItem>
                 </MudToggleGroup>
-                <MudToggleGroup T="LineEnd" Color="Color.Success" ValueChanged="OnLineEndChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
+                <MudText>Select Line End:</MudText>
+                <MudToggleGroup T="LineEnd" Color="Color.Success" Value="cosmeticLineEnd" ValueChanged="OnLineEndChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
                     <MudToggleItem Value="@LineEnd.Normal">
                         <MudIcon Icon="@solidLine"/>
                     </MudToggleItem>
@@ -44,8 +46,9 @@
         </MudTabPanel>
         <MudTabPanel Icon="@curveIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.DrawCurve)">
             <MudPaper>
-                <MudColorPicker Label="Line Color" Text="@AllOptions.CurveDrawOptions!.Color" TextChanged="OnCurveColorChanged" />
-                <MudToggleGroup T="LineStyle" Color="Color.Success" ValueChanged="OnCurveStyleChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
+                <MudColorPicker Label="Line Color" Text="@AllOptions.CurveDrawOptions!.Color" TextChanged="OnCurveColorChanged" Class="my-6" />
+                <MudText>Select Line Style:</MudText>
+                <MudToggleGroup T="LineStyle" Color="Color.Success" Value="cosmeticLineStyle" ValueChanged="OnCurveStyleChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
                     <MudToggleItem Value="@LineStyle.Normal">
                         <MudIcon Icon="@solidLine" />
                     </MudToggleItem>
@@ -56,7 +59,8 @@
                         <MudIcon Icon="@dottetLine" />
                     </MudToggleItem>
                 </MudToggleGroup>
-                <MudToggleGroup T="LineEnd" Color="Color.Success" ValueChanged="OnCurveEndChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
+                <MudText Class="my-3">Select Line End:</MudText>
+                <MudToggleGroup T="LineEnd" Color="Color.Success" Value="cosmeticLineEnd" ValueChanged="OnCurveEndChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
                     <MudToggleItem Value="@LineEnd.Normal">
                         <MudIcon Icon="@solidLine" />
                     </MudToggleItem>
@@ -72,7 +76,20 @@
         </MudTabPanel>
         <MudTabPanel Icon="@Icons.Material.Outlined.Rectangle" @onclick="() => ChangeTool(Models.Tools.ToolType.AddShape)">
             <MudPaper>
-
+                <MudColorPicker Label="Outline Color" Text="@AllOptions.CurveDrawOptions!.Color" TextChanged="OnShapeOutlineColorChanged" Class="my-6" />
+                <MudColorPicker Label="Outline Color" Text="@AllOptions.CurveDrawOptions!.Color" TextChanged="OnShapeFillColorChanged" Class="my-6" />
+                <MudText>Select Line Style:</MudText>
+                <MudToggleGroup T="LineStyle" Color="Color.Success" Value="cosmeticLineStyle" ValueChanged="OnShapeLineStyleChanged" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
+                    <MudToggleItem Value="@LineStyle.Normal">
+                        <MudIcon Icon="@solidLine" />
+                    </MudToggleItem>
+                    <MudToggleItem Value="@LineStyle.Dashed">
+                        <MudIcon Icon="@dashedLine" />
+                    </MudToggleItem>
+                    <MudToggleItem Value="@LineStyle.Dotted">
+                        <MudIcon Icon="@dottetLine" />
+                    </MudToggleItem>
+                </MudToggleGroup>
             </MudPaper>
         </MudTabPanel>
     </MudTabs>
