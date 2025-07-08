@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
 using Wildblood.Tactics.Entities;
 
-public class Slide
+public record Slide
 {
     [BsonId]
     [BsonElement("_id")]

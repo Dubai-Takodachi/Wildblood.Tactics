@@ -1,17 +1,21 @@
 ﻿namespace Wildblood.Tactics
 {
     using Microsoft.AspNetCore.SignalR;
+    using Microsoft.AspNetCore.SignalR.Client;
 
     public class TacticsHub : Hub
     {
-        private static readonly Dictionary<string, string> LockedTactics = new();
-        private static readonly Dictionary<string, HashSet<string>> TacticUsers = [];
-
-        public async Task UpdateTactic(string tacticId, object updatedData, object slideId, object folderId)
+        public async Task UpdateTactic(string tacticId, string folderId, string slideId, object message)
         {
-            Console.WriteLine($"Received update for tactic {tacticId}: {updatedData}");
-            // Broadcast the updated tactic data to all connected clients
-            await Clients.Others.SendAsync("ReceiveTacticUpdate", tacticId, updatedData, slideId, folderId);
+            Console.WriteLine($"Received update for tactic {tacticId}: {message}");
+            await Clients.Others.SendAsync("UpdateTactic", tacticId, folderId, slideId, message);
+        }
+
+        public async Task UpdateEntities(string tacticId, string folderId, string slideId, object message)
+        {
+            Console.WriteLine(
+                $"Received update for entities {tacticId} {folderId} {slideId}: {message}");
+            await Clients.Others.SendAsync("UpdateEntities", tacticId, folderId, slideId, message);
         }
     }
 }

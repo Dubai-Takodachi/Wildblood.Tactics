@@ -125,6 +125,7 @@ var PixiInterop;
     ////TODOS:
     //// - draw preview
     //// - other ToolTypes
+    //// - bug: too many entities in tactic leading to not live updating other clients
     function addEntityOnServer(entity) {
         return __awaiter(this, void 0, void 0, function* () {
             const graphic = yield Draw.drawEntity(entity);

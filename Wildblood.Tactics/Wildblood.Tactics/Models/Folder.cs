@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace Wildblood.Tactics.Models
 {
-    public class Folder
+    public record Folder
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]

@@ -30,7 +30,7 @@ public partial class TacticCanvas : IDisposable
     [JSInvokable]
     public void UpdateServerEntities(Entity[] entities)
     {
-        TacticCanvasService.UpdateServerEntites(entities);
+        TacticCanvasService.UpdateEntites(entities);
     }
 
     private async Task SetSelectedUnit()

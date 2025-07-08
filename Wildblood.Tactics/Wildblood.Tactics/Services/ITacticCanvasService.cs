@@ -20,13 +20,11 @@ public interface ITacticCanvasService
 
     public ToolOptions CurrentOptions { get; }
 
-    public Task UpdateServerTactic();
-
     public List<Entity> GetRedrawEntities();
 
     public string GetMap();
 
     public Task SetZoom(float zoomLevel);
 
-    public Task UpdateServerEntites(Entity[] entities);
+    public Task UpdateEntites(Entity[] entities);
 }

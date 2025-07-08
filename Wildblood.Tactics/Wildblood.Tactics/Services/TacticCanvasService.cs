@@ -2,7 +2,9 @@
 
 using Wildblood.Tactics.Entities;
 using Wildblood.Tactics.Models;
+using Wildblood.Tactics.Models.Messages;
 using Wildblood.Tactics.Models.Tools;
+using static MudBlazor.CategoryTypes;
 
 public class TacticCanvasService : ITacticCanvasService
 {
@@ -51,20 +53,6 @@ public class TacticCanvasService : ITacticCanvasService
         return CurrentSlide.MapPath!;
     }
 
-    private async Task UpdateTactic()
-    {
-        await hubConnectionService.UpdateTactic(CurrentTactic.Id, CurrentTactic, CurrentSlide.Id, CurrentFolder.Id);
-        if (OnGameStateChanged != null)
-        {
-            await OnGameStateChanged.Invoke();
-        }
-    }
-
-    public async Task UpdateServerTactic()
-    {
-        await UpdateTactic();
-    }
-
     private async Task RefreshZoom()
     {
         if (OnGameStateChanged != null)
@@ -94,15 +82,18 @@ public class TacticCanvasService : ITacticCanvasService
         await tacticZoomService.SetZoomLevel(zoomLevel);
     }
 
-    public async Task UpdateServerEntites(Entity[] entities)
+    public async Task UpdateEntites(Entity[] entities)
     {
         var combined = CurrentSlide.Entities
             .Where(e => !entities.Any(x => x.Id == e.Id))
             .Concat(entities)
             .ToList();
 
-        await tacticExplorerService.UpdateEntities(combined);
         CurrentSlide.Entities = combined;
-        await UpdateTactic();
+        await RefreshTactic();
+
+        await tacticExplorerService.SendEntitiesUpdate(entities, null); // TODO: add remove feature
+        await tacticExplorerService.UpdateServerEntities(combined);
+
     }
 }

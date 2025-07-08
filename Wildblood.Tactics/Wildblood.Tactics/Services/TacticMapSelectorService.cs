@@ -26,7 +26,7 @@ public class TacticMapSelectorService : ITacticMapSelectorService
         {
             tacticExplorerService.CurrentSlide.MapPath = map;
             await tacticExplorerService.UpdateMap(CurrentMap);
-            await tacticExplorerService.UpdateServer();
+            await tacticExplorerService.SendTacticUpdate();
         }
     }
 }

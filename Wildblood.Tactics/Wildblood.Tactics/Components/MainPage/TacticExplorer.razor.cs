@@ -42,7 +42,7 @@ public partial class TacticExplorer
         {
             TacticExplorerService.CurrentTactic.Name = newName;
             await TacticExplorerService.UpdateTacticName(TacticExplorerService.CurrentTactic, newName);
-            await TacticExplorerService.UpdateServer();
+            await TacticExplorerService.SendTacticUpdate();
         }
     }
 
@@ -56,7 +56,7 @@ public partial class TacticExplorer
         }
 
         TacticExplorerService.CurrentTactic.Folders.Add(newFolder);
-        await TacticExplorerService.UpdateServer();
+        await TacticExplorerService.SendTacticUpdate();
     }
 
     private async Task OnClickFolderRename(string folderID)
@@ -76,7 +76,7 @@ public partial class TacticExplorer
             // it is infact a referece!
             folder.Name = newName;
             await TacticExplorerService.UpdateFolderName(TacticExplorerService.CurrentTactic, folder.Id, newName);
-            await TacticExplorerService.UpdateServer();
+            await TacticExplorerService.SendTacticUpdate();
         }
     }
 
@@ -90,7 +90,7 @@ public partial class TacticExplorer
         }
 
         TacticExplorerService.CurrentTactic.Folders.Single(f => f.Id == folderID).Slides.Add(newSlide);
-        await TacticExplorerService.UpdateServer();
+        await TacticExplorerService.SendTacticUpdate();
     }
 
     private async Task OnSelectedSlideChange(Slide slide, Folder folder)
@@ -114,7 +114,7 @@ public partial class TacticExplorer
         {
             slide.Name = newName;
             await TacticExplorerService.UpdateSlideName(TacticExplorerService.CurrentTactic, folderId, slideId, newName);
-            await TacticExplorerService.UpdateServer();
+            await TacticExplorerService.SendTacticUpdate();
         }
     }
 }

@@ -13,13 +13,16 @@ public interface ITacticExplorerService
 
     public Slide CurrentSlide { get; }
 
-    public Task UpdateServer();
+    public Task SendTacticUpdate();
+
+    public Task SendEntitiesUpdate(
+        IEnumerable<Entity>? overwriteEntities, IEnumerable<string>? entityIdsToRemove);
 
     public Tactic? GetTactic(string? id);
 
     public Task UpdateMap(string mapPath);
 
-    public Task UpdateEntities(List<Entity> entities);
+    public Task UpdateServerEntities(List<Entity> entities);
 
     public Folder? GetFolder(Tactic tactic, string folderId);
 
