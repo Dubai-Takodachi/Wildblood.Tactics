@@ -86,7 +86,7 @@ var PixiInterop;
         [Tools.ToolType.DrawLine]: () => {
             if (!currentTool.lineDrawOptions)
                 return null;
-            return new Interactions.DrawLineTool(currentEntities, temporaryEntities, currentTool.lineDrawOptions, addEntityOnServer);
+            return new Interactions.DrawLineTool(currentTool.lineDrawOptions, addEntityOnServer);
         },
         [Tools.ToolType.AddIcon]: function () {
             return null;

@@ -1,4 +1,3 @@
-import * as PIXI from '../lib/pixi.mjs';
 import * as Tools from './tools-types.js';
 
 export interface IToolHandler {
@@ -8,16 +7,15 @@ export interface IToolHandler {
 }
 
 export class DrawLineTool implements IToolHandler {
-    private entities: Record<string, Tools.Entity>;
-    private temporaryEntities: Tools.Entity[];
     private lineOptions: Tools.LineOptions;
     private start: { x: number; y: number } | null = null;
-    private previewEntity: Tools.Entity | null = null;
+    private entitiyId: string | null = null;
     private addEntityCallback: (entity: Tools.Entity) => Promise<void>;
 
-    constructor(entities: Record<string, Tools.Entity>, temporaryEntities: Tools.Entity[], lineOptions: Tools.LineOptions, updateCallback: (entity: Tools.Entity) => Promise<void>) {
-        this.entities = entities;
-        this.temporaryEntities = temporaryEntities;
+    constructor(
+        lineOptions: Tools.LineOptions,
+        updateCallback: (entity: Tools.Entity) => Promise<void>) {
+
         this.lineOptions = lineOptions;
         this.addEntityCallback = updateCallback;
 
@@ -29,45 +27,40 @@ export class DrawLineTool implements IToolHandler {
     async onPointerDown(event: PointerEvent) {
         const pos = this.getLocalPos(event);
         this.start = pos;
+        this.entitiyId = crypto.randomUUID();
     }
 
     async onPointerMove(event: PointerEvent) {
-        if (!this.start) return;
-
-        const pos = this.getLocalPos(event);
-
-        if (this.previewEntity) {
-            const index = this.temporaryEntities.indexOf(this.previewEntity);
-            if (index !== -1) {
-                this.temporaryEntities.splice(index, 1);
-            }
-            this.previewEntity = null;
+        if (!this.start || !this.entitiyId) {
+            this.start = null;
+            this.entitiyId = null;
+            // TODO?: remove entity from list in the error case
+            return;
         }
 
-        this.previewEntity = this.createLine(pos.x, pos.y);
-        if (this.previewEntity)
-            this.temporaryEntities.push(this.previewEntity);
+        const pos = this.getLocalPos(event);
+        const line = this.createLine(pos.x, pos.y, this.entitiyId);
+        if (line)
+            await this.addEntityCallback(line);
     }
 
     async onPointerUp(event: PointerEvent) {
-        if (!this.start) return;
-
-        if (this.previewEntity) {
-            const index = this.temporaryEntities.indexOf(this.previewEntity);
-            if (index !== -1) {
-                this.temporaryEntities.splice(index, 1);
-            }
-            this.previewEntity = null;
+        if (!this.start || !this.entitiyId) {
+            this.start = null;
+            this.entitiyId = null;
+            // TODO?: remove entity from list in the error case
+            return;
         }
 
         const pos = this.getLocalPos(event);
-        const line = this.createLine(pos.x, pos.y);
+        const line = this.createLine(pos.x, pos.y, this.entitiyId);
         if (line)
             await this.addEntityCallback(line);
         this.start = null;
+        this.entitiyId = null;
     }
 
-    private createLine(x: number, y: number): Tools.Entity | null {
+    private createLine(x: number, y: number, entityId: string): Tools.Entity | null {
         if (!this.start) return null;
 
         const position: Tools.Point = {
@@ -76,7 +69,7 @@ export class DrawLineTool implements IToolHandler {
         };
 
         let line: Tools.Entity = {
-            id: crypto.randomUUID(),
+            id: entityId,
             toolType: Tools.ToolType.DrawLine,
             position: {
                 x: Math.min(this.start!.x, x),

@@ -9,11 +9,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 import * as Tools from './tools-types.js';
 export class DrawLineTool {
-    constructor(entities, temporaryEntities, lineOptions, updateCallback) {
+    constructor(lineOptions, updateCallback) {
         this.start = null;
-        this.previewEntity = null;
-        this.entities = entities;
-        this.temporaryEntities = temporaryEntities;
+        this.entitiyId = null;
         this.lineOptions = lineOptions;
         this.addEntityCallback = updateCallback;
         this.onPointerDown = this.onPointerDown.bind(this);
@@ -24,44 +22,40 @@ export class DrawLineTool {
         return __awaiter(this, void 0, void 0, function* () {
             const pos = this.getLocalPos(event);
             this.start = pos;
+            this.entitiyId = crypto.randomUUID();
         });
     }
     onPointerMove(event) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!this.start)
+            if (!this.start || !this.entitiyId) {
+                this.start = null;
+                this.entitiyId = null;
+                // TODO?: remove entity from list in the error case
                 return;
-            const pos = this.getLocalPos(event);
-            if (this.previewEntity) {
-                const index = this.temporaryEntities.indexOf(this.previewEntity);
-                if (index !== -1) {
-                    this.temporaryEntities.splice(index, 1);
-                }
-                this.previewEntity = null;
             }
-            this.previewEntity = this.createLine(pos.x, pos.y);
-            if (this.previewEntity)
-                this.temporaryEntities.push(this.previewEntity);
+            const pos = this.getLocalPos(event);
+            const line = this.createLine(pos.x, pos.y, this.entitiyId);
+            if (line)
+                yield this.addEntityCallback(line);
         });
     }
     onPointerUp(event) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!this.start)
+            if (!this.start || !this.entitiyId) {
+                this.start = null;
+                this.entitiyId = null;
+                // TODO?: remove entity from list in the error case
                 return;
-            if (this.previewEntity) {
-                const index = this.temporaryEntities.indexOf(this.previewEntity);
-                if (index !== -1) {
-                    this.temporaryEntities.splice(index, 1);
-                }
-                this.previewEntity = null;
             }
             const pos = this.getLocalPos(event);
-            const line = this.createLine(pos.x, pos.y);
+            const line = this.createLine(pos.x, pos.y, this.entitiyId);
             if (line)
                 yield this.addEntityCallback(line);
             this.start = null;
+            this.entitiyId = null;
         });
     }
-    createLine(x, y) {
+    createLine(x, y, entityId) {
         if (!this.start)
             return null;
         const position = {
@@ -69,7 +63,7 @@ export class DrawLineTool {
             y: Math.min(this.start.y, y)
         };
         let line = {
-            id: crypto.randomUUID(),
+            id: entityId,
             toolType: Tools.ToolType.DrawLine,
             position: {
                 x: Math.min(this.start.x, x),
