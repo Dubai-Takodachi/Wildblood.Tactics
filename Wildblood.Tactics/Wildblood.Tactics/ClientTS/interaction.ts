@@ -11,13 +11,16 @@ export class DrawLineTool implements IToolHandler {
     private start: { x: number; y: number } | null = null;
     private entitiyId: string | null = null;
     private addEntityCallback: (entity: Tools.Entity) => Promise<void>;
+    private setPreviewEntityCallback: (entity: Tools.Entity | null) => Promise<void>;
 
     constructor(
         lineOptions: Tools.LineOptions,
-        updateCallback: (entity: Tools.Entity) => Promise<void>) {
+        updateCallback: (entity: Tools.Entity) => Promise<void>,
+        previewCallback: (entity: Tools.Entity | null) => Promise<void>) {
 
         this.lineOptions = lineOptions;
         this.addEntityCallback = updateCallback;
+        this.setPreviewEntityCallback = previewCallback;
 
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
@@ -41,7 +44,7 @@ export class DrawLineTool implements IToolHandler {
         const pos = this.getLocalPos(event);
         const line = this.createLine(pos.x, pos.y, this.entitiyId);
         if (line)
-            await this.addEntityCallback(line);
+            await this.setPreviewEntityCallback(line);
     }
 
     async onPointerUp(event: PointerEvent) {
@@ -58,6 +61,7 @@ export class DrawLineTool implements IToolHandler {
             await this.addEntityCallback(line);
         this.start = null;
         this.entitiyId = null;
+        this.setPreviewEntityCallback(null);
     }
 
     private createLine(x: number, y: number, entityId: string): Tools.Entity | null {

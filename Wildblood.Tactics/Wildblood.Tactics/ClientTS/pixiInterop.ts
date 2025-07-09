@@ -22,7 +22,7 @@ namespace PixiInterop {
     let currentTool: Tools.ToolOptions;
     let interactionHandler: Interactions.IToolHandler | null = null;
     let currentEntities: Record<string, Tools.Entity> = {};
-    let temporaryEntities: Tools.Entity[] = [];
+    let temporaryEntity: Tools.Entity | null = null;
     let drawnSpriteByEntityId: Record<string, PIXI.Sprite> = {};
     let dotNetObjRef: DotNetObjectReference;
 
@@ -85,7 +85,7 @@ namespace PixiInterop {
     const createInteractionHandler: Record<Tools.ToolType, () => Interactions.IToolHandler | null> = {
         [Tools.ToolType.DrawLine]: () => {
             if (!currentTool.lineDrawOptions) return null;
-            return new Interactions.DrawLineTool(currentTool.lineDrawOptions, addEntityOnServer);
+            return new Interactions.DrawLineTool(currentTool.lineDrawOptions, addEntityOnServer, setPreviewEntity);
         },
         [Tools.ToolType.AddIcon]: function(): Interactions.IToolHandler | null {
             return null;
@@ -130,6 +130,17 @@ namespace PixiInterop {
         const graphic = await Draw.drawEntity(entity);
         if (graphic) {
             await updateSpecificServerEntities([entity]);
+        }
+    }
+
+    async function setPreviewEntity(entity: Tools.Entity | null): Promise<void> {
+        if (temporaryEntity && drawnSpriteByEntityId[temporaryEntity.id]) {
+            entityContainer.removeChild(drawnSpriteByEntityId[temporaryEntity.id]);
+            drawnSpriteByEntityId[temporaryEntity.id].destroy();
+        }
+
+        if (entity) {
+            await drawEntityToScreen(entity);
         }
     }
 

@@ -9,11 +9,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 import * as Tools from './tools-types.js';
 export class DrawLineTool {
-    constructor(lineOptions, updateCallback) {
+    constructor(lineOptions, updateCallback, previewCallback) {
         this.start = null;
         this.entitiyId = null;
         this.lineOptions = lineOptions;
         this.addEntityCallback = updateCallback;
+        this.setPreviewEntityCallback = previewCallback;
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
         this.onPointerUp = this.onPointerUp.bind(this);
@@ -36,7 +37,7 @@ export class DrawLineTool {
             const pos = this.getLocalPos(event);
             const line = this.createLine(pos.x, pos.y, this.entitiyId);
             if (line)
-                yield this.addEntityCallback(line);
+                yield this.setPreviewEntityCallback(line);
         });
     }
     onPointerUp(event) {
@@ -53,6 +54,7 @@ export class DrawLineTool {
                 yield this.addEntityCallback(line);
             this.start = null;
             this.entitiyId = null;
+            this.setPreviewEntityCallback(null);
         });
     }
     createLine(x, y, entityId) {

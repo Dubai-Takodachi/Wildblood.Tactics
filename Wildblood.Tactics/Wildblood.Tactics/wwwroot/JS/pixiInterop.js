@@ -30,7 +30,7 @@ var PixiInterop;
     let currentTool;
     let interactionHandler = null;
     let currentEntities = {};
-    let temporaryEntities = [];
+    let temporaryEntity = null;
     let drawnSpriteByEntityId = {};
     let dotNetObjRef;
     function createApp(dotNetRef, iconNames) {
@@ -86,7 +86,7 @@ var PixiInterop;
         [Tools.ToolType.DrawLine]: () => {
             if (!currentTool.lineDrawOptions)
                 return null;
-            return new Interactions.DrawLineTool(currentTool.lineDrawOptions, addEntityOnServer);
+            return new Interactions.DrawLineTool(currentTool.lineDrawOptions, addEntityOnServer, setPreviewEntity);
         },
         [Tools.ToolType.AddIcon]: function () {
             return null;
@@ -131,6 +131,17 @@ var PixiInterop;
             const graphic = yield Draw.drawEntity(entity);
             if (graphic) {
                 yield updateSpecificServerEntities([entity]);
+            }
+        });
+    }
+    function setPreviewEntity(entity) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (temporaryEntity && drawnSpriteByEntityId[temporaryEntity.id]) {
+                entityContainer.removeChild(drawnSpriteByEntityId[temporaryEntity.id]);
+                drawnSpriteByEntityId[temporaryEntity.id].destroy();
+            }
+            if (entity) {
+                yield drawEntityToScreen(entity);
             }
         });
     }

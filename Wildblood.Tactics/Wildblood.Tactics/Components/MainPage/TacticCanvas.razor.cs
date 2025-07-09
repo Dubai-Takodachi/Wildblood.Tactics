@@ -19,9 +19,16 @@ public partial class TacticCanvas : IDisposable
 
     private DotNetObjectReference<TacticCanvas> objectReference = null!;
 
+    private Timer entityUpdateTimer = null!;
+
+    private Entity[]? latestUpdate = null;
+
+    private Entity[]? latestProcessed = null;
+
     protected override void OnInitialized()
     {
         objectReference = DotNetObjectReference.Create(this);
+        entityUpdateTimer = new Timer(ProcessLatestEntityUpdate, null, 0, 10);
 
         TacticCanvasService.OnGameStateChanged += RedrawIcons;
         TacticCanvasService.OnToolChanged += SetSelectedUnit;
@@ -30,7 +37,16 @@ public partial class TacticCanvas : IDisposable
     [JSInvokable]
     public void UpdateServerEntities(Entity[] entities)
     {
-        TacticCanvasService.UpdateEntites(entities);
+        latestUpdate = entities;
+    }
+
+    private void ProcessLatestEntityUpdate(object? state)
+    {
+        if (latestUpdate is { Length: > 0 } && latestUpdate != latestProcessed)
+        {
+            _ = TacticCanvasService.UpdateEntites(latestUpdate);
+            latestProcessed = latestUpdate;
+        }
     }
 
     private async Task SetSelectedUnit()
