@@ -66,10 +66,10 @@ public class TacticToolService : ITacticToolService
         var defaultTextOptions = new TextOptions
         {
             Text = string.Empty,
-            Size = 40,
+            Size = 30,
             Color = "#000000",
             HasBackground = false,
-            BackgroundColor = "#ffffff",
+            BackgroundColor = "#aaaaaa",
         };
 
         return new ToolOptions
@@ -77,7 +77,7 @@ public class TacticToolService : ITacticToolService
             Tool = ToolType.AddIcon,
             IconOptions = new IconOptions
             {
-                IconSize = 40,
+                IconSize = 60,
                 IconType = IconType.Azaps,
                 LabelOptions = defaultTextOptions,
             },

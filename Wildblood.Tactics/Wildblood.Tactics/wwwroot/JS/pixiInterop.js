@@ -178,7 +178,7 @@ var PixiInterop;
             const bg = new PIXI.Sprite(texture);
             bg.width = app.screen.width;
             bg.height = app.screen.height;
-            mainContainer.addChild(bg);
+            mainContainer.addChildAt(bg, 0);
             bgSprite = bg;
         });
     }

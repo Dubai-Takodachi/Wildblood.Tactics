@@ -13,13 +13,13 @@
                         </MudPaper>
                     }
                 </MudPaper>
-                <MudSlider Class="my-3" T="int" Min="1" Max="40" ValueLabel="true" ValueChanged="OnIconSizeChanged" Color="Color.Primary">Icon Size:</MudSlider>
+                <MudSlider Class="my-3" T="int" Min="20" Max="100" Value="TacticToolService.AllOptions.IconOptions!.IconSize" ValueLabel="true" ValueChanged="OnIconSizeChanged" Color="Color.Primary">Icon Size:</MudSlider>
                 <MudText Class="my-3">Icon Label:</MudText>
-                <MudTextField  T="string" TextChanged="OnIconTextOptionsTextChanged"/>
-                <MudSlider Class="my-3" T="int" Min="1" Max="40" ValueLabel="true" ValueChanged="OnIconTextOptionsSizeChanged" Color="Color.Secondary">Icon Label Size</MudSlider>
-                <MudColorPicker Label="Icon Label Color" Text="@AllOptions.IconOptions!.LabelOptions.Color" TextChanged="OnIconTextOptionsColorChanged" />
-                <MudCheckBox T="bool" ValueChanged="OnIconTextOptionsBackgroundBoolChanged" Label="Add Background"></MudCheckBox>
-                <MudColorPicker Label="Background Color" Text="@AllOptions.IconOptions!.LabelOptions.BackgroundColor" TextChanged="OnIconTextOptionsBackgroundColorChanged" />
+                <MudTextField T="string" Value="TacticToolService.AllOptions.IconOptions!.LabelOptions.Text" TextChanged="OnIconTextOptionsTextChanged" />
+                <MudSlider Class="my-3" T="int" Min="10" Max="50" Value="TacticToolService.AllOptions.IconOptions!.LabelOptions.Size" ValueLabel="true" ValueChanged="OnIconTextOptionsSizeChanged" Color="Color.Secondary">Icon Label Size</MudSlider>
+                <MudColorPicker Label="Icon Label Color" Value="TacticToolService.AllOptions.IconOptions!.LabelOptions.Color" Text="@AllOptions.IconOptions!.LabelOptions.Color" TextChanged="OnIconTextOptionsColorChanged" />
+                <MudCheckBox T="bool" ValueChanged="OnIconTextOptionsBackgroundBoolChanged" Value="TacticToolService.AllOptions.IconOptions!.LabelOptions.HasBackground" Label="Add Background"></MudCheckBox>
+                <MudColorPicker Label="Background Color" Text="@AllOptions.IconOptions!.LabelOptions.BackgroundColor" Value="TacticToolService.AllOptions.IconOptions!.LabelOptions.BackgroundColor" TextChanged="OnIconTextOptionsBackgroundColorChanged" />
             </div>
         </MudTabPanel>
         <MudTabPanel Icon="@vectorLineIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.DrawLine)">
