@@ -25,6 +25,8 @@ public partial class TacticTool
     private static string solidLine = "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\" viewBox=\"0 -960 960 960\" width=\"24px\" fill=\"#e3e3e3\"><path d=\"M199-199q-9-9-9-21t9-21l520-520q9-9 21-9t21 9q9 9 9 21t-9 21L241-199q-9 9-21 9t-21-9Z\"/></svg>";
     private static string arrowHead = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><title>arrow-top-right-thin</title><path d=\"M11.93 5L14.76 7.83L5 17.59L6.42 19L16.18 9.25L19 12.07V5H11.93Z\" /></svg>";
     private static string straightArrow = "<svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\r\n  <!-- Diagonale Linie -->\r\n  <line x1=\"2\" y1=\"22\" x2=\"22\" y2=\"2\" stroke=\"white\" stroke-width=\"2\" stroke-linecap=\"round\" />\r\n\r\n  <!-- Querlinie (90° zur Diagonale, also gedreht) -->\r\n  <line x1=\"-3\" y1=\"0\" x2=\"3\" y2=\"0\" stroke=\"white\" stroke-width=\"2\" stroke-linecap=\"round\"\r\n        transform=\"translate(22 2) rotate(45)\" />\r\n</svg>\r\n";
+    private LineStyle cosmeticLineStyle;
+    private LineEnd cosmeticLineEnd;
     private ToolOptions AllOptions => TacticToolService.AllOptions;
 
     protected override void OnInitialized()
@@ -74,24 +76,44 @@ public partial class TacticTool
         await UpdateTool(curveOptions: AllOptions.CurveDrawOptions! with { Color = color });
     }
 
+    private async Task OnShapeOutlineColorChanged(string color)
+    {
+        await UpdateTool(shapeOptions: AllOptions.ShapeOptions! with { OutlineColor = color });
+    }
+
+    private async Task OnShapeFillColorChanged(string color)
+    {
+        await UpdateTool(shapeOptions: AllOptions.ShapeOptions! with { FillColor = color });
+    }
+
     private async Task OnLineEndChange(LineEnd lineEnd)
     {
         await UpdateTool(lineOptions: AllOptions.LineDrawOptions! with { LineEnd = lineEnd });
-    }
-
-    private async Task OnLineStyleChange(LineStyle lineStyle)
-    {
-        await UpdateTool(lineOptions: AllOptions.LineDrawOptions! with { LineStyle = lineStyle });
+        cosmeticLineEnd = lineEnd;
     }
 
     private async Task OnCurveEndChange(LineEnd lineEnd)
     {
         await UpdateTool(lineOptions: AllOptions.CurveDrawOptions! with { LineEnd = lineEnd });
+        cosmeticLineEnd = lineEnd;
+    }
+
+    private async Task OnLineStyleChange(LineStyle lineStyle)
+    {
+        await UpdateTool(lineOptions: AllOptions.LineDrawOptions! with { LineStyle = lineStyle });
+        cosmeticLineStyle = lineStyle;
     }
 
     private async Task OnCurveStyleChange(LineStyle lineStyle)
     {
         await UpdateTool(lineOptions: AllOptions.CurveDrawOptions! with { LineStyle = lineStyle });
+        cosmeticLineStyle = lineStyle;
+    }
+
+    private async Task OnShapeLineStyleChanged(LineStyle lineStyle)
+    {
+        await UpdateTool(shapeOptions: AllOptions.ShapeOptions! with { OutlineStyle = lineStyle });
+        cosmeticLineStyle = lineStyle;
     }
 
     private async Task UpdateTool(
