@@ -116,6 +116,36 @@ public partial class TacticTool
         cosmeticLineStyle = lineStyle;
     }
 
+    private async Task OnIconSizeChanged(int size)
+    {
+        await UpdateTool(iconOptions: AllOptions.IconOptions! with { IconSize = size });
+    }
+
+    private async Task OnIconTextOptionsTextChanged(string text)
+    {
+        await UpdateTool(iconOptions: AllOptions.IconOptions! with { LabelOptions = AllOptions.IconOptions.LabelOptions with { Text = text } });
+    }
+
+    private async Task OnIconTextOptionsSizeChanged(int size)
+    {
+        await UpdateTool(iconOptions: AllOptions.IconOptions! with { LabelOptions = AllOptions.IconOptions.LabelOptions with { Size = size } });
+    }
+
+    private async Task OnIconTextOptionsColorChanged(string color)
+    {
+        await UpdateTool(iconOptions: AllOptions.IconOptions! with { LabelOptions = AllOptions.IconOptions.LabelOptions with { Color = color } });
+    }
+
+    private async Task OnIconTextOptionsBackgroundBoolChanged(bool hasBackground)
+    {
+        await UpdateTool(iconOptions: AllOptions.IconOptions! with { LabelOptions = AllOptions.IconOptions.LabelOptions with { HasBackground = hasBackground} });
+    }
+
+    private async Task OnIconTextOptionsBackgroundColorChanged(string color)
+    {
+        await UpdateTool(iconOptions: AllOptions.IconOptions! with { LabelOptions = AllOptions.IconOptions.LabelOptions with { BackgroundColor = color } });
+    }
+
     private async Task UpdateTool(
         ToolType? toolType = null,
         IconOptions? iconOptions = null,
