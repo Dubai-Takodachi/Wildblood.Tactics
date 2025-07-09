@@ -1,7 +1,7 @@
 ﻿@using Wildblood.Tactics.Mappings
 @using Wildblood.Tactics.Models.Tools
 
-<MudPaper style="grid-area:2/2/span 3/2">
+<MudPaper style="grid-area:2/2/span 3/2" Class="mx-2">
     <MudTabs MinimumTabWidth="20px">
         <MudTabPanel Icon="@swordsIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.AddIcon)">
             <div>
@@ -13,6 +13,13 @@
                         </MudPaper>
                     }
                 </MudPaper>
+                <MudSlider Class="my-3" T="int" Min="1" Max="40" ValueLabel="true" ValueChanged="OnIconSizeChanged" Color="Color.Primary">Icon Size:</MudSlider>
+                <MudText Class="my-3">Icon Label:</MudText>
+                <MudTextField  T="string" TextChanged="OnIconTextOptionsTextChanged"/>
+                <MudSlider Class="my-3" T="int" Min="1" Max="40" ValueLabel="true" ValueChanged="OnIconTextOptionsSizeChanged" Color="Color.Secondary">Icon Label Size</MudSlider>
+                <MudColorPicker Label="Icon Label Color" Text="@AllOptions.IconOptions!.LabelOptions.Color" TextChanged="OnIconTextOptionsColorChanged" />
+                <MudCheckBox T="bool" ValueChanged="OnIconTextOptionsBackgroundBoolChanged" Label="Add Background"></MudCheckBox>
+                <MudColorPicker Label="Background Color" Text="@AllOptions.IconOptions!.LabelOptions.BackgroundColor" TextChanged="OnIconTextOptionsBackgroundColorChanged" />
             </div>
         </MudTabPanel>
         <MudTabPanel Icon="@vectorLineIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.DrawLine)">
