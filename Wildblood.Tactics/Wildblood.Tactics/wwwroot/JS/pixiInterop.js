@@ -39,11 +39,11 @@ var PixiInterop;
                 app.destroy(true, { children: true });
             }
             dotNetObjRef = dotNetRef;
-            Draw.init(iconNames);
             const parent = document.getElementById("tacticsCanvasContainer");
             if (!parent)
                 return;
             app = new PIXI.Application();
+            Draw.init(iconNames, app);
             yield app.init({ background: '#FFFFFF', resizeTo: parent });
             parent.appendChild(app.canvas);
             mainContainer = new PIXI.Container();
@@ -69,7 +69,7 @@ var PixiInterop;
             app.canvas.removeEventListener("pointerup", interactionHandler.onPointerUp);
         }
         currentTool = options;
-        if (currentTool.tool)
+        if (currentTool.tool || currentTool.tool === 0)
             interactionHandler = (_a = createInteractionHandler[currentTool.tool]) === null || _a === void 0 ? void 0 : _a.call(createInteractionHandler);
         if (interactionHandler === null || interactionHandler === void 0 ? void 0 : interactionHandler.onPointerDown) {
             app.canvas.addEventListener("pointerdown", interactionHandler.onPointerDown);
@@ -89,7 +89,9 @@ var PixiInterop;
             return new Interactions.DrawLineTool(currentTool.lineDrawOptions, addEntityOnServer, setPreviewEntity);
         },
         [Tools.ToolType.AddIcon]: function () {
-            return null;
+            if (!currentTool.iconOptions)
+                return null;
+            return new Interactions.PlaceIconTool(currentTool.iconOptions, addEntityOnServer, setPreviewEntity);
         },
         [Tools.ToolType.Move]: function () {
             return null;

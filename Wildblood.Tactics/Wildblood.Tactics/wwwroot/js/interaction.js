@@ -21,7 +21,7 @@ export class DrawLineTool {
     }
     onPointerDown(event) {
         return __awaiter(this, void 0, void 0, function* () {
-            const pos = this.getLocalPos(event);
+            const pos = getLocalPos(event);
             this.start = pos;
             this.entitiyId = crypto.randomUUID();
         });
@@ -34,7 +34,7 @@ export class DrawLineTool {
                 // TODO?: remove entity from list in the error case
                 return;
             }
-            const pos = this.getLocalPos(event);
+            const pos = getLocalPos(event);
             const line = this.createLine(pos.x, pos.y, this.entitiyId);
             if (line)
                 yield this.setPreviewEntityCallback(line);
@@ -48,7 +48,7 @@ export class DrawLineTool {
                 // TODO?: remove entity from list in the error case
                 return;
             }
-            const pos = this.getLocalPos(event);
+            const pos = getLocalPos(event);
             const line = this.createLine(pos.x, pos.y, this.entitiyId);
             if (line)
                 yield this.addEntityCallback(line);
@@ -67,10 +67,7 @@ export class DrawLineTool {
         let line = {
             id: entityId,
             toolType: Tools.ToolType.DrawLine,
-            position: {
-                x: Math.min(this.start.x, x),
-                y: Math.min(this.start.y, y),
-            },
+            position: position,
             path: [
                 { x: this.start.x - position.x, y: this.start.y - position.y },
                 { x: x - position.x, y: y - position.y }
@@ -83,9 +80,55 @@ export class DrawLineTool {
         };
         return line;
     }
-    getLocalPos(event) {
-        const rect = event.target.getBoundingClientRect();
-        return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+}
+export class PlaceIconTool {
+    constructor(iconOptions, updateCallback, previewCallback) {
+        this.entitiyId = crypto.randomUUID();
+        this.iconOptions = iconOptions;
+        this.addEntityCallback = updateCallback;
+        this.setPreviewEntityCallback = previewCallback;
+        this.onPointerDown = this.onPointerDown.bind(this);
+        this.onPointerMove = this.onPointerMove.bind(this);
     }
+    onPointerDown(event) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const pos = getLocalPos(event);
+            const icon = this.createIcon(pos.x, pos.y, this.entitiyId);
+            if (icon)
+                yield this.addEntityCallback(icon);
+            this.entitiyId = crypto.randomUUID();
+        });
+    }
+    onPointerMove(event) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const pos = getLocalPos(event);
+            const icon = this.createIcon(pos.x, pos.y, this.entitiyId);
+            if (icon)
+                yield this.setPreviewEntityCallback(icon);
+        });
+    }
+    createIcon(x, y, entityId) {
+        const position = {
+            x: x,
+            y: y
+        };
+        let icon = {
+            id: entityId,
+            toolType: Tools.ToolType.AddIcon,
+            position: position,
+            iconType: this.iconOptions.iconType,
+            primarySize: this.iconOptions.iconSize,
+            text: this.iconOptions.labelOptions.text,
+            secondarySize: this.iconOptions.labelOptions.size,
+            primaryColor: this.iconOptions.labelOptions.color,
+            hasBackground: this.iconOptions.labelOptions.hasBackground,
+            secondaryColor: this.iconOptions.labelOptions.backgroundColor,
+        };
+        return icon;
+    }
+}
+function getLocalPos(event) {
+    const rect = event.target.getBoundingClientRect();
+    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
 }
 //# sourceMappingURL=interaction.js.map

@@ -37,10 +37,10 @@ namespace PixiInterop {
             app.destroy(true, { children: true });
         }
         dotNetObjRef = dotNetRef;
-        Draw.init(iconNames);
         const parent = document.getElementById("tacticsCanvasContainer");
         if (!parent) return;
         app = new PIXI.Application();
+        Draw.init(iconNames, app);
         await app.init({ background: '#FFFFFF', resizeTo: parent });
         parent.appendChild(app.canvas);
 
@@ -68,7 +68,7 @@ namespace PixiInterop {
 
         currentTool = options;
 
-        if (currentTool.tool)
+        if (currentTool.tool || currentTool.tool === 0)
             interactionHandler = createInteractionHandler[currentTool.tool]?.();
 
         if (interactionHandler?.onPointerDown) {
@@ -87,8 +87,9 @@ namespace PixiInterop {
             if (!currentTool.lineDrawOptions) return null;
             return new Interactions.DrawLineTool(currentTool.lineDrawOptions, addEntityOnServer, setPreviewEntity);
         },
-        [Tools.ToolType.AddIcon]: function(): Interactions.IToolHandler | null {
-            return null;
+        [Tools.ToolType.AddIcon]: function (): Interactions.IToolHandler | null {
+            if (!currentTool.iconOptions) return null;
+            return new Interactions.PlaceIconTool(currentTool.iconOptions, addEntityOnServer, setPreviewEntity);
         },
         [Tools.ToolType.Move]: function(): Interactions.IToolHandler | null {
             return null;

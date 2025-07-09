@@ -28,7 +28,7 @@ export class DrawLineTool implements IToolHandler {
     }
 
     async onPointerDown(event: PointerEvent) {
-        const pos = this.getLocalPos(event);
+        const pos = getLocalPos(event);
         this.start = pos;
         this.entitiyId = crypto.randomUUID();
     }
@@ -41,7 +41,7 @@ export class DrawLineTool implements IToolHandler {
             return;
         }
 
-        const pos = this.getLocalPos(event);
+        const pos = getLocalPos(event);
         const line = this.createLine(pos.x, pos.y, this.entitiyId);
         if (line)
             await this.setPreviewEntityCallback(line);
@@ -55,7 +55,7 @@ export class DrawLineTool implements IToolHandler {
             return;
         }
 
-        const pos = this.getLocalPos(event);
+        const pos = getLocalPos(event);
         const line = this.createLine(pos.x, pos.y, this.entitiyId);
         if (line)
             await this.addEntityCallback(line);
@@ -75,10 +75,7 @@ export class DrawLineTool implements IToolHandler {
         let line: Tools.Entity = {
             id: entityId,
             toolType: Tools.ToolType.DrawLine,
-            position: {
-                x: Math.min(this.start!.x, x),
-                y: Math.min(this.start!.y, y),
-            },
+            position: position,
             path: [
                 { x: this.start.x - position.x, y: this.start.y - position.y },
                 { x: x - position.x, y: y - position.y }],
@@ -91,9 +88,66 @@ export class DrawLineTool implements IToolHandler {
 
         return line;
     }
+}
 
-    private getLocalPos(event: PointerEvent): { x: number; y: number } {
-        const rect = (event.target as HTMLElement).getBoundingClientRect();
-        return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+export class PlaceIconTool implements IToolHandler {
+    private iconOptions: Tools.IconOptions;
+    private entitiyId: string = crypto.randomUUID();
+    private addEntityCallback: (entity: Tools.Entity) => Promise<void>;
+    private setPreviewEntityCallback: (entity: Tools.Entity | null) => Promise<void>;
+
+    constructor(
+        iconOptions: Tools.IconOptions,
+        updateCallback: (entity: Tools.Entity) => Promise<void>,
+        previewCallback: (entity: Tools.Entity | null) => Promise<void>) {
+
+        this.iconOptions = iconOptions;
+        this.addEntityCallback = updateCallback;
+        this.setPreviewEntityCallback = previewCallback;
+
+        this.onPointerDown = this.onPointerDown.bind(this);
+        this.onPointerMove = this.onPointerMove.bind(this);
     }
+
+    async onPointerDown(event: PointerEvent) {
+        const pos = getLocalPos(event);
+        const icon = this.createIcon(pos.x, pos.y, this.entitiyId);
+        if (icon)
+            await this.addEntityCallback(icon);
+        this.entitiyId = crypto.randomUUID();
+    }
+
+    async onPointerMove(event: PointerEvent) {
+        const pos = getLocalPos(event);
+        const icon = this.createIcon(pos.x, pos.y, this.entitiyId);
+        if (icon)
+            await this.setPreviewEntityCallback(icon);
+    }
+
+    private createIcon(x: number, y: number, entityId: string): Tools.Entity | null {
+        const position: Tools.Point = {
+            x: x,
+            y: y
+        };
+
+        let icon: Tools.Entity = {
+            id: entityId,
+            toolType: Tools.ToolType.AddIcon,
+            position: position,
+            iconType: this.iconOptions.iconType,
+            primarySize: this.iconOptions.iconSize,
+            text: this.iconOptions.labelOptions.text,
+            secondarySize: this.iconOptions.labelOptions.size,
+            primaryColor: this.iconOptions.labelOptions.color,
+            hasBackground: this.iconOptions.labelOptions.hasBackground,
+            secondaryColor: this.iconOptions.labelOptions.backgroundColor,
+        }
+
+        return icon;
+    }
+}
+
+function getLocalPos(event: PointerEvent): { x: number; y: number } {
+    const rect = (event.target as HTMLElement).getBoundingClientRect();
+    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
 }

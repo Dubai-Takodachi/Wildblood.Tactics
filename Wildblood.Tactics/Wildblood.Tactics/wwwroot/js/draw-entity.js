@@ -11,8 +11,10 @@ import * as PIXI from '../lib/pixi.mjs';
 import * as Tools from './tools-types.js';
 let iconFileNamesByType;
 let ImageCache = {};
-export function init(iconNames) {
+let app;
+export function init(iconNames, application) {
     iconFileNamesByType = iconNames;
+    app = application;
 }
 export function drawEntity(entity) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -118,8 +120,25 @@ function drawIcon(entity) {
         else {
             texture = ImageCache[entity.iconType];
         }
-        graphic.texture(texture);
-        graphic.setSize(entity.primarySize);
+        graphic.texture(texture, "#ffffffff", 0, 0, entity.primarySize, entity.primarySize);
+        if (entity.text && entity.text !== "") {
+            const labelStyle = new PIXI.TextStyle({
+                fontSize: entity.secondarySize,
+                fill: entity.primaryColor,
+            });
+            const label = new PIXI.Text({ text: entity.text, style: labelStyle });
+            const labelPadding = 4;
+            const labelWidth = label.width + labelPadding * 2;
+            const labelHeight = label.height + labelPadding * 2;
+            const labelX = 0 + (graphic.width - labelWidth) / 2;
+            const labelY = 0 + graphic.height + 5;
+            if (entity.hasBackground)
+                graphic.rect(labelX, labelY, labelWidth, labelHeight)
+                    .fill(entity.secondaryColor)
+                    .stroke({ width: 1, color: 0xffffff });
+            const textTexture = app.renderer.textureGenerator.generateTexture(label);
+            graphic.texture(textTexture, "#ffffffff", labelX + labelPadding, labelY + labelPadding);
+        }
         return graphic;
     });
 }
