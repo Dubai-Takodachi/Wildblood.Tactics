@@ -25,12 +25,14 @@ public partial class TacticTool
     private static string solidLine = "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\" viewBox=\"0 -960 960 960\" width=\"24px\" fill=\"#e3e3e3\"><path d=\"M199-199q-9-9-9-21t9-21l520-520q9-9 21-9t21 9q9 9 9 21t-9 21L241-199q-9 9-21 9t-21-9Z\"/></svg>";
     private static string arrowHead = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><title>arrow-top-right-thin</title><path d=\"M11.93 5L14.76 7.83L5 17.59L6.42 19L16.18 9.25L19 12.07V5H11.93Z\" /></svg>";
     private static string straightArrow = "<svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\r\n  <!-- Diagonale Linie -->\r\n  <line x1=\"2\" y1=\"22\" x2=\"22\" y2=\"2\" stroke=\"white\" stroke-width=\"2\" stroke-linecap=\"round\" />\r\n\r\n  <!-- Querlinie (90° zur Diagonale, also gedreht) -->\r\n  <line x1=\"-3\" y1=\"0\" x2=\"3\" y2=\"0\" stroke=\"white\" stroke-width=\"2\" stroke-linecap=\"round\"\r\n        transform=\"translate(22 2) rotate(45)\" />\r\n</svg>\r\n";
+    private static string eraserIcon = "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\" viewBox=\"0 -960 960 960\" width=\"24px\" fill=\"#e3e3e3\"><path d=\"M690-240h190v80H610l80-80Zm-500 80-85-85q-23-23-23.5-57t22.5-58l440-456q23-24 56.5-24t56.5 23l199 199q23 23 23 57t-23 57L520-160H190Zm296-80 314-322-198-198-442 456 64 64h262Zm-6-240Z\"/></svg>";
     private LineStyle cosmeticLineStyle;
     private LineEnd cosmeticLineEnd;
     private LineStyle cosmeticCurveStyle;
     private LineEnd cosmeticCurveEnd;
     private LineStyle cosmeticFreeStyle;
     private LineEnd cosmeticFreeEnd;
+    private ShapeType CosmeticShapeType;
     private ToolOptions AllOptions => TacticToolService.AllOptions;
 
     protected override void OnInitialized()
@@ -165,6 +167,42 @@ public partial class TacticTool
     private async Task OnIconTextOptionsBackgroundColorChanged(string color)
     {
         await UpdateTool(iconOptions: AllOptions.IconOptions! with { LabelOptions = AllOptions.IconOptions.LabelOptions with { BackgroundColor = color } });
+    }
+
+    private async Task OnShapeTypeChanged(ShapeType type)
+    {
+        await UpdateTool(shapeOptions: AllOptions.ShapeOptions! with { ShapeType = type });
+        CosmeticShapeType = type;
+    }
+
+    private async Task OnTextOptionsTextChanged(string text)
+    {
+        await UpdateTool(textOptions: AllOptions.TextOptions! with { Text = text });
+    }
+
+    private async Task OnTextOptionsSizeChanged(int size)
+    {
+        await UpdateTool(textOptions: AllOptions.TextOptions! with { Size = size });
+    }
+
+    private async Task OnTextOptionsColorChanged(string color)
+    {
+        await UpdateTool(textOptions: AllOptions.TextOptions! with { Color = color });
+    }
+
+    private async Task OnTextOptionsBackgroundBoolChanged(bool hasBackground)
+    {
+        await UpdateTool(textOptions: AllOptions.TextOptions! with { HasBackground = hasBackground });
+    }
+
+    private async Task OnTextOptionsBackgroundColorChanged(string color)
+    {
+        await UpdateTool(textOptions: AllOptions.TextOptions! with { BackgroundColor = color });
+    }
+
+    private async Task OnShapeOutlineThicknessChanged(int thickness)
+    {
+        await UpdateTool(shapeOptions: AllOptions.ShapeOptions! with { OutlineThickness = thickness });
     }
 
     private async Task UpdateTool(

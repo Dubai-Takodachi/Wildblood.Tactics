@@ -6,7 +6,6 @@ public enum ToolType
 {
     AddIcon,
     Move,
-    Resize,
     DrawFree,
     DrawLine,
     DrawCurve,
@@ -14,6 +13,6 @@ public enum ToolType
     AddShape,
     Undo,
     Redo,
-    Clear,
     Erase,
+    Ping,
 }

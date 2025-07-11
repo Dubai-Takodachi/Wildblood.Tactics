@@ -6,13 +6,9 @@ public record ShapeOptions
 
     public required string OutlineColor { get; init; }
 
-    public required int OutlineTransparancy { get; init; }
-
     public required int OutlineThickness { get; init; }
 
     public required LineStyle OutlineStyle { get; init; }
 
     public required string FillColor { get; init; }
-
-    public required int FillTransparancy { get; init; }
 }
