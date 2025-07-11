@@ -91,8 +91,8 @@ namespace PixiInterop {
             if (!currentTool.iconOptions) return null;
             return new Interactions.PlaceIconTool(currentTool.iconOptions, addEntityOnServer, setPreviewEntity);
         },
-        [Tools.ToolType.Move]: function(): Interactions.IToolHandler | null {
-            return null;
+        [Tools.ToolType.Move]: function (): Interactions.IToolHandler | null {
+            return new Interactions.MoveTool(addEntityOnServer, setPreviewEntity, currentEntities, drawnSpriteByEntityId, app);
         },
         [Tools.ToolType.Resize]: function(): Interactions.IToolHandler | null {
             return null;
@@ -135,10 +135,12 @@ namespace PixiInterop {
     }
 
     async function setPreviewEntity(entity: Tools.Entity | null): Promise<void> {
-        if (temporaryEntity && drawnSpriteByEntityId[temporaryEntity.id]) {
+        if (temporaryEntity && drawnSpriteByEntityId[temporaryEntity.id] && !currentEntities[temporaryEntity.id]) {
             entityContainer.removeChild(drawnSpriteByEntityId[temporaryEntity.id]);
             drawnSpriteByEntityId[temporaryEntity.id].destroy();
         }
+
+        temporaryEntity = entity;
 
         if (entity) {
             await drawEntityToScreen(entity);
@@ -174,16 +176,20 @@ namespace PixiInterop {
         const bg = new PIXI.Sprite(texture);
         bg.width = app.screen.width;
         bg.height = app.screen.height;
+        if (bgSprite) {
+            mainContainer.removeChild(bgSprite);
+        }
         mainContainer.addChildAt(bg, 0);
         bgSprite = bg;
     }
 
     export async function redrawEntities(entities: Tools.Entity[]): Promise<void> {
-        removeOutdatedEntities(entities);
-        updateExistingEntities(entities);
+        await removeOutdatedEntities(entities);
+        await updateExistingEntities(entities);
     }
 
-    function removeOutdatedEntities(newCurrentEntities: Tools.Entity[]): void {
+    async function removeOutdatedEntities(newCurrentEntities: Tools.Entity[]): Promise<void> {
+        await setPreviewEntity(null);
         const currentIds = Object.keys(currentEntities);
         for (const id of currentIds) {
             let isStillExisting = false;
@@ -201,11 +207,11 @@ namespace PixiInterop {
         }
     }
 
-    function updateExistingEntities(newCurrentEntities: Tools.Entity[]): void {
+    async function updateExistingEntities(newCurrentEntities: Tools.Entity[]): Promise<void> {
         for (const entity of newCurrentEntities) {
             if (!currentEntities[entity.id]
                 || (JSON.stringify(currentEntities[entity.id]) === JSON.stringify(entity)) === false) {
-                drawEntityToScreen(entity);
+                await drawEntityToScreen(entity);
             }
         }
     }

@@ -1,4 +1,5 @@
 import * as Tools from './tools-types.js';
+import * as PIXI from '../lib/pixi.mjs';
 
 export interface IToolHandler {
     onPointerDown(event: PointerEvent): Promise<void>;
@@ -28,7 +29,7 @@ export class DrawLineTool implements IToolHandler {
     }
 
     async onPointerDown(event: PointerEvent) {
-        const pos = getLocalPos(event);
+        const pos = getGlobalPos(event);
         this.start = pos;
         this.entitiyId = crypto.randomUUID();
     }
@@ -41,7 +42,7 @@ export class DrawLineTool implements IToolHandler {
             return;
         }
 
-        const pos = getLocalPos(event);
+        const pos = getGlobalPos(event);
         const line = this.createLine(pos.x, pos.y, this.entitiyId);
         if (line)
             await this.setPreviewEntityCallback(line);
@@ -55,7 +56,7 @@ export class DrawLineTool implements IToolHandler {
             return;
         }
 
-        const pos = getLocalPos(event);
+        const pos = getGlobalPos(event);
         const line = this.createLine(pos.x, pos.y, this.entitiyId);
         if (line)
             await this.addEntityCallback(line);
@@ -110,7 +111,7 @@ export class PlaceIconTool implements IToolHandler {
     }
 
     async onPointerDown(event: PointerEvent) {
-        const pos = getLocalPos(event);
+        const pos = getGlobalPos(event);
         const icon = this.createIcon(pos.x, pos.y, this.entitiyId);
         if (icon)
             await this.addEntityCallback(icon);
@@ -118,7 +119,7 @@ export class PlaceIconTool implements IToolHandler {
     }
 
     async onPointerMove(event: PointerEvent) {
-        const pos = getLocalPos(event);
+        const pos = getGlobalPos(event);
         const icon = this.createIcon(pos.x, pos.y, this.entitiyId);
         if (icon)
             await this.setPreviewEntityCallback(icon);
@@ -147,7 +148,85 @@ export class PlaceIconTool implements IToolHandler {
     }
 }
 
-function getLocalPos(event: PointerEvent): { x: number; y: number } {
+export class MoveTool implements IToolHandler {
+    private entityId: string | null = null;
+    private entityClickedPosition: Tools.Point | null = null;
+    private addEntityCallback: (entity: Tools.Entity) => Promise<void>;
+    private setPreviewEntityCallback: (entity: Tools.Entity | null) => Promise<void>;
+    private drawnSpriteByEntityId: Record<string, PIXI.Sprite>;
+    private currentEntities: Record<string, Tools.Entity>;
+    private app: PIXI.Application;
+
+    constructor(
+        updateCallback: (entity: Tools.Entity) => Promise<void>,
+        previewCallback: (entity: Tools.Entity | null) => Promise<void>,
+        currentEntities: Record<string, Tools.Entity>,
+        drawnSpriteByEntityId: Record<string, PIXI.Sprite>,
+        app: PIXI.Application) {
+
+        this.addEntityCallback = updateCallback;
+        this.setPreviewEntityCallback = previewCallback;
+        this.drawnSpriteByEntityId = drawnSpriteByEntityId;
+        this.currentEntities = currentEntities;
+        this.app = app;
+
+        this.onPointerDown = this.onPointerDown.bind(this);
+        this.onPointerMove = this.onPointerMove.bind(this);
+        this.onPointerUp = this.onPointerUp.bind(this);
+    }
+
+    async onPointerDown(event: PointerEvent) {
+        const pos = getGlobalPos(event);
+
+        const keys = Object.keys(this.drawnSpriteByEntityId).reverse();
+        for (const key of keys) {
+            const sprite = this.drawnSpriteByEntityId[key];
+            if (!sprite.position) continue;
+            const local = { x: pos.x - sprite.x, y: pos.y - sprite.y };
+
+            if (this.hitTestPixelPerfect(sprite, pos, local)) {
+                this.entityClickedPosition = local;
+                this.entityId = key;
+                break;
+            }
+        }
+    }
+
+    async onPointerMove(event: PointerEvent) {
+        if (!this.entityId || !this.entityClickedPosition) return;
+        const pos = getGlobalPos(event);
+        this.currentEntities[this.entityId].position = {
+            x: pos.x - this.entityClickedPosition.x,
+            y: pos.y - this.entityClickedPosition.y
+        };
+        await this.setPreviewEntityCallback({ ...this.currentEntities[this.entityId] });
+    }
+
+    async onPointerUp(event: PointerEvent) {
+        if (!this.entityId) return;
+        await this.addEntityCallback({ ...this.currentEntities[this.entityId] });
+        this.entityId = null;
+        this.entityClickedPosition = null;
+    }
+
+    private hitTestPixelPerfect(sprite: PIXI.Sprite, globalPos: Tools.Point, localPos: Tools.Point): boolean {
+        const bounds = sprite.getBounds();
+        const x = sprite.containsPoint(localPos);
+
+        if (localPos.x < 0 || localPos.y < 0 || localPos.x >= bounds.width || localPos.y >= bounds.height) {
+            return false;
+        }
+
+        const tempSprite = new PIXI.Sprite(sprite.texture);
+        const pixels = this.app.renderer.extract.pixels({
+            target: tempSprite,
+            frame: new PIXI.Rectangle(localPos.x, localPos.y, 1, 1),
+        }).pixels;
+        return pixels[3] > 0;
+    }
+}
+
+function getGlobalPos(event: PointerEvent): { x: number; y: number } {
     const rect = (event.target as HTMLElement).getBoundingClientRect();
     return { x: event.clientX - rect.left, y: event.clientY - rect.top };
 }

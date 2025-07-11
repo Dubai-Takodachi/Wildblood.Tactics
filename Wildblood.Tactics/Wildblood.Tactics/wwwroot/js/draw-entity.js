@@ -1,12 +1,3 @@
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 import * as PIXI from '../lib/pixi.mjs';
 import * as Tools from './tools-types.js';
 let iconFileNamesByType;
@@ -16,16 +7,14 @@ export function init(iconNames, application) {
     iconFileNamesByType = iconNames;
     app = application;
 }
-export function drawEntity(entity) {
-    return __awaiter(this, void 0, void 0, function* () {
-        switch (entity.toolType) {
-            case Tools.ToolType.DrawLine:
-                return drawLine(entity);
-            case Tools.ToolType.AddIcon:
-                return yield drawIcon(entity);
-        }
-        return null;
-    });
+export async function drawEntity(entity) {
+    switch (entity.toolType) {
+        case Tools.ToolType.DrawLine:
+            return drawLine(entity);
+        case Tools.ToolType.AddIcon:
+            return await drawIcon(entity);
+    }
+    return null;
 }
 function drawLine(entity) {
     const g = new PIXI.Graphics();
@@ -109,37 +98,35 @@ function drawLine(entity) {
     }
     return g;
 }
-function drawIcon(entity) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const graphic = new PIXI.Graphics();
-        let texture;
-        if (!ImageCache[entity.iconType]) {
-            texture = yield PIXI.Assets.load("ConquerorsBladeData/Units/" + iconFileNamesByType[entity.iconType]);
-            ImageCache[entity.iconType] = texture;
-        }
-        else {
-            texture = ImageCache[entity.iconType];
-        }
-        graphic.texture(texture, "#ffffffff", 0, 0, entity.primarySize, entity.primarySize);
-        if (entity.text && entity.text !== "") {
-            const labelStyle = new PIXI.TextStyle({
-                fontSize: entity.secondarySize,
-                fill: entity.primaryColor,
-            });
-            const label = new PIXI.Text({ text: entity.text, style: labelStyle });
-            const labelPadding = 4;
-            const labelWidth = label.width + labelPadding * 2;
-            const labelHeight = label.height + labelPadding * 2;
-            const labelX = 0 + (graphic.width - labelWidth) / 2;
-            const labelY = 0 + graphic.height + 5;
-            if (entity.hasBackground)
-                graphic.rect(labelX, labelY, labelWidth, labelHeight)
-                    .fill(entity.secondaryColor)
-                    .stroke({ width: 1, color: 0xffffff });
-            const textTexture = app.renderer.textureGenerator.generateTexture(label);
-            graphic.texture(textTexture, "#ffffffff", labelX + labelPadding, labelY + labelPadding);
-        }
-        return graphic;
-    });
+async function drawIcon(entity) {
+    const graphic = new PIXI.Graphics();
+    let texture;
+    if (!ImageCache[entity.iconType]) {
+        texture = await PIXI.Assets.load("ConquerorsBladeData/Units/" + iconFileNamesByType[entity.iconType]);
+        ImageCache[entity.iconType] = texture;
+    }
+    else {
+        texture = ImageCache[entity.iconType];
+    }
+    graphic.texture(texture, "#ffffffff", 0, 0, entity.primarySize, entity.primarySize);
+    if (entity.text && entity.text !== "") {
+        const labelStyle = new PIXI.TextStyle({
+            fontSize: entity.secondarySize,
+            fill: entity.primaryColor,
+        });
+        const label = new PIXI.Text({ text: entity.text, style: labelStyle });
+        const labelPadding = 4;
+        const labelWidth = label.width + labelPadding * 2;
+        const labelHeight = label.height + labelPadding * 2;
+        const labelX = 0 + (graphic.width - labelWidth) / 2;
+        const labelY = 0 + graphic.height + 5;
+        if (entity.hasBackground)
+            graphic.rect(labelX, labelY, labelWidth, labelHeight)
+                .fill(entity.secondaryColor)
+                .stroke({ width: 1, color: 0xffffff });
+        const textTexture = app.renderer.textureGenerator.generateTexture(label);
+        graphic.texture(textTexture, "#ffffffff", labelX + labelPadding, labelY + labelPadding);
+    }
+    return graphic;
 }
 //# sourceMappingURL=draw-entity.js.map
