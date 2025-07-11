@@ -2,8 +2,11 @@
 @using Wildblood.Tactics.Models.Tools
 
 <MudPaper style="grid-area:2/2/span 3/2" Class="mx-2">
-    <MudTabs MinimumTabWidth="20px">
-        <MudTabPanel Icon="@swordsIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.AddIcon)">
+    <MudTabs MinimumTabWidth="20px" Position="Position.Left">
+        <MudTabPanel Icon="@Icons.Material.Filled.CrisisAlert" @onclick="() => ChangeTool(Models.Tools.ToolType.Ping)" ToolTip="Ping">
+
+        </MudTabPanel>
+        <MudTabPanel Icon="@swordsIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.AddIcon)" ToolTip="Place Icons">
             <div>
                 <MudPaper Class="flex-wrap d-flex" Width="100%">
                     @foreach (var unit in IconMapping.FileNameByIconType)
@@ -22,7 +25,7 @@
                 <MudColorPicker Label="Background Color" Text="@AllOptions.IconOptions!.LabelOptions.BackgroundColor" Value="TacticToolService.AllOptions.IconOptions!.LabelOptions.BackgroundColor" TextChanged="OnIconTextOptionsBackgroundColorChanged" />
             </div>
         </MudTabPanel>
-        <MudTabPanel Icon="@vectorLineIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.DrawLine)">
+        <MudTabPanel Icon="@vectorLineIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.DrawLine)" ToolTip="Draw Line">
             <MudPaper>
                 <MudColorPicker Label="Line Color" Text="@AllOptions.LineDrawOptions!.Color" TextChanged="OnLineColorChanged" Class="my-6" />
                 <MudText>Select Line Style:</MudText>
@@ -51,7 +54,7 @@
                 </MudToggleGroup>
             </MudPaper>
         </MudTabPanel>
-        <MudTabPanel Icon="@curveIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.DrawCurve)">
+        <MudTabPanel Icon="@curveIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.DrawCurve)" ToolTip="Draw Curve">
             <MudPaper>
                 <MudColorPicker Label="Line Color" Text="@AllOptions.CurveDrawOptions!.Color" TextChanged="OnCurveColorChanged" Class="my-6" />
                 <MudText>Select Line Style:</MudText>
@@ -80,7 +83,7 @@
                 </MudToggleGroup>
             </MudPaper>
         </MudTabPanel>
-        <MudTabPanel Icon="@vectorLineIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.DrawFree)">
+        <MudTabPanel Icon="@Icons.Material.Filled.Draw" @onclick="() => ChangeTool(Models.Tools.ToolType.DrawFree)" ToolTip="Free Draw">
             <MudPaper>
                 <MudColorPicker Label="Line Color" Text="@AllOptions.FreeDrawOptions!.Color" TextChanged="OnFreeColorChanged" Class="my-6" />
                 <MudText>Select Line Style:</MudText>
@@ -109,10 +112,22 @@
                 </MudToggleGroup>
             </MudPaper>
         </MudTabPanel>
-        <MudTabPanel Icon="@Icons.Material.Outlined.Rectangle" @onclick="() => ChangeTool(Models.Tools.ToolType.AddShape)">
+        <MudTabPanel Icon="@Icons.Material.Outlined.Rectangle" @onclick="() => ChangeTool(Models.Tools.ToolType.AddShape)" ToolTip="Add Shape">
             <MudPaper>
+                <MudToggleGroup T="ShapeType" Color="Color.Success" Value="CosmeticShapeType" ValueChanged="OnShapeTypeChanged" Class="my-3">
+                    <MudToggleItem Value="@ShapeType.Rectangle">
+                        <MudIcon Icon="@Icons.Material.Outlined.Rectangle" />
+                    </MudToggleItem>
+                    <MudToggleItem Value="@ShapeType.Circle">
+                        <MudIcon Icon="@Icons.Material.Outlined.Circle" />
+                    </MudToggleItem>
+                    <MudToggleItem Value="@ShapeType.Polygon">
+                        <MudIcon Icon="@Icons.Material.Outlined.FormatShapes" />
+                    </MudToggleItem>
+                </MudToggleGroup>
                 <MudColorPicker Label="Outline Color" Text="@AllOptions.CurveDrawOptions!.Color" TextChanged="OnShapeOutlineColorChanged" Class="my-6" />
                 <MudColorPicker Label="Outline Color" Text="@AllOptions.CurveDrawOptions!.Color" TextChanged="OnShapeFillColorChanged" Class="my-6" />
+                <MudSlider T="int" Color="Color.Primary" Min="1" Max="100" Value="TacticToolService.AllOptions.ShapeOptions.OutlineThickness" ValueLabel="true" ValueChanged="OnShapeOutlineThicknessChanged">Shape Outline Thickness</MudSlider>
                 <MudText>Select Line Style:</MudText>
                 <MudToggleGroup T="LineStyle" Color="Color.Success" Value="cosmeticLineStyle" ValueChanged="OnShapeLineStyleChanged" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
                     <MudToggleItem Value="@LineStyle.Normal">
@@ -127,7 +142,19 @@
                 </MudToggleGroup>
             </MudPaper>
         </MudTabPanel>
-        <MudTabPanel Icon="@curveIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.Move)">
+        <MudTabPanel Icon="@Icons.Material.Filled.TextFields" @onclick="() => ChangeTool(Models.Tools.ToolType.AddText)" ToolTip="Add Text">
+            <MudPaper>
+                <MudText Class="my-3">Icon Label:</MudText>
+                <MudTextField T="string" Value="TacticToolService.AllOptions.TextOptions!.Text" TextChanged="OnTextOptionsTextChanged" />
+                <MudSlider Class="my-3" T="int" Min="1" Max="100" Value="TacticToolService.AllOptions.TextOptions!.Size" ValueLabel="true" ValueChanged="OnTextOptionsSizeChanged" Color="Color.Secondary">Icon Label Size</MudSlider>
+                <MudColorPicker Label="Icon Label Color" Value="TacticToolService.AllOptions.TextOptions!.Color" Text="@AllOptions.TextOptions!.Color" TextChanged="OnTextOptionsColorChanged" />
+                <MudCheckBox T="bool" ValueChanged="OnTextOptionsBackgroundBoolChanged" Value="TacticToolService.AllOptions.TextOptions!.HasBackground" Label="Add Background"></MudCheckBox>
+                <MudColorPicker Label="Background Color" Text="@AllOptions.TextOptions!.BackgroundColor" Value="TacticToolService.AllOptions.TextOptions!.BackgroundColor" TextChanged="OnTextOptionsBackgroundColorChanged" />
+            </MudPaper>
+        </MudTabPanel>
+        <MudTabPanel Icon="@Icons.Material.Filled.BackHand" @onclick="() => ChangeTool(Models.Tools.ToolType.Move)" ToolTip="Enable Dragging">
+        </MudTabPanel>
+        <MudTabPanel Icon="@eraserIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.Erase)" ToolTip="Erase">
         </MudTabPanel>
     </MudTabs>
 </MudPaper>

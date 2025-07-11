@@ -90,9 +90,7 @@ public class TacticToolService : ITacticToolService
                 OutlineColor = "#ff0000",
                 OutlineStyle = LineStyle.Normal,
                 OutlineThickness = 5,
-                OutlineTransparancy = 0,
                 FillColor = "#ff0000",
-                FillTransparancy = 20,
             },
             TextOptions = defaultTextOptions,
         };
