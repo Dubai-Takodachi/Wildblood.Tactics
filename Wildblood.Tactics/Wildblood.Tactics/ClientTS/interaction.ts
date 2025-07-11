@@ -38,7 +38,6 @@ export class DrawLineTool implements IToolHandler {
         if (!this.start || !this.entitiyId) {
             this.start = null;
             this.entitiyId = null;
-            // TODO?: remove entity from list in the error case
             return;
         }
 
@@ -52,7 +51,6 @@ export class DrawLineTool implements IToolHandler {
         if (!this.start || !this.entitiyId) {
             this.start = null;
             this.entitiyId = null;
-            // TODO?: remove entity from list in the error case
             return;
         }
 
@@ -88,6 +86,97 @@ export class DrawLineTool implements IToolHandler {
         }
 
         return line;
+    }
+}
+
+export class DrawCurve implements IToolHandler {
+    private lineOptions: Tools.LineOptions;
+    private path: Tools.Point[] = [];
+    private previewPoint: Tools.Point | null = null;
+    private entityId: string | null = null;
+    private addEntityCallback: (entity: Tools.Entity) => Promise<void>;
+    private setPreviewEntityCallback: (entity: Tools.Entity | null) => Promise<void>;
+
+    constructor(
+        lineOptions: Tools.LineOptions,
+        updateCallback: (entity: Tools.Entity) => Promise<void>,
+        previewCallback: (entity: Tools.Entity | null) => Promise<void>) {
+
+        this.lineOptions = lineOptions;
+        this.addEntityCallback = updateCallback;
+        this.setPreviewEntityCallback = previewCallback;
+
+        this.onPointerDown = this.onPointerDown.bind(this);
+        this.onPointerMove = this.onPointerMove.bind(this);
+    }
+
+    async onPointerDown(event: PointerEvent) {
+        const pos = getGlobalPos(event);
+
+        if (this.path.length === 0) {
+            this.path.push(pos);
+            this.entityId = crypto.randomUUID();
+            return;
+        }
+
+
+        if (this.calculateDistance(pos, this.path[this.path.length - 1]) < 10) {
+            const curve = this.createCurve(this.path);
+            if (curve)
+                await this.addEntityCallback(curve);
+            this.path = [];
+            return;
+        }
+
+        this.path.push(pos);
+
+        const curve = this.createCurve(this.path);
+        if (curve)
+            await this.addEntityCallback(curve);
+    }
+
+    async onPointerMove(event: PointerEvent) {
+        const pos = getGlobalPos(event);
+        if (this.path.length === 0 || !this.entityId) {
+            this.path = [];
+            this.entityId = null;
+            return;
+        }
+
+        if (this.calculateDistance(pos, this.path[this.path.length - 1]) < 10) {
+            return;
+        }
+
+        const curve = this.createCurve(([...this.path, pos]));
+        if (curve)
+            await this.setPreviewEntityCallback(curve);
+    }
+
+    private calculateDistance(a: Tools.Point, b: Tools.Point): number {
+        return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+    }
+
+    private createCurve(path: Tools.Point[]): Tools.Entity | null {
+        if (path.length < 1 || !this.entityId) return null;
+
+        const position: Tools.Point = {
+            x: Math.min(...path.map(p => p.x)),
+            y: Math.min(...path.map(p => p.y))
+        };
+
+        let curve: Tools.Entity = {
+            id: this.entityId,
+            toolType: Tools.ToolType.DrawCurve,
+            position: position,
+            path: path.map(p => ({ x: p.x - position.x, y: p.y - position.y })),
+            lineEnd: this.lineOptions.lineEnd,
+            lineStyle: this.lineOptions.lineStyle,
+            primarySize: this.lineOptions.thickness,
+            secondarySize: this.lineOptions.endSize,
+            primaryColor: this.lineOptions.color,
+        }
+
+        return curve;
     }
 }
 
@@ -211,7 +300,6 @@ export class MoveTool implements IToolHandler {
 
     private hitTestPixelPerfect(sprite: PIXI.Sprite, globalPos: Tools.Point, localPos: Tools.Point): boolean {
         const bounds = sprite.getBounds();
-        const x = sprite.containsPoint(localPos);
 
         if (localPos.x < 0 || localPos.y < 0 || localPos.x >= bounds.width || localPos.y >= bounds.height) {
             return false;

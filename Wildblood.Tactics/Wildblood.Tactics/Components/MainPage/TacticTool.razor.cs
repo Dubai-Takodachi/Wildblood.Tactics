@@ -94,7 +94,7 @@ public partial class TacticTool
 
     private async Task OnCurveEndChange(LineEnd lineEnd)
     {
-        await UpdateTool(lineOptions: AllOptions.CurveDrawOptions! with { LineEnd = lineEnd });
+        await UpdateTool(curveOptions: AllOptions.CurveDrawOptions! with { LineEnd = lineEnd });
         cosmeticLineEnd = lineEnd;
     }
 
@@ -106,7 +106,7 @@ public partial class TacticTool
 
     private async Task OnCurveStyleChange(LineStyle lineStyle)
     {
-        await UpdateTool(lineOptions: AllOptions.CurveDrawOptions! with { LineStyle = lineStyle });
+        await UpdateTool(curveOptions: AllOptions.CurveDrawOptions! with { LineStyle = lineStyle });
         cosmeticLineStyle = lineStyle;
     }
 
@@ -138,7 +138,7 @@ public partial class TacticTool
 
     private async Task OnIconTextOptionsBackgroundBoolChanged(bool hasBackground)
     {
-        await UpdateTool(iconOptions: AllOptions.IconOptions! with { LabelOptions = AllOptions.IconOptions.LabelOptions with { HasBackground = hasBackground} });
+        await UpdateTool(iconOptions: AllOptions.IconOptions! with { LabelOptions = AllOptions.IconOptions.LabelOptions with { HasBackground = hasBackground } });
     }
 
     private async Task OnIconTextOptionsBackgroundColorChanged(string color)

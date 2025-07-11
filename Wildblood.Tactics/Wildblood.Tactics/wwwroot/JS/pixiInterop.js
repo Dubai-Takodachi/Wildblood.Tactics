@@ -91,7 +91,9 @@ var PixiInterop;
             return null;
         },
         [Tools.ToolType.DrawCurve]: function () {
-            return null;
+            if (!currentTool.curveDrawOptions)
+                return null;
+            return new Interactions.DrawCurve(currentTool.curveDrawOptions, addEntityOnServer, setPreviewEntity);
         },
         [Tools.ToolType.AddText]: function () {
             return null;
@@ -143,8 +145,8 @@ var PixiInterop;
                 drawnSpriteByEntityId[entity.id].destroy();
             }
             const sprite = new PIXI.Sprite(app.renderer.generateTexture(graphic));
-            sprite.x = entity.position.x;
-            sprite.y = entity.position.y;
+            sprite.x = entity.position.x + graphic.bounds.minX;
+            sprite.y = entity.position.y + graphic.bounds.minY;
             currentEntities[entity.id] = entity;
             drawnSpriteByEntityId[entity.id] = sprite;
             entityContainer.addChild(sprite);

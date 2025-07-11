@@ -100,8 +100,9 @@ namespace PixiInterop {
         [Tools.ToolType.DrawFree]: function(): Interactions.IToolHandler | null {
             return null;
         },
-        [Tools.ToolType.DrawCurve]: function(): Interactions.IToolHandler | null {
-            return null;
+        [Tools.ToolType.DrawCurve]: function (): Interactions.IToolHandler | null {
+            if (!currentTool.curveDrawOptions) return null;
+            return new Interactions.DrawCurve(currentTool.curveDrawOptions, addEntityOnServer, setPreviewEntity);
         },
         [Tools.ToolType.AddText]: function(): Interactions.IToolHandler | null {
             return null;
@@ -160,8 +161,8 @@ namespace PixiInterop {
             }
 
             const sprite = new PIXI.Sprite(app.renderer.generateTexture(graphic));
-            sprite.x = entity.position.x;
-            sprite.y = entity.position.y;
+            sprite.x = entity.position.x + graphic.bounds.minX;
+            sprite.y = entity.position.y + graphic.bounds.minY;
             currentEntities[entity.id] = entity;
             drawnSpriteByEntityId[entity.id] = sprite;
             entityContainer.addChild(sprite);

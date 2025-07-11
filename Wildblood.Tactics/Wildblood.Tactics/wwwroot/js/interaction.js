@@ -23,7 +23,6 @@ export class DrawLineTool {
         if (!this.start || !this.entitiyId) {
             this.start = null;
             this.entitiyId = null;
-            // TODO?: remove entity from list in the error case
             return;
         }
         const pos = getGlobalPos(event);
@@ -35,7 +34,6 @@ export class DrawLineTool {
         if (!this.start || !this.entitiyId) {
             this.start = null;
             this.entitiyId = null;
-            // TODO?: remove entity from list in the error case
             return;
         }
         const pos = getGlobalPos(event);
@@ -68,6 +66,77 @@ export class DrawLineTool {
             primaryColor: this.lineOptions.color,
         };
         return line;
+    }
+}
+export class DrawCurve {
+    lineOptions;
+    path = [];
+    previewPoint = null;
+    entityId = null;
+    addEntityCallback;
+    setPreviewEntityCallback;
+    constructor(lineOptions, updateCallback, previewCallback) {
+        this.lineOptions = lineOptions;
+        this.addEntityCallback = updateCallback;
+        this.setPreviewEntityCallback = previewCallback;
+        this.onPointerDown = this.onPointerDown.bind(this);
+        this.onPointerMove = this.onPointerMove.bind(this);
+    }
+    async onPointerDown(event) {
+        const pos = getGlobalPos(event);
+        if (this.path.length === 0) {
+            this.path.push(pos);
+            this.entityId = crypto.randomUUID();
+            return;
+        }
+        if (this.calculateDistance(pos, this.path[this.path.length - 1]) < 10) {
+            const curve = this.createCurve(this.path);
+            if (curve)
+                await this.addEntityCallback(curve);
+            this.path = [];
+            return;
+        }
+        this.path.push(pos);
+        const curve = this.createCurve(this.path);
+        if (curve)
+            await this.addEntityCallback(curve);
+    }
+    async onPointerMove(event) {
+        const pos = getGlobalPos(event);
+        if (this.path.length === 0 || !this.entityId) {
+            this.path = [];
+            this.entityId = null;
+            return;
+        }
+        if (this.calculateDistance(pos, this.path[this.path.length - 1]) < 10) {
+            return;
+        }
+        const curve = this.createCurve(([...this.path, pos]));
+        if (curve)
+            await this.setPreviewEntityCallback(curve);
+    }
+    calculateDistance(a, b) {
+        return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+    }
+    createCurve(path) {
+        if (path.length < 1 || !this.entityId)
+            return null;
+        const position = {
+            x: Math.min(...path.map(p => p.x)),
+            y: Math.min(...path.map(p => p.y))
+        };
+        let curve = {
+            id: this.entityId,
+            toolType: Tools.ToolType.DrawCurve,
+            position: position,
+            path: path.map(p => ({ x: p.x - position.x, y: p.y - position.y })),
+            lineEnd: this.lineOptions.lineEnd,
+            lineStyle: this.lineOptions.lineStyle,
+            primarySize: this.lineOptions.thickness,
+            secondarySize: this.lineOptions.endSize,
+            primaryColor: this.lineOptions.color,
+        };
+        return curve;
     }
 }
 export class PlaceIconTool {
@@ -167,15 +236,13 @@ export class MoveTool {
     }
     hitTestPixelPerfect(sprite, globalPos, localPos) {
         const bounds = sprite.getBounds();
-        const x = sprite.containsPoint(localPos);
         if (localPos.x < 0 || localPos.y < 0 || localPos.x >= bounds.width || localPos.y >= bounds.height) {
             return false;
         }
         const tempSprite = new PIXI.Sprite(sprite.texture);
-        const texture = this.app.renderer.textureGenerator.generateTexture(tempSprite);
         const pixels = this.app.renderer.extract.pixels({
             target: tempSprite,
-            frame: new PIXI.Rectangle(Math.floor(localPos.x), Math.floor(localPos.y), 3, 3),
+            frame: new PIXI.Rectangle(localPos.x, localPos.y, 1, 1),
         }).pixels;
         return pixels[3] > 0;
     }
