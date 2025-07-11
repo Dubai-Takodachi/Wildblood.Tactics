@@ -2,16 +2,15 @@ export var ToolType;
 (function (ToolType) {
     ToolType[ToolType["AddIcon"] = 0] = "AddIcon";
     ToolType[ToolType["Move"] = 1] = "Move";
-    ToolType[ToolType["Resize"] = 2] = "Resize";
-    ToolType[ToolType["DrawFree"] = 3] = "DrawFree";
-    ToolType[ToolType["DrawLine"] = 4] = "DrawLine";
-    ToolType[ToolType["DrawCurve"] = 5] = "DrawCurve";
-    ToolType[ToolType["AddText"] = 6] = "AddText";
-    ToolType[ToolType["AddShape"] = 7] = "AddShape";
-    ToolType[ToolType["Undo"] = 8] = "Undo";
-    ToolType[ToolType["Redo"] = 9] = "Redo";
-    ToolType[ToolType["Clear"] = 10] = "Clear";
-    ToolType[ToolType["Erase"] = 11] = "Erase";
+    ToolType[ToolType["DrawFree"] = 2] = "DrawFree";
+    ToolType[ToolType["DrawLine"] = 3] = "DrawLine";
+    ToolType[ToolType["DrawCurve"] = 4] = "DrawCurve";
+    ToolType[ToolType["AddText"] = 5] = "AddText";
+    ToolType[ToolType["AddShape"] = 6] = "AddShape";
+    ToolType[ToolType["Undo"] = 7] = "Undo";
+    ToolType[ToolType["Redo"] = 8] = "Redo";
+    ToolType[ToolType["Erase"] = 9] = "Erase";
+    ToolType[ToolType["Ping"] = 10] = "Ping";
 })(ToolType || (ToolType = {}));
 ;
 export var LineStyle;
@@ -32,6 +31,7 @@ export var ShapeType;
 (function (ShapeType) {
     ShapeType[ShapeType["Square"] = 0] = "Square";
     ShapeType[ShapeType["Circle"] = 1] = "Circle";
+    ShapeType[ShapeType["Polygon"] = 2] = "Polygon";
 })(ShapeType || (ShapeType = {}));
 ;
 //# sourceMappingURL=tools-types.js.map

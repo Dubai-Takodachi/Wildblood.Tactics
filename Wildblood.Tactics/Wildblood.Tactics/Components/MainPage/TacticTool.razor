@@ -58,7 +58,7 @@
             <MudPaper>
                 <MudColorPicker Label="Line Color" Text="@AllOptions.CurveDrawOptions!.Color" TextChanged="OnCurveColorChanged" Class="my-6" />
                 <MudText>Select Line Style:</MudText>
-                <MudToggleGroup T="LineStyle" Color="Color.Success" Value="cosmeticLineStyle" ValueChanged="OnCurveStyleChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
+                <MudToggleGroup T="LineStyle" Color="Color.Success" Value="cosmeticCurveStyle" ValueChanged="OnCurveStyleChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
                     <MudToggleItem Value="@LineStyle.Normal">
                         <MudIcon Icon="@solidLine" />
                     </MudToggleItem>
@@ -70,7 +70,7 @@
                     </MudToggleItem>
                 </MudToggleGroup>
                 <MudText Class="my-3">Select Line End:</MudText>
-                <MudToggleGroup T="LineEnd" Color="Color.Success" Value="cosmeticLineEnd" ValueChanged="OnCurveEndChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
+                <MudToggleGroup T="LineEnd" Color="Color.Success" Value="cosmeticCurveEnd" ValueChanged="OnCurveEndChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
                     <MudToggleItem Value="@LineEnd.Normal">
                         <MudIcon Icon="@solidLine" />
                     </MudToggleItem>

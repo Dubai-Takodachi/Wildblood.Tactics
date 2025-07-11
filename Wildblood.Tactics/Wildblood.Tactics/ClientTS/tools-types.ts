@@ -1,7 +1,7 @@
-export enum ToolType { AddIcon, Move, Resize, DrawFree, DrawLine, DrawCurve, AddText, AddShape, Undo, Redo, Clear, Erase };
+export enum ToolType { AddIcon, Move, DrawFree, DrawLine, DrawCurve, AddText, AddShape, Undo, Redo, Erase, Ping };
 export enum LineStyle { Normal, Dashed, Dotted };
 export enum LineEnd { Normal, Arrow, Flat };
-export enum ShapeType { Square, Circle };
+export enum ShapeType { Square, Circle, Polygon };
 
 export type Point = {
     x: number;
@@ -19,8 +19,6 @@ export interface Entity {
     shapeType?: ShapeType;
     primarySize?: number;
     secondarySize?: number;
-    primaryTransparencyPercent?: number;
-    secondaryTransparencyPercent?: number;
     primaryColor?: string;
     secondaryColor?: string;
     text?: string;

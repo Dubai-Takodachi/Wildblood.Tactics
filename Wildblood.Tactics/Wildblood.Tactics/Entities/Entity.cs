@@ -24,10 +24,6 @@ public record Entity
 
     public int? SecondarySize { get; init; }
 
-    public byte? PrimaryTransparencyPercent { get; init; }
-
-    public byte? SecondaryTransparencyPercent { get; init; }
-
     public string? PrimaryColor { get; init; }
 
     public string? SecondaryColor { get; init; }

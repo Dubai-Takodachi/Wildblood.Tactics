@@ -94,9 +94,6 @@ namespace PixiInterop {
         [Tools.ToolType.Move]: function (): Interactions.IToolHandler | null {
             return new Interactions.MoveTool(addEntityOnServer, setPreviewEntity, currentEntities, drawnSpriteByEntityId, app);
         },
-        [Tools.ToolType.Resize]: function(): Interactions.IToolHandler | null {
-            return null;
-        },
         [Tools.ToolType.DrawFree]: function (): Interactions.IToolHandler | null {
             if (!currentTool.freeDrawOptions) return null;
             return new Interactions.DrawFree(currentTool.freeDrawOptions, addEntityOnServer, setPreviewEntity);
@@ -117,10 +114,10 @@ namespace PixiInterop {
         [Tools.ToolType.Redo]: function(): Interactions.IToolHandler | null {
             return null;
         },
-        [Tools.ToolType.Clear]: function(): Interactions.IToolHandler | null {
+        [Tools.ToolType.Erase]: function(): Interactions.IToolHandler | null {
             return null;
         },
-        [Tools.ToolType.Erase]: function(): Interactions.IToolHandler | null {
+        [Tools.ToolType.Ping]: function (): Interactions.IToolHandler | null {
             return null;
         }
     };

@@ -84,9 +84,6 @@ var PixiInterop;
         [Tools.ToolType.Move]: function () {
             return new Interactions.MoveTool(addEntityOnServer, setPreviewEntity, currentEntities, drawnSpriteByEntityId, app);
         },
-        [Tools.ToolType.Resize]: function () {
-            return null;
-        },
         [Tools.ToolType.DrawFree]: function () {
             if (!currentTool.freeDrawOptions)
                 return null;
@@ -109,10 +106,10 @@ var PixiInterop;
         [Tools.ToolType.Redo]: function () {
             return null;
         },
-        [Tools.ToolType.Clear]: function () {
+        [Tools.ToolType.Erase]: function () {
             return null;
         },
-        [Tools.ToolType.Erase]: function () {
+        [Tools.ToolType.Ping]: function () {
             return null;
         }
     };
