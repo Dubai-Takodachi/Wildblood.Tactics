@@ -28,9 +28,7 @@ export async function drawEntity(entity: Tools.Entity): Promise<PIXI.Graphics | 
 function drawLine(entity: Tools.Entity): PIXI.Graphics | null {
     let g = new PIXI.Graphics();
 
-    for (var i = 0; i < entity.path!.length - 1; i++) {
-        g = drawLinePointToPoint(g, entity, entity.path![i], entity.path![i + 1]);
-    }
+    g = drawPath(g, entity, entity.path!);
     g = drawLineEnd(g, entity, entity.path![entity.path!.length - 2], entity.path![entity.path!.length - 1]);
 
     return g;
@@ -40,61 +38,77 @@ function drawCurve(entity: Tools.Entity): PIXI.Graphics | null {
     const curvePath = getSmoothCurve(entity.path!)
     let g = new PIXI.Graphics();
 
-    for (var i = 0; i < curvePath.length - 1; i++) {
-        g = drawLinePointToPoint(g, entity, curvePath[i], curvePath[i + 1]);
-    }
+    g = drawPath(g, entity, curvePath);
     g = drawLineEnd(g, entity, curvePath[curvePath!.length - 2], curvePath[curvePath.length - 1]);
 
     return g;
 }
 
-function drawLinePointToPoint(g: PIXI.Graphics, entity: Tools.Entity, a: Tools.Point, b: Tools.Point) {
+function drawPath(g: PIXI.Graphics, entity: Tools.Entity, path: Tools.Point[]): PIXI.Graphics {
     if (entity.lineStyle === Tools.LineStyle.Normal) {
-        g.moveTo(a.x, a.y)
-            .lineTo(b.x, b.y)
-            .stroke({ width: entity.primarySize, color: entity.primaryColor })
+        for (var i = 0; i < path.length - 1; i++) {
+            g.moveTo(path[i].x, path[i].y)
+                .lineTo(path[i + 1].x, path[i + 1].y)
+                .stroke({ width: entity.primarySize, color: entity.primaryColor })
+        }
     } else if (entity.lineStyle === Tools.LineStyle.Dotted) {
-        const dx = b.x - a.x;
-        const dy = b.y - a.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        const dots = Math.floor((distance / entity.primarySize!) / 4);
-
-        const stepDistX = dx / dots;
-        const stepDistY = dy / dots;
-
-        for (let i = 0; i < dots; i++) {
-            const stepX = a.x + stepDistX * i;
-            const stepY = a.y + stepDistY * i;
-            g.circle(stepX, stepY, entity.primarySize!)
+        const stepSize = entity.primarySize! * 3;
+        const spacedPath = getEvenlySpacedPoints(path, stepSize);
+        for (var i = 0; i < spacedPath.length; i++) {
+            g.circle(spacedPath[i].x, spacedPath[i].y, entity.primarySize!)
                 .fill(entity.primaryColor);
         }
     } else if (entity.lineStyle === Tools.LineStyle.Dashed) {
-        const dashLength = entity.primarySize! * 3;
-        const gapLength = entity.primarySize!;
-        const dx = b.x - a.x;
-        const dy = b.y - a.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        const dashCount = Math.floor(distance / (dashLength + gapLength));
-
-        const stepX = dx / dashCount;
-        const stepY = dy / dashCount;
-
-        const dashX = (dashLength / (dashLength + gapLength)) * stepX;
-        const dashY = (dashLength / (dashLength + gapLength)) * stepY;
-
-        for (let i = 0; i < dashCount; i++) {
-            const x1 = a.x + i * stepX;
-            const y1 = a.y + i * stepY;
-            const x2 = x1 + dashX;
-            const y2 = y1 + dashY;
-
-            g.moveTo(x1, y1)
-                .lineTo(x2, y2)
-                .stroke({ width: entity.primarySize, color: entity.primaryColor });
+        const stepSize = entity.primarySize!;
+        const spacedPath = getEvenlySpacedPoints(path, stepSize);
+        for (var i = 0; i < spacedPath.length - 1; i++) {
+            if (i % 3 > 0) {
+                g.moveTo(spacedPath[i].x, spacedPath[i].y)
+                    .lineTo(spacedPath[i + 1].x, spacedPath[i + 1].y)
+                    .stroke({ width: entity.primarySize, color: entity.primaryColor });
+            }
         }
     }
 
     return g;
+}
+
+function getEvenlySpacedPoints(path: Tools.Point[], stepSize: number): Tools.Point[] {
+    if (path.length < 2) return [];
+
+    const result: Tools.Point[] = [path[0]];
+    let remaining = stepSize;
+    let lastPoint = path[0];
+
+    for (let i = 1; i < path.length; i++) {
+        let curr = path[i];
+        let dx = curr.x - lastPoint.x;
+        let dy = curr.y - lastPoint.y;
+        let segmentLength = Math.sqrt(dx * dx + dy * dy);
+
+        while (segmentLength >= remaining) {
+            let ratio = remaining / segmentLength;
+
+            const newX = lastPoint.x + dx * ratio;
+            const newY = lastPoint.y + dy * ratio;
+            const newPoint = { x: newX, y: newY };
+
+            result.push(newPoint);
+
+            // Prepare for next step
+            lastPoint = newPoint;
+            dx = curr.x - lastPoint.x;
+            dy = curr.y - lastPoint.y;
+            segmentLength = Math.sqrt(dx * dx + dy * dy);
+            remaining = stepSize;
+        }
+
+        // Remaining segment is smaller than stepSize, move to next
+        remaining -= segmentLength;
+        lastPoint = curr;
+    }
+
+    return result;
 }
 
 function drawLineEnd(g: PIXI.Graphics, entity: Tools.Entity, a: Tools.Point, b: Tools.Point) {
@@ -220,4 +234,24 @@ async function drawIcon(entity: Tools.Entity): Promise<PIXI.Graphics | null> {
     }
 
     return graphic;
+}
+
+function calculateDistance(a: Tools.Point, b: Tools.Point): number {
+    return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+}
+
+function getSteppedPointByCount(a: Tools.Point, b: Tools.Point, stepSize: number, stepCount: number): Tools.Point {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance === 0) return { x: a.x, y: a.y };
+
+    const totalStepDistance = stepSize * stepCount;
+    const ratio = totalStepDistance / distance;
+
+    return {
+        x: a.x + dx * ratio,
+        y: a.y + dy * ratio
+    };
 }
