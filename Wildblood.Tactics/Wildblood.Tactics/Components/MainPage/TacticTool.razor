@@ -79,7 +79,35 @@
                     </MudToggleItem>
                 </MudToggleGroup>
             </MudPaper>
-
+        </MudTabPanel>
+        <MudTabPanel Icon="@vectorLineIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.DrawFree)">
+            <MudPaper>
+                <MudColorPicker Label="Line Color" Text="@AllOptions.FreeDrawOptions!.Color" TextChanged="OnFreeColorChanged" Class="my-6" />
+                <MudText>Select Line Style:</MudText>
+                <MudToggleGroup T="LineStyle" Color="Color.Success" Value="cosmeticFreeStyle" ValueChanged="OnFreeStyleChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
+                    <MudToggleItem Value="@LineStyle.Normal">
+                        <MudIcon Icon="@solidLine" />
+                    </MudToggleItem>
+                    <MudToggleItem Value="@LineStyle.Dashed">
+                        <MudIcon Icon="@dashedLine" />
+                    </MudToggleItem>
+                    <MudToggleItem Value="@LineStyle.Dotted">
+                        <MudIcon Icon="@dottetLine" />
+                    </MudToggleItem>
+                </MudToggleGroup>
+                <MudText>Select Line End:</MudText>
+                <MudToggleGroup T="LineEnd" Color="Color.Success" Value="cosmeticFreeEnd" ValueChanged="OnFreeEndChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
+                    <MudToggleItem Value="@LineEnd.Normal">
+                        <MudIcon Icon="@solidLine" />
+                    </MudToggleItem>
+                    <MudToggleItem Value="@LineEnd.Arrow">
+                        <MudIcon Icon="@arrowHead" />
+                    </MudToggleItem>
+                    <MudToggleItem Value="@LineEnd.Flat">
+                        <MudIcon Icon="@straightArrow" />
+                    </MudToggleItem>
+                </MudToggleGroup>
+            </MudPaper>
         </MudTabPanel>
         <MudTabPanel Icon="@Icons.Material.Outlined.Rectangle" @onclick="() => ChangeTool(Models.Tools.ToolType.AddShape)">
             <MudPaper>

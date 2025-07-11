@@ -92,7 +92,6 @@ export class DrawLineTool implements IToolHandler {
 export class DrawCurve implements IToolHandler {
     private lineOptions: Tools.LineOptions;
     private path: Tools.Point[] = [];
-    private previewPoint: Tools.Point | null = null;
     private entityId: string | null = null;
     private addEntityCallback: (entity: Tools.Entity) => Promise<void>;
     private setPreviewEntityCallback: (entity: Tools.Entity | null) => Promise<void>;
@@ -118,7 +117,6 @@ export class DrawCurve implements IToolHandler {
             this.entityId = crypto.randomUUID();
             return;
         }
-
 
         if (this.calculateDistance(pos, this.path[this.path.length - 1]) < 10) {
             const curve = this.createCurve(this.path);
@@ -177,6 +175,78 @@ export class DrawCurve implements IToolHandler {
         }
 
         return curve;
+    }
+}
+
+export class DrawFree implements IToolHandler {
+    private lineOptions: Tools.LineOptions;
+    private path: Tools.Point[] = [];
+    private entityId: string | null = null;
+    private addEntityCallback: (entity: Tools.Entity) => Promise<void>;
+    private setPreviewEntityCallback: (entity: Tools.Entity | null) => Promise<void>;
+
+    constructor(
+        lineOptions: Tools.LineOptions,
+        updateCallback: (entity: Tools.Entity) => Promise<void>,
+        previewCallback: (entity: Tools.Entity | null) => Promise<void>) {
+
+        this.lineOptions = lineOptions;
+        this.addEntityCallback = updateCallback;
+        this.setPreviewEntityCallback = previewCallback;
+
+        this.onPointerDown = this.onPointerDown.bind(this);
+        this.onPointerMove = this.onPointerMove.bind(this);
+        this.onPointerUp = this.onPointerUp.bind(this);
+    }
+
+    async onPointerDown(event: PointerEvent) {
+        const pos = getGlobalPos(event);
+        this.entityId = crypto.randomUUID();
+        this.path = [pos];
+    }
+
+    async onPointerMove(event: PointerEvent) {
+        if (this.path.length === 0) return;
+
+        const pos = getGlobalPos(event);
+        if (calculateDistance(pos, this.path[this.path.length - 1]) >= 1.4) {
+            this.path.push(pos);
+            const freeDrawing = this.createFreeDrawing(this.path);
+            if (freeDrawing)
+                await this.setPreviewEntityCallback(freeDrawing);
+        }
+    }
+
+    async onPointerUp(event: PointerEvent) {
+        if (this.path.length === 0) return;
+        const freeDrawing = this.createFreeDrawing(this.path);
+        if (freeDrawing)
+            await this.addEntityCallback(freeDrawing);
+        this.path = [];
+        this.entityId = null;
+    }
+
+    private createFreeDrawing(path: Tools.Point[]): Tools.Entity | null {
+        if (path.length === 0 || !this.entityId) return null;
+
+        const position: Tools.Point = {
+            x: Math.min(...path.map(p => p.x)),
+            y: Math.min(...path.map(p => p.y))
+        };
+
+        let freeDrawing: Tools.Entity = {
+            id: this.entityId,
+            toolType: Tools.ToolType.DrawFree,
+            position: position,
+            path: path.map(p => ({ x: p.x - position.x, y: p.y - position.y })),
+            lineEnd: this.lineOptions.lineEnd,
+            lineStyle: this.lineOptions.lineStyle,
+            primarySize: this.lineOptions.thickness,
+            secondarySize: this.lineOptions.endSize,
+            primaryColor: this.lineOptions.color,
+        }
+
+        return freeDrawing;
     }
 }
 
@@ -317,4 +387,8 @@ export class MoveTool implements IToolHandler {
 function getGlobalPos(event: PointerEvent): { x: number; y: number } {
     const rect = (event.target as HTMLElement).getBoundingClientRect();
     return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+}
+
+function calculateDistance(a: Tools.Point, b: Tools.Point): number {
+    return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
 }

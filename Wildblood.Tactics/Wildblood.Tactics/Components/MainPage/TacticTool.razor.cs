@@ -27,6 +27,10 @@ public partial class TacticTool
     private static string straightArrow = "<svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\r\n  <!-- Diagonale Linie -->\r\n  <line x1=\"2\" y1=\"22\" x2=\"22\" y2=\"2\" stroke=\"white\" stroke-width=\"2\" stroke-linecap=\"round\" />\r\n\r\n  <!-- Querlinie (90° zur Diagonale, also gedreht) -->\r\n  <line x1=\"-3\" y1=\"0\" x2=\"3\" y2=\"0\" stroke=\"white\" stroke-width=\"2\" stroke-linecap=\"round\"\r\n        transform=\"translate(22 2) rotate(45)\" />\r\n</svg>\r\n";
     private LineStyle cosmeticLineStyle;
     private LineEnd cosmeticLineEnd;
+    private LineStyle cosmeticCurveStyle;
+    private LineEnd cosmeticCurveEnd;
+    private LineStyle cosmeticFreeStyle;
+    private LineEnd cosmeticFreeEnd;
     private ToolOptions AllOptions => TacticToolService.AllOptions;
 
     protected override void OnInitialized()
@@ -76,6 +80,11 @@ public partial class TacticTool
         await UpdateTool(curveOptions: AllOptions.CurveDrawOptions! with { Color = color });
     }
 
+    private async Task OnFreeColorChanged(string color)
+    {
+        await UpdateTool(freeDrawOptions: AllOptions.FreeDrawOptions! with { Color = color });
+    }
+
     private async Task OnShapeOutlineColorChanged(string color)
     {
         await UpdateTool(shapeOptions: AllOptions.ShapeOptions! with { OutlineColor = color });
@@ -95,7 +104,13 @@ public partial class TacticTool
     private async Task OnCurveEndChange(LineEnd lineEnd)
     {
         await UpdateTool(curveOptions: AllOptions.CurveDrawOptions! with { LineEnd = lineEnd });
-        cosmeticLineEnd = lineEnd;
+        cosmeticCurveEnd = lineEnd;
+    }
+
+    private async Task OnFreeEndChange(LineEnd lineEnd)
+    {
+        await UpdateTool(freeDrawOptions: AllOptions.FreeDrawOptions! with { LineEnd = lineEnd });
+        cosmeticFreeEnd = lineEnd;
     }
 
     private async Task OnLineStyleChange(LineStyle lineStyle)
@@ -107,7 +122,13 @@ public partial class TacticTool
     private async Task OnCurveStyleChange(LineStyle lineStyle)
     {
         await UpdateTool(curveOptions: AllOptions.CurveDrawOptions! with { LineStyle = lineStyle });
-        cosmeticLineStyle = lineStyle;
+        cosmeticCurveStyle = lineStyle;
+    }
+
+    private async Task OnFreeStyleChange(LineStyle lineStyle)
+    {
+        await UpdateTool(freeDrawOptions: AllOptions.FreeDrawOptions! with { LineStyle = lineStyle });
+        cosmeticFreeStyle = lineStyle;
     }
 
     private async Task OnShapeLineStyleChanged(LineStyle lineStyle)

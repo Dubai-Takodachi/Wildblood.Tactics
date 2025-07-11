@@ -71,7 +71,6 @@ export class DrawLineTool {
 export class DrawCurve {
     lineOptions;
     path = [];
-    previewPoint = null;
     entityId = null;
     addEntityCallback;
     setPreviewEntityCallback;
@@ -137,6 +136,66 @@ export class DrawCurve {
             primaryColor: this.lineOptions.color,
         };
         return curve;
+    }
+}
+export class DrawFree {
+    lineOptions;
+    path = [];
+    entityId = null;
+    addEntityCallback;
+    setPreviewEntityCallback;
+    constructor(lineOptions, updateCallback, previewCallback) {
+        this.lineOptions = lineOptions;
+        this.addEntityCallback = updateCallback;
+        this.setPreviewEntityCallback = previewCallback;
+        this.onPointerDown = this.onPointerDown.bind(this);
+        this.onPointerMove = this.onPointerMove.bind(this);
+        this.onPointerUp = this.onPointerUp.bind(this);
+    }
+    async onPointerDown(event) {
+        const pos = getGlobalPos(event);
+        this.entityId = crypto.randomUUID();
+        this.path = [pos];
+    }
+    async onPointerMove(event) {
+        if (this.path.length === 0)
+            return;
+        const pos = getGlobalPos(event);
+        if (calculateDistance(pos, this.path[this.path.length - 1]) >= 1.4) {
+            this.path.push(pos);
+            const freeDrawing = this.createFreeDrawing(this.path);
+            if (freeDrawing)
+                await this.setPreviewEntityCallback(freeDrawing);
+        }
+    }
+    async onPointerUp(event) {
+        if (this.path.length === 0)
+            return;
+        const freeDrawing = this.createFreeDrawing(this.path);
+        if (freeDrawing)
+            await this.addEntityCallback(freeDrawing);
+        this.path = [];
+        this.entityId = null;
+    }
+    createFreeDrawing(path) {
+        if (path.length === 0 || !this.entityId)
+            return null;
+        const position = {
+            x: Math.min(...path.map(p => p.x)),
+            y: Math.min(...path.map(p => p.y))
+        };
+        let freeDrawing = {
+            id: this.entityId,
+            toolType: Tools.ToolType.DrawFree,
+            position: position,
+            path: path.map(p => ({ x: p.x - position.x, y: p.y - position.y })),
+            lineEnd: this.lineOptions.lineEnd,
+            lineStyle: this.lineOptions.lineStyle,
+            primarySize: this.lineOptions.thickness,
+            secondarySize: this.lineOptions.endSize,
+            primaryColor: this.lineOptions.color,
+        };
+        return freeDrawing;
     }
 }
 export class PlaceIconTool {
@@ -250,5 +309,8 @@ export class MoveTool {
 function getGlobalPos(event) {
     const rect = event.target.getBoundingClientRect();
     return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+}
+function calculateDistance(a, b) {
+    return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
 }
 //# sourceMappingURL=interaction.js.map

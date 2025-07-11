@@ -97,8 +97,9 @@ namespace PixiInterop {
         [Tools.ToolType.Resize]: function(): Interactions.IToolHandler | null {
             return null;
         },
-        [Tools.ToolType.DrawFree]: function(): Interactions.IToolHandler | null {
-            return null;
+        [Tools.ToolType.DrawFree]: function (): Interactions.IToolHandler | null {
+            if (!currentTool.freeDrawOptions) return null;
+            return new Interactions.DrawFree(currentTool.freeDrawOptions, addEntityOnServer, setPreviewEntity);
         },
         [Tools.ToolType.DrawCurve]: function (): Interactions.IToolHandler | null {
             if (!currentTool.curveDrawOptions) return null;
@@ -124,10 +125,6 @@ namespace PixiInterop {
         }
     };
 
-    ////TODOS:
-    //// - draw preview
-    //// - other ToolTypes
-    //// - bug: too many entities in tactic leading to not live updating other clients
     async function addEntityOnServer(entity: Tools.Entity): Promise<void> {
         const graphic = await Draw.drawEntity(entity);
         if (graphic) {
