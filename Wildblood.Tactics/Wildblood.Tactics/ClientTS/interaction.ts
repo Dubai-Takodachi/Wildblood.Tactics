@@ -268,7 +268,10 @@ export class PlaceIconTool implements IToolHandler {
         if (event.button !== 0) return;
 
         const pos = getPosition(event, this.context);
-        const icon = this.createIcon(pos.x, pos.y, this.entitiyId);
+        const icon = this.createIcon(
+            pos.x - (this.iconOptions.iconSize / 2),
+            pos.y - (this.iconOptions.iconSize / 2),
+            this.entitiyId);
         if (icon)
             await this.context.addEntityCallback(icon);
         this.entitiyId = crypto.randomUUID();
@@ -276,7 +279,10 @@ export class PlaceIconTool implements IToolHandler {
 
     async onPointerMove(event: PointerEvent) {
         const pos = getPosition(event, this.context);
-        const icon = this.createIcon(pos.x, pos.y, this.entitiyId);
+        const icon = this.createIcon(
+            pos.x - (this.iconOptions.iconSize / 2),
+            pos.y - (this.iconOptions.iconSize / 2),
+            this.entitiyId);
         if (icon)
             await this.context.setPreviewEntityCallback(icon);
     }
