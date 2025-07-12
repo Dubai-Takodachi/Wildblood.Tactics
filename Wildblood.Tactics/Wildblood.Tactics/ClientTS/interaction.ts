@@ -30,6 +30,7 @@ export class DrawLineTool implements IToolHandler {
     }
 
     async onPointerDown(event: PointerEvent) {
+        if (event.button !== 0) return;
         const pos = getPosition(event, this.context);
         this.start = pos;
         this.entitiyId = crypto.randomUUID();
@@ -49,6 +50,8 @@ export class DrawLineTool implements IToolHandler {
     }
 
     async onPointerUp(event: PointerEvent) {
+        if (event.button !== 0) return;
+
         if (!this.start || !this.entitiyId) {
             this.start = null;
             this.entitiyId = null;
@@ -108,6 +111,8 @@ export class DrawCurve implements IToolHandler {
     }
 
     async onPointerDown(event: PointerEvent) {
+        if (event.button !== 0) return;
+
         const pos = getPosition(event, this.context);
 
         if (this.path.length === 0) {
@@ -192,6 +197,8 @@ export class DrawFree implements IToolHandler {
     }
 
     async onPointerDown(event: PointerEvent) {
+        if (event.button !== 0) return;
+
         const pos = getPosition(event, this.context);
         this.entityId = crypto.randomUUID();
         this.path = [pos];
@@ -210,7 +217,9 @@ export class DrawFree implements IToolHandler {
     }
 
     async onPointerUp(event: PointerEvent) {
+        if (event.button !== 0) return;
         if (this.path.length === 0) return;
+
         const freeDrawing = this.createFreeDrawing(this.path);
         if (freeDrawing)
             await this.context.addEntityCallback(freeDrawing);
@@ -256,6 +265,8 @@ export class PlaceIconTool implements IToolHandler {
     }
 
     async onPointerDown(event: PointerEvent) {
+        if (event.button !== 0) return;
+
         const pos = getPosition(event, this.context);
         const icon = this.createIcon(pos.x, pos.y, this.entitiyId);
         if (icon)
@@ -315,6 +326,8 @@ export class MoveTool implements IToolHandler {
     }
 
     async onPointerDown(event: PointerEvent) {
+        if (event.button !== 0) return;
+
         const pos = getPosition(event, this.context);
 
         const keys = Object.keys(this.drawnSpriteByEntityId).reverse();
@@ -342,7 +355,9 @@ export class MoveTool implements IToolHandler {
     }
 
     async onPointerUp(event: PointerEvent) {
+        if (event.button !== 0) return;
         if (!this.entityId) return;
+
         await this.context.addEntityCallback({ ...this.currentEntities[this.entityId] });
         this.entityId = null;
         this.entityClickedPosition = null;

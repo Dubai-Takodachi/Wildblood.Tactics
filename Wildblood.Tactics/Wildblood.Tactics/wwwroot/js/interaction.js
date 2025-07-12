@@ -13,6 +13,8 @@ export class DrawLineTool {
         this.onPointerUp = this.onPointerUp.bind(this);
     }
     async onPointerDown(event) {
+        if (event.button !== 0)
+            return;
         const pos = getPosition(event, this.context);
         this.start = pos;
         this.entitiyId = crypto.randomUUID();
@@ -29,6 +31,8 @@ export class DrawLineTool {
             await this.context.setPreviewEntityCallback(line);
     }
     async onPointerUp(event) {
+        if (event.button !== 0)
+            return;
         if (!this.start || !this.entitiyId) {
             this.start = null;
             this.entitiyId = null;
@@ -78,6 +82,8 @@ export class DrawCurve {
         this.onPointerMove = this.onPointerMove.bind(this);
     }
     async onPointerDown(event) {
+        if (event.button !== 0)
+            return;
         const pos = getPosition(event, this.context);
         if (this.path.length === 0) {
             this.path.push(pos);
@@ -147,6 +153,8 @@ export class DrawFree {
         this.onPointerUp = this.onPointerUp.bind(this);
     }
     async onPointerDown(event) {
+        if (event.button !== 0)
+            return;
         const pos = getPosition(event, this.context);
         this.entityId = crypto.randomUUID();
         this.path = [pos];
@@ -163,6 +171,8 @@ export class DrawFree {
         }
     }
     async onPointerUp(event) {
+        if (event.button !== 0)
+            return;
         if (this.path.length === 0)
             return;
         const freeDrawing = this.createFreeDrawing(this.path);
@@ -203,6 +213,8 @@ export class PlaceIconTool {
         this.onPointerMove = this.onPointerMove.bind(this);
     }
     async onPointerDown(event) {
+        if (event.button !== 0)
+            return;
         const pos = getPosition(event, this.context);
         const icon = this.createIcon(pos.x, pos.y, this.entitiyId);
         if (icon)
@@ -250,6 +262,8 @@ export class MoveTool {
         this.onPointerUp = this.onPointerUp.bind(this);
     }
     async onPointerDown(event) {
+        if (event.button !== 0)
+            return;
         const pos = getPosition(event, this.context);
         const keys = Object.keys(this.drawnSpriteByEntityId).reverse();
         for (const key of keys) {
@@ -257,7 +271,7 @@ export class MoveTool {
             if (!sprite.position)
                 continue;
             const local = { x: pos.x - sprite.x, y: pos.y - sprite.y };
-            if (this.hitTestPixelPerfect(sprite, pos, local)) {
+            if (this.hitTestPixelPerfect(sprite, local)) {
                 this.entityClickedPosition = local;
                 this.entityId = key;
                 break;
@@ -275,13 +289,15 @@ export class MoveTool {
         await this.context.setPreviewEntityCallback({ ...this.currentEntities[this.entityId] });
     }
     async onPointerUp(event) {
+        if (event.button !== 0)
+            return;
         if (!this.entityId)
             return;
         await this.context.addEntityCallback({ ...this.currentEntities[this.entityId] });
         this.entityId = null;
         this.entityClickedPosition = null;
     }
-    hitTestPixelPerfect(sprite, globalPos, localPos) {
+    hitTestPixelPerfect(sprite, localPos) {
         const bounds = sprite.getBounds();
         if (localPos.x < 0 || localPos.y < 0 || localPos.x >= bounds.width || localPos.y >= bounds.height) {
             return false;
