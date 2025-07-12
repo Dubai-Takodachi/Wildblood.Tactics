@@ -7,30 +7,22 @@ import * as Draw from './draw-entity.js';
 
 namespace PixiInterop {
     let app: PIXI.Application;
-    let iconMap: Record<string, PIXI.Container> = {};
-    let bgSprite: PIXI.Sprite | null = null;
-    let pan: { x: number; y: number } = { x: 0, y: 0 };
-    let zoom: number = 1;
-    let isPanning: boolean = false;
-    let panStart: { x: number; y: number } = { x: 0, y: 0 };
-    let panOrigin: { x: number; y: number } = { x: 0, y: 0 };
+    let dotNetObjRef: DotNetObjectReference;
+
     let mainContainer: PIXI.Container = new PIXI.Container();
     let entityContainer: PIXI.Container = new PIXI.Container();
-    let dragging: boolean = false;
+    let bgSprite: PIXI.Sprite | null = null;
+
+    let isDragging: boolean = false;
     let lastDragPos: Tools.Point | null = null;
-    let dragOffset: { x: number; y: number } = { x: 0, y: 0 };
-    let wasDragging: boolean = false;
+
+    let currentEntities: Record<string, Tools.Entity> = {};
+    let drawnSpriteByEntityId: Record<string, PIXI.Sprite> = {};
+
     let currentTool: Tools.ToolOptions;
     let interactionHandler: Interactions.IToolHandler | null = null;
-    let currentEntities: Record<string, Tools.Entity> = {};
-    let temporaryEntity: Tools.Entity | null = null;
-    let drawnSpriteByEntityId: Record<string, PIXI.Sprite> = {};
-    let dotNetObjRef: DotNetObjectReference;
     let interactionContext: Interactions.InteractionContext;
-
-    interface DotNetObjectReference {
-        invokeMethodAsync<T = any>(methodIdentifier: string, ...args: any[]): Promise<T>;
-    }
+    let temporaryEntity: Tools.Entity | null = null;
 
     export async function createApp(
             dotNetRef: DotNetObjectReference,
@@ -50,11 +42,7 @@ namespace PixiInterop {
         mainContainer.addChild(entityContainer);
         app.stage.addChild(mainContainer);
 
-        iconMap = {};
         bgSprite = null;
-        pan = { x: 0, y: 0 };
-        zoom = 1;
-        isPanning = false;
 
         interactionContext = {
             addEntityCallback: addEntityOnServer,
@@ -65,7 +53,7 @@ namespace PixiInterop {
 
         app.canvas.addEventListener("mousedown", (event) => {
             if (event.button === 1) { // Middle mouse button
-                dragging = true;
+                isDragging = true;
                 lastDragPos = { x: event.clientX, y: event.clientY };
                 // Prevent default middle-mouse scroll behavior
                 event.preventDefault();
@@ -73,7 +61,7 @@ namespace PixiInterop {
         });
 
         app.canvas.addEventListener("mousemove", (event) => {
-            if (dragging && lastDragPos) {
+            if (isDragging && lastDragPos) {
                 const dx = event.clientX - lastDragPos.x;
                 const dy = event.clientY - lastDragPos.y;
 
@@ -88,13 +76,13 @@ namespace PixiInterop {
 
         app.canvas.addEventListener("mouseup", (event) => {
             if (event.button === 1) {
-                dragging = false;
+                isDragging = false;
                 lastDragPos = null;
             }
         });
 
         app.canvas.addEventListener("mouseleave", () => {
-            dragging = false;
+            isDragging = false;
             lastDragPos = null;
         });
 
@@ -218,6 +206,10 @@ namespace PixiInterop {
         }
     }
 
+    async function updateSpecificServerEntities(entities: Tools.Entity[]): Promise<void> {
+        dotNetObjRef.invokeMethodAsync('UpdateServerEntities', entities);
+    }
+
     async function setPreviewEntity(entity: Tools.Entity | null): Promise<void> {
         if (temporaryEntity && drawnSpriteByEntityId[temporaryEntity.id] && !currentEntities[temporaryEntity.id]) {
             entityContainer.removeChild(drawnSpriteByEntityId[temporaryEntity.id]);
@@ -229,10 +221,6 @@ namespace PixiInterop {
         if (entity) {
             await drawEntityToScreen(entity);
         }
-    }
-
-    async function updateSpecificServerEntities(entities: Tools.Entity[]): Promise<void> {
-        dotNetObjRef.invokeMethodAsync('UpdateServerEntities', entities);
     }
 
     async function drawEntityToScreen(entity: Tools.Entity): Promise<void> {
@@ -298,6 +286,10 @@ namespace PixiInterop {
                 await drawEntityToScreen(entity);
             }
         }
+    }
+
+    interface DotNetObjectReference {
+        invokeMethodAsync<T = any>(methodIdentifier: string, ...args: any[]): Promise<T>;
     }
 }
 

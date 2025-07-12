@@ -6,26 +6,18 @@ import * as Draw from './draw-entity.js';
 var PixiInterop;
 (function (PixiInterop) {
     let app;
-    let iconMap = {};
-    let bgSprite = null;
-    let pan = { x: 0, y: 0 };
-    let zoom = 1;
-    let isPanning = false;
-    let panStart = { x: 0, y: 0 };
-    let panOrigin = { x: 0, y: 0 };
+    let dotNetObjRef;
     let mainContainer = new PIXI.Container();
     let entityContainer = new PIXI.Container();
-    let dragging = false;
+    let bgSprite = null;
+    let isDragging = false;
     let lastDragPos = null;
-    let dragOffset = { x: 0, y: 0 };
-    let wasDragging = false;
+    let currentEntities = {};
+    let drawnSpriteByEntityId = {};
     let currentTool;
     let interactionHandler = null;
-    let currentEntities = {};
-    let temporaryEntity = null;
-    let drawnSpriteByEntityId = {};
-    let dotNetObjRef;
     let interactionContext;
+    let temporaryEntity = null;
     async function createApp(dotNetRef, iconNames) {
         if (app) {
             app.destroy(true, { children: true });
@@ -41,11 +33,7 @@ var PixiInterop;
         mainContainer = new PIXI.Container();
         mainContainer.addChild(entityContainer);
         app.stage.addChild(mainContainer);
-        iconMap = {};
         bgSprite = null;
-        pan = { x: 0, y: 0 };
-        zoom = 1;
-        isPanning = false;
         interactionContext = {
             addEntityCallback: addEntityOnServer,
             setPreviewEntityCallback: setPreviewEntity,
@@ -54,14 +42,14 @@ var PixiInterop;
         };
         app.canvas.addEventListener("mousedown", (event) => {
             if (event.button === 1) { // Middle mouse button
-                dragging = true;
+                isDragging = true;
                 lastDragPos = { x: event.clientX, y: event.clientY };
                 // Prevent default middle-mouse scroll behavior
                 event.preventDefault();
             }
         });
         app.canvas.addEventListener("mousemove", (event) => {
-            if (dragging && lastDragPos) {
+            if (isDragging && lastDragPos) {
                 const dx = event.clientX - lastDragPos.x;
                 const dy = event.clientY - lastDragPos.y;
                 mainContainer.x += dx;
@@ -72,12 +60,12 @@ var PixiInterop;
         });
         app.canvas.addEventListener("mouseup", (event) => {
             if (event.button === 1) {
-                dragging = false;
+                isDragging = false;
                 lastDragPos = null;
             }
         });
         app.canvas.addEventListener("mouseleave", () => {
-            dragging = false;
+            isDragging = false;
             lastDragPos = null;
         });
         app.canvas.addEventListener("wheel", (event) => {
@@ -188,6 +176,9 @@ var PixiInterop;
             await updateSpecificServerEntities([entity]);
         }
     }
+    async function updateSpecificServerEntities(entities) {
+        dotNetObjRef.invokeMethodAsync('UpdateServerEntities', entities);
+    }
     async function setPreviewEntity(entity) {
         if (temporaryEntity && drawnSpriteByEntityId[temporaryEntity.id] && !currentEntities[temporaryEntity.id]) {
             entityContainer.removeChild(drawnSpriteByEntityId[temporaryEntity.id]);
@@ -197,9 +188,6 @@ var PixiInterop;
         if (entity) {
             await drawEntityToScreen(entity);
         }
-    }
-    async function updateSpecificServerEntities(entities) {
-        dotNetObjRef.invokeMethodAsync('UpdateServerEntities', entities);
     }
     async function drawEntityToScreen(entity) {
         const graphic = await Draw.drawEntity(entity);
