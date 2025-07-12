@@ -26,5 +26,5 @@ public interface ITacticCanvasService
 
     public Task SetZoom(float zoomLevel);
 
-    public Task UpdateEntites(Entity[] entities);
+    public Task UpdateEntites(Entity[] entities, string[] removedEntityIds);
 }

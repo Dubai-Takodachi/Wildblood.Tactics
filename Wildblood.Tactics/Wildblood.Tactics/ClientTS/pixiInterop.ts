@@ -46,6 +46,7 @@ namespace PixiInterop {
 
         interactionContext = {
             addEntityCallback: addEntityOnServer,
+            removeEntityCallback: removeEntityOnServer,
             setPreviewEntityCallback: setPreviewEntity,
             app: app,
             container: mainContainer,
@@ -191,8 +192,8 @@ namespace PixiInterop {
         [Tools.ToolType.Redo]: function(): Interactions.IToolHandler | null {
             return null;
         },
-        [Tools.ToolType.Erase]: function(): Interactions.IToolHandler | null {
-            return null;
+        [Tools.ToolType.Erase]: function (): Interactions.IToolHandler | null {
+            return new Interactions.EraseTool(interactionContext, drawnSpriteByEntityId);
         },
         [Tools.ToolType.Ping]: function (): Interactions.IToolHandler | null {
             return null;
@@ -202,12 +203,16 @@ namespace PixiInterop {
     async function addEntityOnServer(entity: Tools.Entity): Promise<void> {
         const graphic = await Draw.drawEntity(entity);
         if (graphic) {
-            await updateSpecificServerEntities([entity]);
+            await updateSpecificServerEntities([entity], []);
         }
     }
 
-    async function updateSpecificServerEntities(entities: Tools.Entity[]): Promise<void> {
-        dotNetObjRef.invokeMethodAsync('UpdateServerEntities', entities);
+    async function removeEntityOnServer(entityId: string): Promise<void> {
+        await updateSpecificServerEntities([], [entityId]);
+    }
+
+    async function updateSpecificServerEntities(entities: Tools.Entity[], removedEntityIds: string[]): Promise<void> {
+        dotNetObjRef.invokeMethodAsync('UpdateServerEntities', entities, removedEntityIds);
     }
 
     async function setPreviewEntity(entity: Tools.Entity | null): Promise<void> {

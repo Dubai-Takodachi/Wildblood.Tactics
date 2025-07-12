@@ -2,9 +2,7 @@
 
 using Wildblood.Tactics.Entities;
 using Wildblood.Tactics.Models;
-using Wildblood.Tactics.Models.Messages;
 using Wildblood.Tactics.Models.Tools;
-using static MudBlazor.CategoryTypes;
 
 public class TacticCanvasService : ITacticCanvasService
 {
@@ -22,18 +20,15 @@ public class TacticCanvasService : ITacticCanvasService
 
     public ToolOptions CurrentOptions => tacticToolService.CurrentOptions;
 
-    private IHubConnectionService hubConnectionService;
     private ITacticZoomService tacticZoomService;
     private ITacticExplorerService tacticExplorerService;
     private ITacticToolService tacticToolService;
 
     public TacticCanvasService(
-        IHubConnectionService hubConnectionService,
         ITacticZoomService tacticZoomService,
         ITacticExplorerService tacticExplorerService,
         ITacticToolService tacticToolService)
     {
-        this.hubConnectionService = hubConnectionService;
         this.tacticZoomService = tacticZoomService;
         this.tacticExplorerService = tacticExplorerService;
         this.tacticToolService = tacticToolService;
@@ -82,17 +77,18 @@ public class TacticCanvasService : ITacticCanvasService
         await tacticZoomService.SetZoomLevel(zoomLevel);
     }
 
-    public async Task UpdateEntites(Entity[] entities)
+    public async Task UpdateEntites(Entity[] entities, string[] removedEntityIds)
     {
         var combined = CurrentSlide.Entities
             .Where(e => !entities.Any(x => x.Id == e.Id))
             .Concat(entities)
+            .Where(e => !removedEntityIds.Contains(e.Id))
             .ToList();
 
         CurrentSlide.Entities = combined;
         await RefreshTactic();
 
-        await tacticExplorerService.SendEntitiesUpdate(entities, null); // TODO: add remove feature
+        await tacticExplorerService.SendEntitiesUpdate(entities, removedEntityIds);
         await tacticExplorerService.UpdateServerEntities(combined);
 
     }

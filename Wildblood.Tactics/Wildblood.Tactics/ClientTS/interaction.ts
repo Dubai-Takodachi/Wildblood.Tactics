@@ -2,7 +2,7 @@ import * as Tools from './tools-types.js';
 import * as PIXI from '../lib/pixi.mjs';
 
 export interface IToolHandler {
-    onPointerDown(event: PointerEvent): Promise<void>;
+    onPointerDown?(event: PointerEvent): Promise<void>;
     onPointerMove?(event: PointerEvent): Promise<void>;
     onPointerUp?(event: PointerEvent): Promise<void>;
 }
@@ -12,6 +12,7 @@ export interface InteractionContext {
     container: PIXI.Container;
     addEntityCallback: (entity: Tools.Entity) => Promise<void>;
     setPreviewEntityCallback: (entity: Tools.Entity | null) => Promise<void>;
+    removeEntityCallback: (entityId: string) => Promise<void>;
 }
 
 export class DrawLineTool implements IToolHandler {
@@ -342,7 +343,7 @@ export class MoveTool implements IToolHandler {
             if (!sprite.position) continue;
             const local = { x: pos.x - sprite.x, y: pos.y - sprite.y };
 
-            if (this.hitTestPixelPerfect(sprite, local)) {
+            if (hitTestPixelPerfect(sprite, local, this.context.app)) {
                 this.entityClickedPosition = local;
                 this.entityId = key;
                 break;
@@ -368,20 +369,35 @@ export class MoveTool implements IToolHandler {
         this.entityId = null;
         this.entityClickedPosition = null;
     }
+}
 
-    private hitTestPixelPerfect(sprite: PIXI.Sprite, localPos: Tools.Point): boolean {
-        const bounds = sprite.getBounds();
+export class EraseTool implements IToolHandler {
+    private context: InteractionContext;
+    private drawnSpriteByEntityId: Record<string, PIXI.Sprite>;
 
-        if (localPos.x < 0 || localPos.y < 0 || localPos.x >= bounds.width || localPos.y >= bounds.height) {
-            return false;
+    constructor(context: InteractionContext, drawnSpriteByEntityId: Record<string, PIXI.Sprite>) {
+
+        this.context = context;
+        this.drawnSpriteByEntityId = drawnSpriteByEntityId;
+
+        this.onPointerMove = this.onPointerMove.bind(this);
+    }
+
+    async onPointerMove(event: PointerEvent) {
+        if ((event.buttons & 1) !== 1) return;
+
+        const pos = getPosition(event, this.context);
+
+        const keys = Object.keys(this.drawnSpriteByEntityId);
+        for (const key of keys) {
+            const sprite = this.drawnSpriteByEntityId[key];
+            if (!sprite.position) continue;
+            const local = { x: pos.x - sprite.x, y: pos.y - sprite.y };
+
+            if (hitTestPixelPerfect(sprite, local, this.context.app)) {
+                this.context.removeEntityCallback(key);
+            }
         }
-
-        const tempSprite = new PIXI.Sprite(sprite.texture);
-        const pixels = this.context.app.renderer.extract.pixels({
-            target: tempSprite,
-            frame: new PIXI.Rectangle(localPos.x, localPos.y, 1, 1),
-        }).pixels;
-        return pixels[3] > 0;
     }
 }
 
@@ -394,4 +410,19 @@ function getPosition(event: PointerEvent, context: InteractionContext): { x: num
 
 function calculateDistance(a: Tools.Point, b: Tools.Point): number {
     return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+}
+
+function hitTestPixelPerfect(sprite: PIXI.Sprite, localPos: Tools.Point, app: PIXI.Application): boolean {
+    const bounds = sprite.getBounds();
+
+    if (localPos.x < 0 || localPos.y < 0 || localPos.x >= bounds.width || localPos.y >= bounds.height) {
+        return false;
+    }
+
+    const tempSprite = new PIXI.Sprite(sprite.texture);
+    const pixels = app.renderer.extract.pixels({
+        target: tempSprite,
+        frame: new PIXI.Rectangle(localPos.x, localPos.y, 1, 1),
+    }).pixels;
+    return pixels[3] > 0;
 }

@@ -271,7 +271,7 @@ export class MoveTool {
             if (!sprite.position)
                 continue;
             const local = { x: pos.x - sprite.x, y: pos.y - sprite.y };
-            if (this.hitTestPixelPerfect(sprite, local)) {
+            if (hitTestPixelPerfect(sprite, local, this.context.app)) {
                 this.entityClickedPosition = local;
                 this.entityId = key;
                 break;
@@ -297,17 +297,29 @@ export class MoveTool {
         this.entityId = null;
         this.entityClickedPosition = null;
     }
-    hitTestPixelPerfect(sprite, localPos) {
-        const bounds = sprite.getBounds();
-        if (localPos.x < 0 || localPos.y < 0 || localPos.x >= bounds.width || localPos.y >= bounds.height) {
-            return false;
+}
+export class EraseTool {
+    context;
+    drawnSpriteByEntityId;
+    constructor(context, drawnSpriteByEntityId) {
+        this.context = context;
+        this.drawnSpriteByEntityId = drawnSpriteByEntityId;
+        this.onPointerMove = this.onPointerMove.bind(this);
+    }
+    async onPointerMove(event) {
+        if ((event.buttons & 1) !== 1)
+            return;
+        const pos = getPosition(event, this.context);
+        const keys = Object.keys(this.drawnSpriteByEntityId);
+        for (const key of keys) {
+            const sprite = this.drawnSpriteByEntityId[key];
+            if (!sprite.position)
+                continue;
+            const local = { x: pos.x - sprite.x, y: pos.y - sprite.y };
+            if (hitTestPixelPerfect(sprite, local, this.context.app)) {
+                this.context.removeEntityCallback(key);
+            }
         }
-        const tempSprite = new PIXI.Sprite(sprite.texture);
-        const pixels = this.context.app.renderer.extract.pixels({
-            target: tempSprite,
-            frame: new PIXI.Rectangle(localPos.x, localPos.y, 1, 1),
-        }).pixels;
-        return pixels[3] > 0;
     }
 }
 function getPosition(event, context) {
@@ -318,5 +330,17 @@ function getPosition(event, context) {
 }
 function calculateDistance(a, b) {
     return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+}
+function hitTestPixelPerfect(sprite, localPos, app) {
+    const bounds = sprite.getBounds();
+    if (localPos.x < 0 || localPos.y < 0 || localPos.x >= bounds.width || localPos.y >= bounds.height) {
+        return false;
+    }
+    const tempSprite = new PIXI.Sprite(sprite.texture);
+    const pixels = app.renderer.extract.pixels({
+        target: tempSprite,
+        frame: new PIXI.Rectangle(localPos.x, localPos.y, 1, 1),
+    }).pixels;
+    return pixels[3] > 0;
 }
 //# sourceMappingURL=interaction.js.map

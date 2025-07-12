@@ -36,6 +36,7 @@ var PixiInterop;
         bgSprite = null;
         interactionContext = {
             addEntityCallback: addEntityOnServer,
+            removeEntityCallback: removeEntityOnServer,
             setPreviewEntityCallback: setPreviewEntity,
             app: app,
             container: mainContainer,
@@ -164,7 +165,7 @@ var PixiInterop;
             return null;
         },
         [Tools.ToolType.Erase]: function () {
-            return null;
+            return new Interactions.EraseTool(interactionContext, drawnSpriteByEntityId);
         },
         [Tools.ToolType.Ping]: function () {
             return null;
@@ -173,11 +174,14 @@ var PixiInterop;
     async function addEntityOnServer(entity) {
         const graphic = await Draw.drawEntity(entity);
         if (graphic) {
-            await updateSpecificServerEntities([entity]);
+            await updateSpecificServerEntities([entity], []);
         }
     }
-    async function updateSpecificServerEntities(entities) {
-        dotNetObjRef.invokeMethodAsync('UpdateServerEntities', entities);
+    async function removeEntityOnServer(entityId) {
+        await updateSpecificServerEntities([], [entityId]);
+    }
+    async function updateSpecificServerEntities(entities, removedEntityIds) {
+        dotNetObjRef.invokeMethodAsync('UpdateServerEntities', entities, removedEntityIds);
     }
     async function setPreviewEntity(entity) {
         if (temporaryEntity && drawnSpriteByEntityId[temporaryEntity.id] && !currentEntities[temporaryEntity.id]) {

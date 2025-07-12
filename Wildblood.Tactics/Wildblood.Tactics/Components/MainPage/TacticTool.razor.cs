@@ -32,7 +32,7 @@ public partial class TacticTool
     private LineEnd cosmeticCurveEnd;
     private LineStyle cosmeticFreeStyle;
     private LineEnd cosmeticFreeEnd;
-    private ShapeType CosmeticShapeType;
+    private ShapeType cosmeticShapeType;
     private ToolOptions AllOptions => TacticToolService.AllOptions;
 
     protected override void OnInitialized()
@@ -172,7 +172,7 @@ public partial class TacticTool
     private async Task OnShapeTypeChanged(ShapeType type)
     {
         await UpdateTool(shapeOptions: AllOptions.ShapeOptions! with { ShapeType = type });
-        CosmeticShapeType = type;
+        cosmeticShapeType = type;
     }
 
     private async Task OnTextOptionsTextChanged(string text)
