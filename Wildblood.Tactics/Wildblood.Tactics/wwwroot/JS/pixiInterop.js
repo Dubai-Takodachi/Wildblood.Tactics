@@ -16,6 +16,7 @@ var PixiInterop;
     let mainContainer = new PIXI.Container();
     let entityContainer = new PIXI.Container();
     let dragging = false;
+    let lastDragPos = null;
     let dragOffset = { x: 0, y: 0 };
     let wasDragging = false;
     let currentTool;
@@ -24,6 +25,7 @@ var PixiInterop;
     let temporaryEntity = null;
     let drawnSpriteByEntityId = {};
     let dotNetObjRef;
+    let interactionContext;
     async function createApp(dotNetRef, iconNames) {
         if (app) {
             app.destroy(true, { children: true });
@@ -44,6 +46,39 @@ var PixiInterop;
         pan = { x: 0, y: 0 };
         zoom = 1;
         isPanning = false;
+        interactionContext = {
+            addEntityCallback: addEntityOnServer,
+            setPreviewEntityCallback: setPreviewEntity,
+            app: app,
+            container: mainContainer,
+        };
+        app.canvas.addEventListener("mousedown", (event) => {
+            if (event.button === 1) { // Middle mouse button
+                dragging = true;
+                lastDragPos = { x: event.clientX, y: event.clientY };
+                // Prevent default middle-mouse scroll behavior
+                event.preventDefault();
+            }
+        });
+        app.canvas.addEventListener("mousemove", (event) => {
+            if (dragging && lastDragPos) {
+                const dx = event.clientX - lastDragPos.x;
+                const dy = event.clientY - lastDragPos.y;
+                mainContainer.x += dx;
+                mainContainer.y += dy;
+                lastDragPos = { x: event.clientX, y: event.clientY };
+            }
+        });
+        app.canvas.addEventListener("mouseup", (event) => {
+            if (event.button === 1) {
+                dragging = false;
+                lastDragPos = null;
+            }
+        });
+        app.canvas.addEventListener("mouseleave", () => {
+            dragging = false;
+            lastDragPos = null;
+        });
     }
     PixiInterop.createApp = createApp;
     function setToolOptions(options) {
@@ -74,25 +109,25 @@ var PixiInterop;
         [Tools.ToolType.DrawLine]: () => {
             if (!currentTool.lineDrawOptions)
                 return null;
-            return new Interactions.DrawLineTool(currentTool.lineDrawOptions, addEntityOnServer, setPreviewEntity);
+            return new Interactions.DrawLineTool(interactionContext, currentTool.lineDrawOptions);
         },
         [Tools.ToolType.AddIcon]: function () {
             if (!currentTool.iconOptions)
                 return null;
-            return new Interactions.PlaceIconTool(currentTool.iconOptions, addEntityOnServer, setPreviewEntity);
+            return new Interactions.PlaceIconTool(interactionContext, currentTool.iconOptions);
         },
         [Tools.ToolType.Move]: function () {
-            return new Interactions.MoveTool(addEntityOnServer, setPreviewEntity, currentEntities, drawnSpriteByEntityId, app);
+            return new Interactions.MoveTool(interactionContext, currentEntities, drawnSpriteByEntityId);
         },
         [Tools.ToolType.DrawFree]: function () {
             if (!currentTool.freeDrawOptions)
                 return null;
-            return new Interactions.DrawFree(currentTool.freeDrawOptions, addEntityOnServer, setPreviewEntity);
+            return new Interactions.DrawFree(interactionContext, currentTool.freeDrawOptions);
         },
         [Tools.ToolType.DrawCurve]: function () {
             if (!currentTool.curveDrawOptions)
                 return null;
-            return new Interactions.DrawCurve(currentTool.curveDrawOptions, addEntityOnServer, setPreviewEntity);
+            return new Interactions.DrawCurve(interactionContext, currentTool.curveDrawOptions);
         },
         [Tools.ToolType.AddText]: function () {
             return null;

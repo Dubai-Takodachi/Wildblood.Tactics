@@ -17,6 +17,7 @@ namespace PixiInterop {
     let mainContainer: PIXI.Container = new PIXI.Container();
     let entityContainer: PIXI.Container = new PIXI.Container();
     let dragging: boolean = false;
+    let lastDragPos: Tools.Point | null = null;
     let dragOffset: { x: number; y: number } = { x: 0, y: 0 };
     let wasDragging: boolean = false;
     let currentTool: Tools.ToolOptions;
@@ -25,6 +26,7 @@ namespace PixiInterop {
     let temporaryEntity: Tools.Entity | null = null;
     let drawnSpriteByEntityId: Record<string, PIXI.Sprite> = {};
     let dotNetObjRef: DotNetObjectReference;
+    let interactionContext: Interactions.InteractionContext;
 
     interface DotNetObjectReference {
         invokeMethodAsync<T = any>(methodIdentifier: string, ...args: any[]): Promise<T>;
@@ -53,6 +55,46 @@ namespace PixiInterop {
         pan = { x: 0, y: 0 };
         zoom = 1;
         isPanning = false;
+
+        interactionContext = {
+            addEntityCallback: addEntityOnServer,
+            setPreviewEntityCallback: setPreviewEntity,
+            app: app,
+            container: mainContainer,
+        }
+
+        app.canvas.addEventListener("mousedown", (event) => {
+            if (event.button === 1) { // Middle mouse button
+                dragging = true;
+                lastDragPos = { x: event.clientX, y: event.clientY };
+                // Prevent default middle-mouse scroll behavior
+                event.preventDefault();
+            }
+        });
+
+        app.canvas.addEventListener("mousemove", (event) => {
+            if (dragging && lastDragPos) {
+                const dx = event.clientX - lastDragPos.x;
+                const dy = event.clientY - lastDragPos.y;
+
+                mainContainer.x += dx;
+                mainContainer.y += dy;
+
+                lastDragPos = { x: event.clientX, y: event.clientY };
+            }
+        });
+
+        app.canvas.addEventListener("mouseup", (event) => {
+            if (event.button === 1) {
+                dragging = false;
+                lastDragPos = null;
+            }
+        });
+
+        app.canvas.addEventListener("mouseleave", () => {
+            dragging = false;
+            lastDragPos = null;
+        });
     }
 
     export function setToolOptions(options: Tools.ToolOptions): void {
@@ -85,22 +127,22 @@ namespace PixiInterop {
     const createInteractionHandler: Record<Tools.ToolType, () => Interactions.IToolHandler | null> = {
         [Tools.ToolType.DrawLine]: () => {
             if (!currentTool.lineDrawOptions) return null;
-            return new Interactions.DrawLineTool(currentTool.lineDrawOptions, addEntityOnServer, setPreviewEntity);
+            return new Interactions.DrawLineTool(interactionContext, currentTool.lineDrawOptions);
         },
         [Tools.ToolType.AddIcon]: function (): Interactions.IToolHandler | null {
             if (!currentTool.iconOptions) return null;
-            return new Interactions.PlaceIconTool(currentTool.iconOptions, addEntityOnServer, setPreviewEntity);
+            return new Interactions.PlaceIconTool(interactionContext, currentTool.iconOptions);
         },
         [Tools.ToolType.Move]: function (): Interactions.IToolHandler | null {
-            return new Interactions.MoveTool(addEntityOnServer, setPreviewEntity, currentEntities, drawnSpriteByEntityId, app);
+            return new Interactions.MoveTool(interactionContext, currentEntities, drawnSpriteByEntityId);
         },
         [Tools.ToolType.DrawFree]: function (): Interactions.IToolHandler | null {
             if (!currentTool.freeDrawOptions) return null;
-            return new Interactions.DrawFree(currentTool.freeDrawOptions, addEntityOnServer, setPreviewEntity);
+            return new Interactions.DrawFree(interactionContext, currentTool.freeDrawOptions);
         },
         [Tools.ToolType.DrawCurve]: function (): Interactions.IToolHandler | null {
             if (!currentTool.curveDrawOptions) return null;
-            return new Interactions.DrawCurve(currentTool.curveDrawOptions, addEntityOnServer, setPreviewEntity);
+            return new Interactions.DrawCurve(interactionContext, currentTool.curveDrawOptions);
         },
         [Tools.ToolType.AddText]: function(): Interactions.IToolHandler | null {
             return null;

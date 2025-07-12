@@ -1,21 +1,19 @@
 import * as Tools from './tools-types.js';
 import * as PIXI from '../lib/pixi.mjs';
 export class DrawLineTool {
+    context;
     lineOptions;
     start = null;
     entitiyId = null;
-    addEntityCallback;
-    setPreviewEntityCallback;
-    constructor(lineOptions, updateCallback, previewCallback) {
+    constructor(context, lineOptions) {
+        this.context = context;
         this.lineOptions = lineOptions;
-        this.addEntityCallback = updateCallback;
-        this.setPreviewEntityCallback = previewCallback;
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
         this.onPointerUp = this.onPointerUp.bind(this);
     }
     async onPointerDown(event) {
-        const pos = getGlobalPos(event);
+        const pos = getPosition(event, this.context);
         this.start = pos;
         this.entitiyId = crypto.randomUUID();
     }
@@ -25,10 +23,10 @@ export class DrawLineTool {
             this.entitiyId = null;
             return;
         }
-        const pos = getGlobalPos(event);
+        const pos = getPosition(event, this.context);
         const line = this.createLine(pos.x, pos.y, this.entitiyId);
         if (line)
-            await this.setPreviewEntityCallback(line);
+            await this.context.setPreviewEntityCallback(line);
     }
     async onPointerUp(event) {
         if (!this.start || !this.entitiyId) {
@@ -36,13 +34,13 @@ export class DrawLineTool {
             this.entitiyId = null;
             return;
         }
-        const pos = getGlobalPos(event);
+        const pos = getPosition(event, this.context);
         const line = this.createLine(pos.x, pos.y, this.entitiyId);
         if (line)
-            await this.addEntityCallback(line);
+            await this.context.addEntityCallback(line);
         this.start = null;
         this.entitiyId = null;
-        this.setPreviewEntityCallback(null);
+        this.context.setPreviewEntityCallback(null);
     }
     createLine(x, y, entityId) {
         if (!this.start)
@@ -69,20 +67,18 @@ export class DrawLineTool {
     }
 }
 export class DrawCurve {
+    context;
     lineOptions;
     path = [];
     entityId = null;
-    addEntityCallback;
-    setPreviewEntityCallback;
-    constructor(lineOptions, updateCallback, previewCallback) {
+    constructor(context, lineOptions) {
+        this.context = context;
         this.lineOptions = lineOptions;
-        this.addEntityCallback = updateCallback;
-        this.setPreviewEntityCallback = previewCallback;
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
     }
     async onPointerDown(event) {
-        const pos = getGlobalPos(event);
+        const pos = getPosition(event, this.context);
         if (this.path.length === 0) {
             this.path.push(pos);
             this.entityId = crypto.randomUUID();
@@ -91,17 +87,17 @@ export class DrawCurve {
         if (this.calculateDistance(pos, this.path[this.path.length - 1]) < 10) {
             const curve = this.createCurve(this.path);
             if (curve)
-                await this.addEntityCallback(curve);
+                await this.context.addEntityCallback(curve);
             this.path = [];
             return;
         }
         this.path.push(pos);
         const curve = this.createCurve(this.path);
         if (curve)
-            await this.addEntityCallback(curve);
+            await this.context.addEntityCallback(curve);
     }
     async onPointerMove(event) {
-        const pos = getGlobalPos(event);
+        const pos = getPosition(event, this.context);
         if (this.path.length === 0 || !this.entityId) {
             this.path = [];
             this.entityId = null;
@@ -112,7 +108,7 @@ export class DrawCurve {
         }
         const curve = this.createCurve(([...this.path, pos]));
         if (curve)
-            await this.setPreviewEntityCallback(curve);
+            await this.context.setPreviewEntityCallback(curve);
     }
     calculateDistance(a, b) {
         return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
@@ -139,33 +135,31 @@ export class DrawCurve {
     }
 }
 export class DrawFree {
+    context;
     lineOptions;
     path = [];
     entityId = null;
-    addEntityCallback;
-    setPreviewEntityCallback;
-    constructor(lineOptions, updateCallback, previewCallback) {
+    constructor(context, lineOptions) {
+        this.context = context;
         this.lineOptions = lineOptions;
-        this.addEntityCallback = updateCallback;
-        this.setPreviewEntityCallback = previewCallback;
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
         this.onPointerUp = this.onPointerUp.bind(this);
     }
     async onPointerDown(event) {
-        const pos = getGlobalPos(event);
+        const pos = getPosition(event, this.context);
         this.entityId = crypto.randomUUID();
         this.path = [pos];
     }
     async onPointerMove(event) {
         if (this.path.length === 0)
             return;
-        const pos = getGlobalPos(event);
+        const pos = getPosition(event, this.context);
         if (calculateDistance(pos, this.path[this.path.length - 1]) >= 1.4) {
             this.path.push(pos);
             const freeDrawing = this.createFreeDrawing(this.path);
             if (freeDrawing)
-                await this.setPreviewEntityCallback(freeDrawing);
+                await this.context.setPreviewEntityCallback(freeDrawing);
         }
     }
     async onPointerUp(event) {
@@ -173,7 +167,7 @@ export class DrawFree {
             return;
         const freeDrawing = this.createFreeDrawing(this.path);
         if (freeDrawing)
-            await this.addEntityCallback(freeDrawing);
+            await this.context.addEntityCallback(freeDrawing);
         this.path = [];
         this.entityId = null;
     }
@@ -199,29 +193,27 @@ export class DrawFree {
     }
 }
 export class PlaceIconTool {
+    context;
     iconOptions;
     entitiyId = crypto.randomUUID();
-    addEntityCallback;
-    setPreviewEntityCallback;
-    constructor(iconOptions, updateCallback, previewCallback) {
+    constructor(context, iconOptions) {
+        this.context = context;
         this.iconOptions = iconOptions;
-        this.addEntityCallback = updateCallback;
-        this.setPreviewEntityCallback = previewCallback;
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
     }
     async onPointerDown(event) {
-        const pos = getGlobalPos(event);
+        const pos = getPosition(event, this.context);
         const icon = this.createIcon(pos.x, pos.y, this.entitiyId);
         if (icon)
-            await this.addEntityCallback(icon);
+            await this.context.addEntityCallback(icon);
         this.entitiyId = crypto.randomUUID();
     }
     async onPointerMove(event) {
-        const pos = getGlobalPos(event);
+        const pos = getPosition(event, this.context);
         const icon = this.createIcon(pos.x, pos.y, this.entitiyId);
         if (icon)
-            await this.setPreviewEntityCallback(icon);
+            await this.context.setPreviewEntityCallback(icon);
     }
     createIcon(x, y, entityId) {
         const position = {
@@ -244,25 +236,21 @@ export class PlaceIconTool {
     }
 }
 export class MoveTool {
+    context;
     entityId = null;
     entityClickedPosition = null;
-    addEntityCallback;
-    setPreviewEntityCallback;
     drawnSpriteByEntityId;
     currentEntities;
-    app;
-    constructor(updateCallback, previewCallback, currentEntities, drawnSpriteByEntityId, app) {
-        this.addEntityCallback = updateCallback;
-        this.setPreviewEntityCallback = previewCallback;
+    constructor(context, currentEntities, drawnSpriteByEntityId) {
+        this.context = context;
         this.drawnSpriteByEntityId = drawnSpriteByEntityId;
         this.currentEntities = currentEntities;
-        this.app = app;
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
         this.onPointerUp = this.onPointerUp.bind(this);
     }
     async onPointerDown(event) {
-        const pos = getGlobalPos(event);
+        const pos = getPosition(event, this.context);
         const keys = Object.keys(this.drawnSpriteByEntityId).reverse();
         for (const key of keys) {
             const sprite = this.drawnSpriteByEntityId[key];
@@ -279,17 +267,17 @@ export class MoveTool {
     async onPointerMove(event) {
         if (!this.entityId || !this.entityClickedPosition)
             return;
-        const pos = getGlobalPos(event);
+        const pos = getPosition(event, this.context);
         this.currentEntities[this.entityId].position = {
             x: pos.x - this.entityClickedPosition.x,
             y: pos.y - this.entityClickedPosition.y
         };
-        await this.setPreviewEntityCallback({ ...this.currentEntities[this.entityId] });
+        await this.context.setPreviewEntityCallback({ ...this.currentEntities[this.entityId] });
     }
     async onPointerUp(event) {
         if (!this.entityId)
             return;
-        await this.addEntityCallback({ ...this.currentEntities[this.entityId] });
+        await this.context.addEntityCallback({ ...this.currentEntities[this.entityId] });
         this.entityId = null;
         this.entityClickedPosition = null;
     }
@@ -299,16 +287,18 @@ export class MoveTool {
             return false;
         }
         const tempSprite = new PIXI.Sprite(sprite.texture);
-        const pixels = this.app.renderer.extract.pixels({
+        const pixels = this.context.app.renderer.extract.pixels({
             target: tempSprite,
             frame: new PIXI.Rectangle(localPos.x, localPos.y, 1, 1),
         }).pixels;
         return pixels[3] > 0;
     }
 }
-function getGlobalPos(event) {
-    const rect = event.target.getBoundingClientRect();
-    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+function getPosition(event, context) {
+    const point = new PIXI.Point();
+    context.app.renderer.events.mapPositionToPoint(point, event.clientX, event.clientY);
+    const local = context.container.toLocal(point);
+    return { x: local.x, y: local.y };
 }
 function calculateDistance(a, b) {
     return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);

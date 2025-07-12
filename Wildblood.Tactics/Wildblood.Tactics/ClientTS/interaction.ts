@@ -7,21 +7,22 @@ export interface IToolHandler {
     onPointerUp?(event: PointerEvent): Promise<void>;
 }
 
+export interface InteractionContext {
+    app: PIXI.Application;
+    container: PIXI.Container;
+    addEntityCallback: (entity: Tools.Entity) => Promise<void>;
+    setPreviewEntityCallback: (entity: Tools.Entity | null) => Promise<void>;
+}
+
 export class DrawLineTool implements IToolHandler {
+    private context: InteractionContext;
     private lineOptions: Tools.LineOptions;
     private start: { x: number; y: number } | null = null;
     private entitiyId: string | null = null;
-    private addEntityCallback: (entity: Tools.Entity) => Promise<void>;
-    private setPreviewEntityCallback: (entity: Tools.Entity | null) => Promise<void>;
 
-    constructor(
-        lineOptions: Tools.LineOptions,
-        updateCallback: (entity: Tools.Entity) => Promise<void>,
-        previewCallback: (entity: Tools.Entity | null) => Promise<void>) {
-
+    constructor(context: InteractionContext, lineOptions: Tools.LineOptions) {
+        this.context = context;
         this.lineOptions = lineOptions;
-        this.addEntityCallback = updateCallback;
-        this.setPreviewEntityCallback = previewCallback;
 
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
@@ -29,7 +30,7 @@ export class DrawLineTool implements IToolHandler {
     }
 
     async onPointerDown(event: PointerEvent) {
-        const pos = getGlobalPos(event);
+        const pos = getPosition(event, this.context);
         this.start = pos;
         this.entitiyId = crypto.randomUUID();
     }
@@ -41,10 +42,10 @@ export class DrawLineTool implements IToolHandler {
             return;
         }
 
-        const pos = getGlobalPos(event);
+        const pos = getPosition(event, this.context);
         const line = this.createLine(pos.x, pos.y, this.entitiyId);
         if (line)
-            await this.setPreviewEntityCallback(line);
+            await this.context.setPreviewEntityCallback(line);
     }
 
     async onPointerUp(event: PointerEvent) {
@@ -54,13 +55,13 @@ export class DrawLineTool implements IToolHandler {
             return;
         }
 
-        const pos = getGlobalPos(event);
+        const pos = getPosition(event, this.context);
         const line = this.createLine(pos.x, pos.y, this.entitiyId);
         if (line)
-            await this.addEntityCallback(line);
+            await this.context.addEntityCallback(line);
         this.start = null;
         this.entitiyId = null;
-        this.setPreviewEntityCallback(null);
+        this.context.setPreviewEntityCallback(null);
     }
 
     private createLine(x: number, y: number, entityId: string): Tools.Entity | null {
@@ -90,27 +91,24 @@ export class DrawLineTool implements IToolHandler {
 }
 
 export class DrawCurve implements IToolHandler {
+    private context: InteractionContext;
     private lineOptions: Tools.LineOptions;
     private path: Tools.Point[] = [];
     private entityId: string | null = null;
-    private addEntityCallback: (entity: Tools.Entity) => Promise<void>;
-    private setPreviewEntityCallback: (entity: Tools.Entity | null) => Promise<void>;
 
     constructor(
-        lineOptions: Tools.LineOptions,
-        updateCallback: (entity: Tools.Entity) => Promise<void>,
-        previewCallback: (entity: Tools.Entity | null) => Promise<void>) {
+        context: InteractionContext,
+        lineOptions: Tools.LineOptions) {
 
+        this.context = context;
         this.lineOptions = lineOptions;
-        this.addEntityCallback = updateCallback;
-        this.setPreviewEntityCallback = previewCallback;
 
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
     }
 
     async onPointerDown(event: PointerEvent) {
-        const pos = getGlobalPos(event);
+        const pos = getPosition(event, this.context);
 
         if (this.path.length === 0) {
             this.path.push(pos);
@@ -121,7 +119,7 @@ export class DrawCurve implements IToolHandler {
         if (this.calculateDistance(pos, this.path[this.path.length - 1]) < 10) {
             const curve = this.createCurve(this.path);
             if (curve)
-                await this.addEntityCallback(curve);
+                await this.context.addEntityCallback(curve);
             this.path = [];
             return;
         }
@@ -130,11 +128,11 @@ export class DrawCurve implements IToolHandler {
 
         const curve = this.createCurve(this.path);
         if (curve)
-            await this.addEntityCallback(curve);
+            await this.context.addEntityCallback(curve);
     }
 
     async onPointerMove(event: PointerEvent) {
-        const pos = getGlobalPos(event);
+        const pos = getPosition(event, this.context);
         if (this.path.length === 0 || !this.entityId) {
             this.path = [];
             this.entityId = null;
@@ -147,7 +145,7 @@ export class DrawCurve implements IToolHandler {
 
         const curve = this.createCurve(([...this.path, pos]));
         if (curve)
-            await this.setPreviewEntityCallback(curve);
+            await this.context.setPreviewEntityCallback(curve);
     }
 
     private calculateDistance(a: Tools.Point, b: Tools.Point): number {
@@ -179,20 +177,14 @@ export class DrawCurve implements IToolHandler {
 }
 
 export class DrawFree implements IToolHandler {
+    private context: InteractionContext;
     private lineOptions: Tools.LineOptions;
     private path: Tools.Point[] = [];
     private entityId: string | null = null;
-    private addEntityCallback: (entity: Tools.Entity) => Promise<void>;
-    private setPreviewEntityCallback: (entity: Tools.Entity | null) => Promise<void>;
 
-    constructor(
-        lineOptions: Tools.LineOptions,
-        updateCallback: (entity: Tools.Entity) => Promise<void>,
-        previewCallback: (entity: Tools.Entity | null) => Promise<void>) {
-
+    constructor(context: InteractionContext, lineOptions: Tools.LineOptions) {
+        this.context = context;
         this.lineOptions = lineOptions;
-        this.addEntityCallback = updateCallback;
-        this.setPreviewEntityCallback = previewCallback;
 
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
@@ -200,7 +192,7 @@ export class DrawFree implements IToolHandler {
     }
 
     async onPointerDown(event: PointerEvent) {
-        const pos = getGlobalPos(event);
+        const pos = getPosition(event, this.context);
         this.entityId = crypto.randomUUID();
         this.path = [pos];
     }
@@ -208,12 +200,12 @@ export class DrawFree implements IToolHandler {
     async onPointerMove(event: PointerEvent) {
         if (this.path.length === 0) return;
 
-        const pos = getGlobalPos(event);
+        const pos = getPosition(event, this.context);
         if (calculateDistance(pos, this.path[this.path.length - 1]) >= 1.4) {
             this.path.push(pos);
             const freeDrawing = this.createFreeDrawing(this.path);
             if (freeDrawing)
-                await this.setPreviewEntityCallback(freeDrawing);
+                await this.context.setPreviewEntityCallback(freeDrawing);
         }
     }
 
@@ -221,7 +213,7 @@ export class DrawFree implements IToolHandler {
         if (this.path.length === 0) return;
         const freeDrawing = this.createFreeDrawing(this.path);
         if (freeDrawing)
-            await this.addEntityCallback(freeDrawing);
+            await this.context.addEntityCallback(freeDrawing);
         this.path = [];
         this.entityId = null;
     }
@@ -251,37 +243,31 @@ export class DrawFree implements IToolHandler {
 }
 
 export class PlaceIconTool implements IToolHandler {
+    private context: InteractionContext;
     private iconOptions: Tools.IconOptions;
     private entitiyId: string = crypto.randomUUID();
-    private addEntityCallback: (entity: Tools.Entity) => Promise<void>;
-    private setPreviewEntityCallback: (entity: Tools.Entity | null) => Promise<void>;
 
-    constructor(
-        iconOptions: Tools.IconOptions,
-        updateCallback: (entity: Tools.Entity) => Promise<void>,
-        previewCallback: (entity: Tools.Entity | null) => Promise<void>) {
-
+    constructor(context: InteractionContext, iconOptions: Tools.IconOptions) {
+        this.context = context;
         this.iconOptions = iconOptions;
-        this.addEntityCallback = updateCallback;
-        this.setPreviewEntityCallback = previewCallback;
 
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
     }
 
     async onPointerDown(event: PointerEvent) {
-        const pos = getGlobalPos(event);
+        const pos = getPosition(event, this.context);
         const icon = this.createIcon(pos.x, pos.y, this.entitiyId);
         if (icon)
-            await this.addEntityCallback(icon);
+            await this.context.addEntityCallback(icon);
         this.entitiyId = crypto.randomUUID();
     }
 
     async onPointerMove(event: PointerEvent) {
-        const pos = getGlobalPos(event);
+        const pos = getPosition(event, this.context);
         const icon = this.createIcon(pos.x, pos.y, this.entitiyId);
         if (icon)
-            await this.setPreviewEntityCallback(icon);
+            await this.context.setPreviewEntityCallback(icon);
     }
 
     private createIcon(x: number, y: number, entityId: string): Tools.Entity | null {
@@ -308,26 +294,20 @@ export class PlaceIconTool implements IToolHandler {
 }
 
 export class MoveTool implements IToolHandler {
+    private context: InteractionContext;
     private entityId: string | null = null;
     private entityClickedPosition: Tools.Point | null = null;
-    private addEntityCallback: (entity: Tools.Entity) => Promise<void>;
-    private setPreviewEntityCallback: (entity: Tools.Entity | null) => Promise<void>;
     private drawnSpriteByEntityId: Record<string, PIXI.Sprite>;
     private currentEntities: Record<string, Tools.Entity>;
-    private app: PIXI.Application;
 
     constructor(
-        updateCallback: (entity: Tools.Entity) => Promise<void>,
-        previewCallback: (entity: Tools.Entity | null) => Promise<void>,
+        context: InteractionContext,
         currentEntities: Record<string, Tools.Entity>,
-        drawnSpriteByEntityId: Record<string, PIXI.Sprite>,
-        app: PIXI.Application) {
+        drawnSpriteByEntityId: Record<string, PIXI.Sprite>) {
 
-        this.addEntityCallback = updateCallback;
-        this.setPreviewEntityCallback = previewCallback;
+        this.context = context;
         this.drawnSpriteByEntityId = drawnSpriteByEntityId;
         this.currentEntities = currentEntities;
-        this.app = app;
 
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
@@ -335,7 +315,7 @@ export class MoveTool implements IToolHandler {
     }
 
     async onPointerDown(event: PointerEvent) {
-        const pos = getGlobalPos(event);
+        const pos = getPosition(event, this.context);
 
         const keys = Object.keys(this.drawnSpriteByEntityId).reverse();
         for (const key of keys) {
@@ -343,7 +323,7 @@ export class MoveTool implements IToolHandler {
             if (!sprite.position) continue;
             const local = { x: pos.x - sprite.x, y: pos.y - sprite.y };
 
-            if (this.hitTestPixelPerfect(sprite, pos, local)) {
+            if (this.hitTestPixelPerfect(sprite, local)) {
                 this.entityClickedPosition = local;
                 this.entityId = key;
                 break;
@@ -353,22 +333,22 @@ export class MoveTool implements IToolHandler {
 
     async onPointerMove(event: PointerEvent) {
         if (!this.entityId || !this.entityClickedPosition) return;
-        const pos = getGlobalPos(event);
+        const pos = getPosition(event, this.context);
         this.currentEntities[this.entityId].position = {
             x: pos.x - this.entityClickedPosition.x,
             y: pos.y - this.entityClickedPosition.y
         };
-        await this.setPreviewEntityCallback({ ...this.currentEntities[this.entityId] });
+        await this.context.setPreviewEntityCallback({ ...this.currentEntities[this.entityId] });
     }
 
     async onPointerUp(event: PointerEvent) {
         if (!this.entityId) return;
-        await this.addEntityCallback({ ...this.currentEntities[this.entityId] });
+        await this.context.addEntityCallback({ ...this.currentEntities[this.entityId] });
         this.entityId = null;
         this.entityClickedPosition = null;
     }
 
-    private hitTestPixelPerfect(sprite: PIXI.Sprite, globalPos: Tools.Point, localPos: Tools.Point): boolean {
+    private hitTestPixelPerfect(sprite: PIXI.Sprite, localPos: Tools.Point): boolean {
         const bounds = sprite.getBounds();
 
         if (localPos.x < 0 || localPos.y < 0 || localPos.x >= bounds.width || localPos.y >= bounds.height) {
@@ -376,7 +356,7 @@ export class MoveTool implements IToolHandler {
         }
 
         const tempSprite = new PIXI.Sprite(sprite.texture);
-        const pixels = this.app.renderer.extract.pixels({
+        const pixels = this.context.app.renderer.extract.pixels({
             target: tempSprite,
             frame: new PIXI.Rectangle(localPos.x, localPos.y, 1, 1),
         }).pixels;
@@ -384,9 +364,11 @@ export class MoveTool implements IToolHandler {
     }
 }
 
-function getGlobalPos(event: PointerEvent): { x: number; y: number } {
-    const rect = (event.target as HTMLElement).getBoundingClientRect();
-    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+function getPosition(event: PointerEvent, context: InteractionContext): { x: number; y: number } {
+    const point = new PIXI.Point();
+    context.app.renderer.events.mapPositionToPoint(point, event.clientX, event.clientY);
+    const local = context.container.toLocal(point);
+    return { x: local.x, y: local.y };
 }
 
 function calculateDistance(a: Tools.Point, b: Tools.Point): number {
