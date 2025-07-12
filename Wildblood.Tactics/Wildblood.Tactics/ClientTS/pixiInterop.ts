@@ -81,6 +81,8 @@ namespace PixiInterop {
                 mainContainer.y += dy;
 
                 lastDragPos = { x: event.clientX, y: event.clientY };
+
+                clampWorldPosition()
             }
         });
 
@@ -95,6 +97,51 @@ namespace PixiInterop {
             dragging = false;
             lastDragPos = null;
         });
+
+        app.canvas.addEventListener("wheel", (event) => {
+            event.preventDefault();
+
+            const zoomAmount = 1.1;
+            const direction = event.deltaY > 0 ? 1 : -1;
+            const scaleFactor = direction > 0 ? 1 / zoomAmount : zoomAmount;
+
+            const mousePos = new PIXI.Point();
+            app.renderer.events.mapPositionToPoint(mousePos, event.clientX, event.clientY);
+
+            const beforeZoom = mainContainer.toLocal(mousePos);
+
+            // Proposed new scale
+            const newScaleX = mainContainer.scale.x * scaleFactor;
+            const newScaleY = mainContainer.scale.y * scaleFactor;
+
+            // Clamp the scale
+            if (newScaleX < 1 || newScaleX > 5) return;
+
+            // Apply the clamped scale
+            mainContainer.scale.set(newScaleX, newScaleY);
+
+            const afterZoom = mainContainer.toLocal(mousePos);
+
+            // Adjust position to keep zoom centered on pointer
+            mainContainer.x += (afterZoom.x - beforeZoom.x) * mainContainer.scale.x;
+            mainContainer.y += (afterZoom.y - beforeZoom.y) * mainContainer.scale.y;
+
+            clampWorldPosition()
+        });
+    }
+
+    function clampWorldPosition() {
+        if (!bgSprite) return;
+        const scale = mainContainer.scale.x; // Assuming uniform scaling
+
+        const scaledWidth = bgSprite!.width * scale;
+        const scaledHeight = bgSprite!.height * scale;
+
+        const minX = Math.min(0, app.screen.width - scaledWidth);
+        const minY = Math.min(0, app.screen.height - scaledHeight);
+
+        mainContainer.x = Math.max(minX, Math.min(mainContainer.x, 0));
+        mainContainer.y = Math.max(minY, Math.min(mainContainer.y, 0));
     }
 
     export function setToolOptions(options: Tools.ToolOptions): void {
