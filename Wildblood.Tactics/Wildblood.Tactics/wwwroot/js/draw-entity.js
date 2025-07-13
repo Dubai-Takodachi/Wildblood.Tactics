@@ -17,6 +17,8 @@ export async function drawEntity(entity) {
             return drawCurve(entity);
         case Tools.ToolType.AddIcon:
             return await drawIcon(entity);
+        case Tools.ToolType.Ping:
+            return drawPing(entity);
     }
     return null;
 }
@@ -133,6 +135,14 @@ function drawLineEnd(g, entity, a, b) {
     }
     return g;
 }
+function drawPing(entity) {
+    const ring = new PIXI.Graphics();
+    ring.circle(0, 0, entity.primarySize + 8);
+    ring.fill({ color: entity.primaryColor });
+    ring.circle(0, 0, entity.primarySize);
+    ring.cut();
+    return ring;
+}
 function getSmoothCurve(points, segments = 16, tension = 0.2) {
     const result = [];
     for (let i = 0; i < points.length - 1; i++) {
@@ -189,21 +199,5 @@ async function drawIcon(entity) {
         graphic.texture(textTexture, "#ffffffff", labelX + labelPadding, labelY + labelPadding);
     }
     return graphic;
-}
-function calculateDistance(a, b) {
-    return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
-}
-function getSteppedPointByCount(a, b, stepSize, stepCount) {
-    const dx = b.x - a.x;
-    const dy = b.y - a.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    if (distance === 0)
-        return { x: a.x, y: a.y };
-    const totalStepDistance = stepSize * stepCount;
-    const ratio = totalStepDistance / distance;
-    return {
-        x: a.x + dx * ratio,
-        y: a.y + dy * ratio
-    };
 }
 //# sourceMappingURL=draw-entity.js.map

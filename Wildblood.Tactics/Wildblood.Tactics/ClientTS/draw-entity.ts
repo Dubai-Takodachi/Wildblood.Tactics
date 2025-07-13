@@ -20,6 +20,8 @@ export async function drawEntity(entity: Tools.Entity): Promise<PIXI.Graphics | 
             return drawCurve(entity);
         case Tools.ToolType.AddIcon:
             return await drawIcon(entity);
+        case Tools.ToolType.Ping:
+            return drawPing(entity);
     }
 
     return null;
@@ -162,6 +164,17 @@ function drawLineEnd(g: PIXI.Graphics, entity: Tools.Entity, a: Tools.Point, b: 
     return g;
 }
 
+function drawPing(entity: Tools.Entity): PIXI.Graphics | null {
+    const ring = new PIXI.Graphics();
+
+    ring.circle(0, 0, entity.primarySize! + 8);
+    ring.fill({ color: entity.primaryColor });
+    ring.circle(0, 0, entity.primarySize!);
+    ring.cut();
+
+    return ring;
+}
+
 function getSmoothCurve(points: { x: number, y: number }[], segments = 16, tension = 0.2): { x: number, y: number } [] {
     const result: { x: number, y: number }[] = [];
 
@@ -234,24 +247,4 @@ async function drawIcon(entity: Tools.Entity): Promise<PIXI.Graphics | null> {
     }
 
     return graphic;
-}
-
-function calculateDistance(a: Tools.Point, b: Tools.Point): number {
-    return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
-}
-
-function getSteppedPointByCount(a: Tools.Point, b: Tools.Point, stepSize: number, stepCount: number): Tools.Point {
-    const dx = b.x - a.x;
-    const dy = b.y - a.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    if (distance === 0) return { x: a.x, y: a.y };
-
-    const totalStepDistance = stepSize * stepCount;
-    const ratio = totalStepDistance / distance;
-
-    return {
-        x: a.x + dx * ratio,
-        y: a.y + dy * ratio
-    };
 }

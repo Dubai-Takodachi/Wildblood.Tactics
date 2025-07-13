@@ -168,7 +168,7 @@ var PixiInterop;
             return new Interactions.EraseTool(interactionContext, drawnSpriteByEntityId);
         },
         [Tools.ToolType.Ping]: function () {
-            return null;
+            return new Interactions.PingTool(interactionContext);
         }
     };
     async function addEntityOnServer(entity) {
