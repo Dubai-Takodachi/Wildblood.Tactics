@@ -18,7 +18,7 @@ export async function drawEntity(entity) {
         case Tools.ToolType.AddIcon:
             return await drawIcon(entity);
         case Tools.ToolType.Ping:
-            return drawPing(entity);
+            return drawPingAnimation(entity);
     }
     return null;
 }
@@ -135,12 +135,26 @@ function drawLineEnd(g, entity, a, b) {
     }
     return g;
 }
-function drawPing(entity) {
+function drawPingAnimation(entity) {
     const ring = new PIXI.Graphics();
-    ring.circle(0, 0, entity.primarySize + 8);
-    ring.fill({ color: entity.primaryColor });
-    ring.circle(0, 0, entity.primarySize);
-    ring.cut();
+    let size = 0;
+    let alpha = 255;
+    const animate = () => {
+        ring.clear();
+        ring.circle(0, 0, size + 5).fill({ color: "#ff0000" + alpha.toString(16).padStart(2, '0') });
+        ring.circle(0, 0, size).cut();
+        size += 1;
+        alpha -= 10;
+        if (alpha <= 0) {
+            ring.parent?.removeChild(ring);
+            ring.destroy();
+            return;
+        }
+        requestAnimationFrame(animate);
+    };
+    ring.on('added', () => {
+        requestAnimationFrame(animate);
+    });
     return ring;
 }
 function getSmoothCurve(points, segments = 16, tension = 0.2) {

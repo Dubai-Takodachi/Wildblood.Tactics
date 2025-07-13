@@ -332,24 +332,16 @@ export class PingTool {
     async onPointerMove(event) {
         if ((event.buttons & 1) !== 1)
             return;
-        if (performance.now() - this.lastPingTime < 150)
+        if (performance.now() - this.lastPingTime < 100)
             return;
         this.lastPingTime = performance.now();
         let ping = {
             id: crypto.randomUUID(),
             toolType: Tools.ToolType.Ping,
             position: getPosition(event, this.context),
-            primarySize: 0,
-            primaryColor: "#ff0000f0",
         };
-        let transparency = 255;
-        while (transparency > 0) {
-            ping.primarySize += 2;
-            ping.primaryColor = "#ff0000" + transparency.toString(16).padStart(2, '0');
-            await this.context.addEntityCallback(ping);
-            await delay(20);
-            transparency -= 10;
-        }
+        await this.context.addEntityCallback(ping);
+        await delay(50);
         await this.context.removeEntityCallback(ping.id);
     }
 }

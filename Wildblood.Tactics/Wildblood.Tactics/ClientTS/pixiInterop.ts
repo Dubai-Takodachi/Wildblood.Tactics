@@ -231,6 +231,13 @@ namespace PixiInterop {
     async function drawEntityToScreen(entity: Tools.Entity): Promise<void> {
         const graphic = await Draw.drawEntity(entity);
         if (graphic) {
+            if (entity.toolType === Tools.ToolType.Ping) {
+                graphic.x = entity.position.x;
+                graphic.y = entity.position.y;
+                entityContainer.addChild(graphic);
+                return;
+            }
+
             if (drawnSpriteByEntityId[entity.id]) {
                 entityContainer.removeChild(drawnSpriteByEntityId[entity.id]);
                 drawnSpriteByEntityId[entity.id].destroy();
