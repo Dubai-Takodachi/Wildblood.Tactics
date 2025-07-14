@@ -6,6 +6,9 @@ import * as Interactions from './interaction.js';
 import * as Draw from './draw-entity.js';
 
 namespace PixiInterop {
+    let VIRTUAL_WIDTH = 3000;
+    let VIRTUAL_HEIGHT = 3000;
+
     let app: PIXI.Application;
     let dotNetObjRef: DotNetObjectReference;
 
@@ -35,7 +38,12 @@ namespace PixiInterop {
         if (!parent) return;
         app = new PIXI.Application();
         Draw.init(iconNames, app);
-        await app.init({ background: '#FFFFFF', resizeTo: parent });
+        await app.init({
+            background: '#FFFFFF',
+            resizeTo: parent,
+            autoDensity: true,
+            resolution: window.devicePixelRatio,
+        });
         parent.appendChild(app.canvas);
 
         mainContainer = new PIXI.Container();
@@ -53,10 +61,9 @@ namespace PixiInterop {
         }
 
         app.canvas.addEventListener("mousedown", (event) => {
-            if (event.button === 1) { // Middle mouse button
+            if (event.button === 1) {
                 isDragging = true;
                 lastDragPos = { x: event.clientX, y: event.clientY };
-                // Prevent default middle-mouse scroll behavior
                 event.preventDefault();
             }
         });
@@ -71,7 +78,7 @@ namespace PixiInterop {
 
                 lastDragPos = { x: event.clientX, y: event.clientY };
 
-                clampWorldPosition()
+                clampWorldPosition();
             }
         });
 
@@ -98,39 +105,81 @@ namespace PixiInterop {
             app.renderer.events.mapPositionToPoint(mousePos, event.clientX, event.clientY);
 
             const beforeZoom = mainContainer.toLocal(mousePos);
-
-            // Proposed new scale
-            const newScaleX = mainContainer.scale.x * scaleFactor;
-            const newScaleY = mainContainer.scale.y * scaleFactor;
-
-            // Clamp the scale
-            if (newScaleX < 1 || newScaleX > 5) return;
-
-            // Apply the clamped scale
-            mainContainer.scale.set(newScaleX, newScaleY);
+            const newScale = mainContainer.scale.x * scaleFactor;
+            if (newScale > 5) return;
+            mainContainer.scale.set(newScale);
 
             const afterZoom = mainContainer.toLocal(mousePos);
-
-            // Adjust position to keep zoom centered on pointer
             mainContainer.x += (afterZoom.x - beforeZoom.x) * mainContainer.scale.x;
             mainContainer.y += (afterZoom.y - beforeZoom.y) * mainContainer.scale.y;
 
-            clampWorldPosition()
+            clampWorldPosition();
+            clampWorldScale()
         });
+
+        updateViewSize();
+    }
+
+    function updateViewSize() {
+        const ratio = app.renderer.width / app.renderer.height;
+        VIRTUAL_WIDTH = 1000;
+        VIRTUAL_HEIGHT = 1000 * (1 / ratio);
+
+        const screenWidth = app.renderer.width;
+        const screenHeight = app.renderer.height;
+
+        const widthScale = screenWidth / VIRTUAL_WIDTH;
+        const heightScale = screenHeight / VIRTUAL_HEIGHT;
+
+        const scale = Math.min(
+            screenWidth / VIRTUAL_WIDTH,
+            screenHeight / VIRTUAL_HEIGHT
+        );
+
+        mainContainer.scale.set(scale);
+        mainContainer.position.set(
+            (screenWidth - VIRTUAL_WIDTH * widthScale) / 2,
+            (screenHeight - VIRTUAL_HEIGHT * heightScale) / 2
+        );
     }
 
     function clampWorldPosition() {
         if (!bgSprite) return;
-        const scale = mainContainer.scale.x; // Assuming uniform scaling
+        const scaleX = mainContainer.scale.x;
+        const scaleY = mainContainer.scale.y;
 
-        const scaledWidth = bgSprite!.width * scale;
-        const scaledHeight = bgSprite!.height * scale;
+        const scaledWidth = bgSprite!.width * scaleX;
+        const scaledHeight = bgSprite!.height * scaleY;
 
         const minX = Math.min(0, app.screen.width - scaledWidth);
         const minY = Math.min(0, app.screen.height - scaledHeight);
 
         mainContainer.x = Math.max(minX, Math.min(mainContainer.x, 0));
         mainContainer.y = Math.max(minY, Math.min(mainContainer.y, 0));
+    }
+
+    function clampWorldScale() {
+        if (!bgSprite) return;
+
+        const screenWidth = app.screen.width;
+        const screenHeight = app.screen.height;
+
+        const bgWidth = bgSprite.width;
+        const bgHeight = bgSprite.height;
+
+        const minScaleX = screenWidth / bgWidth;
+        const minScaleY = screenHeight / bgHeight;
+        const minScale = Math.max(minScaleX, minScaleY);
+
+        const maxScale = 5;
+
+        const currentScale = mainContainer.scale.x;
+
+        if (currentScale < minScale) {
+            mainContainer.scale.set(minScale);
+        } else if (currentScale > maxScale) {
+            mainContainer.scale.set(maxScale);
+        }
     }
 
     export function setToolOptions(options: Tools.ToolOptions): void {
@@ -258,13 +307,16 @@ namespace PixiInterop {
         }
         const texture = await PIXI.Assets.load("ConquerorsBladeData/Maps/" + imageUrl + ".png");
         const bg = new PIXI.Sprite(texture);
-        bg.width = app.screen.width;
-        bg.height = app.screen.height;
+
+        bg.width = VIRTUAL_WIDTH;
+        bg.height = VIRTUAL_HEIGHT;
+
         if (bgSprite) {
             mainContainer.removeChild(bgSprite);
         }
-        mainContainer.addChildAt(bg, 0);
+
         bgSprite = bg;
+        mainContainer.addChildAt(bgSprite, 0);
     }
 
     export async function redrawEntities(entities: Tools.Entity[]): Promise<void> {
