@@ -392,10 +392,12 @@ export class MoveTool implements IToolHandler {
         for (const key of keys) {
             const sprite = this.drawnSpriteByEntityId[key];
             if (!sprite.position) continue;
-            const local = { x: pos.x - sprite.x, y: pos.y - sprite.y };
+            const entity = this.currentEntities[key];
+            const spriteLocal = { x: pos.x - sprite.x, y: pos.y - sprite.y };
+            const entityLocal = { x: pos.x - entity.position.x, y: pos.y - entity.position.y };
 
-            if (hitTestPixelPerfect(sprite, local, this.context.app)) {
-                this.entityClickedPosition = local;
+            if (hitTestPixelPerfect(sprite, spriteLocal, this.context.app)) {
+                this.entityClickedPosition = entityLocal;
                 this.entityId = key;
                 break;
             }
