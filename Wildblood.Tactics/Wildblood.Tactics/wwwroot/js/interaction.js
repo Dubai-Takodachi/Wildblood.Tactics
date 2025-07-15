@@ -247,6 +247,49 @@ export class PlaceIconTool {
         return icon;
     }
 }
+export class PlaceTextTool {
+    context;
+    textOptions;
+    entitiyId = crypto.randomUUID();
+    constructor(context, textOptions) {
+        this.context = context;
+        this.textOptions = textOptions;
+        this.onPointerDown = this.onPointerDown.bind(this);
+        this.onPointerMove = this.onPointerMove.bind(this);
+    }
+    async onPointerDown(event) {
+        if (event.button !== 0)
+            return;
+        const pos = getPosition(event, this.context);
+        const text = this.createText(pos.x, pos.y, this.entitiyId);
+        if (text)
+            await this.context.addEntityCallback(text);
+        this.entitiyId = crypto.randomUUID();
+    }
+    async onPointerMove(event) {
+        const pos = getPosition(event, this.context);
+        const text = this.createText(pos.x, pos.y, this.entitiyId);
+        if (text)
+            await this.context.setPreviewEntityCallback(text);
+    }
+    createText(x, y, entityId) {
+        const position = {
+            x: x,
+            y: y
+        };
+        let icon = {
+            id: entityId,
+            toolType: Tools.ToolType.AddText,
+            position: position,
+            primarySize: this.textOptions.size,
+            text: this.textOptions.text,
+            primaryColor: this.textOptions.color,
+            hasBackground: this.textOptions.hasBackground,
+            secondaryColor: this.textOptions.backgroundColor,
+        };
+        return icon;
+    }
+}
 export class MoveTool {
     context;
     entityId = null;

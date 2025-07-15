@@ -311,6 +311,57 @@ export class PlaceIconTool implements IToolHandler {
     }
 }
 
+export class PlaceTextTool implements IToolHandler {
+    private context: InteractionContext;
+    private textOptions: Tools.TextOptions;
+    private entitiyId: string = crypto.randomUUID();
+
+    constructor(context: InteractionContext, textOptions: Tools.TextOptions) {
+        this.context = context;
+        this.textOptions = textOptions;
+
+        this.onPointerDown = this.onPointerDown.bind(this);
+        this.onPointerMove = this.onPointerMove.bind(this);
+    }
+
+    async onPointerDown(event: PointerEvent) {
+        if (event.button !== 0) return;
+
+        const pos = getPosition(event, this.context);
+        const text = this.createText(pos.x, pos.y, this.entitiyId);
+        if (text)
+            await this.context.addEntityCallback(text);
+        this.entitiyId = crypto.randomUUID();
+    }
+
+    async onPointerMove(event: PointerEvent) {
+        const pos = getPosition(event, this.context);
+        const text = this.createText(pos.x, pos.y, this.entitiyId);
+        if (text)
+            await this.context.setPreviewEntityCallback(text);
+    }
+
+    private createText(x: number, y: number, entityId: string): Tools.Entity | null {
+        const position: Tools.Point = {
+            x: x,
+            y: y
+        };
+
+        let icon: Tools.Entity = {
+            id: entityId,
+            toolType: Tools.ToolType.AddText,
+            position: position,
+            primarySize: this.textOptions.size,
+            text: this.textOptions.text,
+            primaryColor: this.textOptions.color,
+            hasBackground: this.textOptions.hasBackground,
+            secondaryColor: this.textOptions.backgroundColor,
+        }
+
+        return icon;
+    }
+}
+
 export class MoveTool implements IToolHandler {
     private context: InteractionContext;
     private entityId: string | null = null;

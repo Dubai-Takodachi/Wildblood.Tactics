@@ -229,8 +229,9 @@ namespace PixiInterop {
             if (!currentTool.curveDrawOptions) return null;
             return new Interactions.DrawCurve(interactionContext, currentTool.curveDrawOptions);
         },
-        [Tools.ToolType.AddText]: function(): Interactions.IToolHandler | null {
-            return null;
+        [Tools.ToolType.AddText]: function (): Interactions.IToolHandler | null {
+            if (!currentTool.textOptions) return null;
+            return new Interactions.PlaceTextTool(interactionContext, currentTool.textOptions);
         },
         [Tools.ToolType.AddShape]: function (): Interactions.IToolHandler | null {
             return null;

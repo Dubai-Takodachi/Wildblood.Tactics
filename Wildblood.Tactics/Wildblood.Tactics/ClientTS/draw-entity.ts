@@ -22,6 +22,8 @@ export async function drawEntity(entity: Tools.Entity): Promise<PIXI.Graphics | 
             return await drawIcon(entity);
         case Tools.ToolType.Ping:
             return drawPingAnimation(entity);
+        case Tools.ToolType.AddText:
+            return drawText(entity);
     }
 
     return null;
@@ -257,8 +259,35 @@ async function drawIcon(entity: Tools.Entity): Promise<PIXI.Graphics | null> {
 
         if (entity.hasBackground)
             graphic.rect(labelX, labelY, labelWidth, labelHeight)
-                .fill(entity.secondaryColor)
-                .stroke({ width: 1, color: 0xffffff });
+                .fill(entity.secondaryColor);
+
+        const textTexture = app.renderer.textureGenerator.generateTexture(label);
+        graphic.texture(textTexture, "#ffffffff", labelX + labelPadding, labelY + labelPadding);
+    }
+
+    return graphic;
+}
+
+async function drawText(entity: Tools.Entity): Promise<PIXI.Graphics | null> {
+    const graphic = new PIXI.Graphics();
+
+    if (entity.text && entity.text !== "") {
+        const textStyle = new PIXI.TextStyle({
+            fontSize: entity.primarySize,
+            fill: entity.primaryColor,
+        });
+
+        const label = new PIXI.Text({ text: entity.text, style: textStyle });
+
+        const labelPadding = 4;
+        const labelWidth = label.width + labelPadding * 2;
+        const labelHeight = label.height + labelPadding * 2;
+        const labelX = 0 + (graphic.width - labelWidth) / 2;
+        const labelY = 0 + (graphic.height - labelHeight) / 2;
+
+        if (entity.hasBackground)
+            graphic.rect(labelX, labelY, labelWidth, labelHeight)
+                .fill(entity.secondaryColor);
 
         const textTexture = app.renderer.textureGenerator.generateTexture(label);
         graphic.texture(textTexture, "#ffffffff", labelX + labelPadding, labelY + labelPadding);

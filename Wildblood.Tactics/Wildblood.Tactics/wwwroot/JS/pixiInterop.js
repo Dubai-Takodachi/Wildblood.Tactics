@@ -49,10 +49,9 @@ var PixiInterop;
             container: mainContainer,
         };
         app.canvas.addEventListener("mousedown", (event) => {
-            if (event.button === 1) { // Middle mouse button
+            if (event.button === 1) {
                 isDragging = true;
                 lastDragPos = { x: event.clientX, y: event.clientY };
-                // Prevent default middle-mouse scroll behavior
                 event.preventDefault();
             }
         });
@@ -189,7 +188,9 @@ var PixiInterop;
             return new Interactions.DrawCurve(interactionContext, currentTool.curveDrawOptions);
         },
         [Tools.ToolType.AddText]: function () {
-            return null;
+            if (!currentTool.textOptions)
+                return null;
+            return new Interactions.PlaceTextTool(interactionContext, currentTool.textOptions);
         },
         [Tools.ToolType.AddShape]: function () {
             return null;
