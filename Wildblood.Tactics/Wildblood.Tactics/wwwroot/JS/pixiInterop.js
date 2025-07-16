@@ -193,7 +193,9 @@ var PixiInterop;
             return new Interactions.PlaceTextTool(interactionContext, currentTool.textOptions);
         },
         [Tools.ToolType.AddShape]: function () {
-            return null;
+            if (!currentTool.shapeOptions)
+                return null;
+            return new Interactions.DrawShapeTool(interactionContext, currentTool.shapeOptions);
         },
         [Tools.ToolType.Undo]: function () {
             return null;
@@ -243,7 +245,13 @@ var PixiInterop;
                 entityContainer.removeChild(drawnSpriteByEntityId[entity.id]);
                 drawnSpriteByEntityId[entity.id].destroy();
             }
-            const sprite = new PIXI.Sprite(app.renderer.generateTexture(graphic));
+            const padding = 2;
+            const bounds = graphic.getBounds();
+            const paddedBounds = new PIXI.Rectangle(bounds.x - padding, bounds.y - padding, bounds.width + padding * 2, bounds.height + padding * 2);
+            const sprite = new PIXI.Sprite(app.renderer.generateTexture({
+                target: graphic,
+                frame: paddedBounds,
+            }));
             sprite.x = entity.position.x + graphic.bounds.minX;
             sprite.y = entity.position.y + graphic.bounds.minY;
             currentEntities[entity.id] = entity;

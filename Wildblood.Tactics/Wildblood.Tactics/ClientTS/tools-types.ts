@@ -1,7 +1,7 @@
 export enum ToolType { AddIcon, Move, DrawFree, DrawLine, DrawCurve, AddText, AddShape, Undo, Redo, Erase, Ping };
 export enum LineStyle { Normal, Dashed, Dotted };
 export enum LineEnd { Normal, Arrow, Flat };
-export enum ShapeType { Square, Circle, Polygon };
+export enum ShapeType { Circle, Square, Polygon };
 
 export type Point = {
     x: number;

@@ -115,19 +115,19 @@
         <MudTabPanel Icon="@Icons.Material.Outlined.Rectangle" @onclick="() => ChangeTool(Models.Tools.ToolType.AddShape)" ToolTip="Add Shape">
             <MudPaper>
                 <MudToggleGroup T="ShapeType" Color="Color.Success" Value="cosmeticShapeType" ValueChanged="OnShapeTypeChanged" Class="my-3">
-                    <MudToggleItem Value="@ShapeType.Rectangle">
-                        <MudIcon Icon="@Icons.Material.Outlined.Rectangle" />
-                    </MudToggleItem>
                     <MudToggleItem Value="@ShapeType.Circle">
                         <MudIcon Icon="@Icons.Material.Outlined.Circle" />
+                    </MudToggleItem>
+                    <MudToggleItem Value="@ShapeType.Rectangle">
+                        <MudIcon Icon="@Icons.Material.Outlined.Rectangle" />
                     </MudToggleItem>
                     <MudToggleItem Value="@ShapeType.Polygon">
                         <MudIcon Icon="@Icons.Material.Outlined.FormatShapes" />
                     </MudToggleItem>
                 </MudToggleGroup>
-                <MudColorPicker Label="Outline Color" Text="@AllOptions.CurveDrawOptions!.Color" TextChanged="OnShapeOutlineColorChanged" Class="my-6" />
-                <MudColorPicker Label="Outline Color" Text="@AllOptions.CurveDrawOptions!.Color" TextChanged="OnShapeFillColorChanged" Class="my-6" />
-                <MudSlider T="int" Color="Color.Primary" Min="1" Max="100" Value="TacticToolService.AllOptions.ShapeOptions.OutlineThickness" ValueLabel="true" ValueChanged="OnShapeOutlineThicknessChanged">Shape Outline Thickness</MudSlider>
+                <MudColorPicker Label="Outline Color" Text="@AllOptions.ShapeOptions!.OutlineColor" TextChanged="OnShapeOutlineColorChanged" Class="my-6" />
+                <MudColorPicker Label="Fill Color" Text="@AllOptions.ShapeOptions!.FillColor" TextChanged="OnShapeFillColorChanged" Class="my-6" />
+                <MudSlider T="int" Color="Color.Primary" Min="0" Max="10" Value="TacticToolService.AllOptions.ShapeOptions!.OutlineThickness" ValueLabel="true" ValueChanged="OnShapeOutlineThicknessChanged">Shape Outline Thickness</MudSlider>
                 <MudText>Select Line Style:</MudText>
                 <MudToggleGroup T="LineStyle" Color="Color.Success" Value="cosmeticLineStyle" ValueChanged="OnShapeLineStyleChanged" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
                     <MudToggleItem Value="@LineStyle.Normal">

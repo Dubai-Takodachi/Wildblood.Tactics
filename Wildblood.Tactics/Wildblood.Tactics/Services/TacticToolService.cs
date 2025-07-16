@@ -48,6 +48,7 @@ public class TacticToolService : ITacticToolService
             ToolType.DrawCurve => currentBase with { CurveDrawOptions = AllOptions.CurveDrawOptions },
             ToolType.DrawFree => currentBase with { FreeDrawOptions = AllOptions.FreeDrawOptions },
             ToolType.AddText => currentBase with { TextOptions = AllOptions.TextOptions },
+            ToolType.AddShape => currentBase with { ShapeOptions = AllOptions.ShapeOptions },
             _ => currentBase,
         };
     }
@@ -87,10 +88,10 @@ public class TacticToolService : ITacticToolService
             ShapeOptions = new ShapeOptions
             {
                 ShapeType = ShapeType.Circle,
-                OutlineColor = "#ff0000",
+                OutlineColor = "#ff0000ff",
                 OutlineStyle = LineStyle.Normal,
                 OutlineThickness = 5,
-                FillColor = "#ff0000",
+                FillColor = "#ff000033",
             },
             TextOptions = defaultTextOptions,
         };

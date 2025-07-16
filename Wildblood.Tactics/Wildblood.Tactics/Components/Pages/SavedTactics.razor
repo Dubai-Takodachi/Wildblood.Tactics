@@ -21,7 +21,7 @@
     private List<Tactic> Tactics { get; set; } = new List<Tactic>();
     private Tactic selectedTactic;
 
-    protected override async Task OnInitializedAsync() 
+    protected override async Task OnInitializedAsync()
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User.FindFirst(c => c.Type == "sub")?.Value
@@ -35,6 +35,4 @@
     {
         NavigationManager.NavigateTo($"/tactics/{args.Item.Id}");
     }
-
-
 }

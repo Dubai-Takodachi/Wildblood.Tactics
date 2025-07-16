@@ -24,6 +24,8 @@ export async function drawEntity(entity: Tools.Entity): Promise<PIXI.Graphics | 
             return drawPingAnimation(entity);
         case Tools.ToolType.AddText:
             return drawText(entity);
+        case Tools.ToolType.AddShape:
+            return drawShape(entity);
     }
 
     return null;
@@ -63,7 +65,7 @@ function drawPath(g: PIXI.Graphics, entity: Tools.Entity, path: Tools.Point[]): 
                 .fill(entity.primaryColor);
         }
     } else if (entity.lineStyle === Tools.LineStyle.Dashed) {
-        const stepSize = entity.primarySize!;
+        const stepSize = entity.primarySize! * 3;
         const spacedPath = getEvenlySpacedPoints(path, stepSize);
         for (var i = 0; i < spacedPath.length - 1; i++) {
             if (i % 3 > 0) {
@@ -268,7 +270,7 @@ async function drawIcon(entity: Tools.Entity): Promise<PIXI.Graphics | null> {
     return graphic;
 }
 
-async function drawText(entity: Tools.Entity): Promise<PIXI.Graphics | null> {
+function drawText(entity: Tools.Entity): PIXI.Graphics | null {
     const graphic = new PIXI.Graphics();
 
     if (entity.text && entity.text !== "") {
@@ -294,4 +296,42 @@ async function drawText(entity: Tools.Entity): Promise<PIXI.Graphics | null> {
     }
 
     return graphic;
+}
+
+function drawShape(entity: Tools.Entity): PIXI.Graphics | null {
+    if (!entity) return null;
+    if (!entity.path) return null;
+    let graphics = new PIXI.Graphics();
+
+    const radius = getDistance(entity!.path[0], entity!.path[1])
+
+    if (entity.shapeType === Tools.ShapeType.Circle) {
+        graphics.circle(0, 0, radius).fill({ color: entity.secondaryColor });
+
+        const path: Tools.Point[] = [];
+
+        const angleStep = (Math.PI * 2) / 64;
+
+        graphics.moveTo(
+            Math.cos(0) * radius,
+            Math.sin(0) * radius
+        );
+
+        for (let i = 0; i <= 64; i++) {
+            const angle = angleStep * i;
+            const x = Math.cos(angle) * radius;
+            const y = Math.sin(angle) * radius;
+            path.push({ x: x, y: y });
+        }
+
+        graphics = drawPath(graphics, entity, path);
+    }
+
+    return graphics;
+}
+
+function getDistance(a: Tools.Point, b: Tools.Point): number{
+    let dx = a.x - b.x;
+    let dy = a.y - b.y;
+    return Math.sqrt(dx * dx + dy * dy);
 }

@@ -390,6 +390,96 @@ export class PingTool {
         await this.context.removeEntityCallback(ping.id);
     }
 }
+export class DrawShapeTool {
+    context;
+    shapeOptions;
+    path = [];
+    entitiyId = null;
+    constructor(context, shapeOptions) {
+        this.context = context;
+        this.shapeOptions = shapeOptions;
+        this.onPointerDown = this.onPointerDown.bind(this);
+        this.onPointerMove = this.onPointerMove.bind(this);
+        this.onPointerUp = this.onPointerUp.bind(this);
+    }
+    async onPointerDown(event) {
+        if (event.button !== 0)
+            return;
+        const pos = getPosition(event, this.context);
+        if (this.shapeOptions.shapeType === Tools.ShapeType.Circle ||
+            this.shapeOptions.shapeType === Tools.ShapeType.Square) {
+            this.entitiyId = crypto.randomUUID();
+            this.path = [pos];
+            return;
+        }
+        if (this.shapeOptions.shapeType === Tools.ShapeType.Polygon) {
+            if (this.path.length === 0) {
+                this.entitiyId = crypto.randomUUID();
+                this.path.push(pos);
+                return;
+            }
+            if (calculateDistance(this.path[0], pos) < 5) {
+                const shape = this.createShape(this.path);
+                if (shape)
+                    await this.context.addEntityCallback(shape);
+                this.path = [];
+                return;
+            }
+            this.path.push(pos);
+        }
+    }
+    async onPointerMove(event) {
+        const pos = getPosition(event, this.context);
+        if (this.shapeOptions.shapeType === Tools.ShapeType.Circle ||
+            this.shapeOptions.shapeType === Tools.ShapeType.Square) {
+            if ((event.buttons & 1) !== 1)
+                return;
+            if (this.path.length === 0)
+                return;
+            const shape = this.createShape([...this.path, pos]);
+            if (shape)
+                await this.context.setPreviewEntityCallback(shape);
+            return;
+        }
+        if (this.shapeOptions.shapeType === Tools.ShapeType.Polygon) {
+            if (this.path.length === 0)
+                return;
+            const shape = this.createShape([...this.path, pos]);
+            if (shape)
+                await this.context.setPreviewEntityCallback(shape);
+            return;
+        }
+    }
+    async onPointerUp(event) {
+        const pos = getPosition(event, this.context);
+        if (this.shapeOptions.shapeType === Tools.ShapeType.Circle ||
+            this.shapeOptions.shapeType === Tools.ShapeType.Square) {
+            if (event.button !== 0)
+                return;
+            if (this.path.length === 0)
+                return;
+            const shape = this.createShape([...this.path, pos]);
+            if (shape)
+                await this.context.addEntityCallback(shape);
+            return;
+        }
+    }
+    createShape(path) {
+        const position = { x: path[0].x, y: path[0].y };
+        const shape = {
+            id: this.entitiyId,
+            position: position,
+            toolType: Tools.ToolType.AddShape,
+            shapeType: this.shapeOptions.shapeType,
+            path: path,
+            primaryColor: this.shapeOptions.outlineColor,
+            primarySize: this.shapeOptions.outlineThickness,
+            lineStyle: this.shapeOptions.outlineStyle,
+            secondaryColor: this.shapeOptions.fillColor
+        };
+        return shape;
+    }
+}
 function getPosition(event, context) {
     const point = new PIXI.Point();
     context.app.renderer.events.mapPositionToPoint(point, event.clientX, event.clientY);

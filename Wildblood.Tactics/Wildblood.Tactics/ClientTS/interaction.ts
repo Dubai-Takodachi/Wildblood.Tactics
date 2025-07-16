@@ -1,5 +1,6 @@
 import * as Tools from './tools-types.js';
 import * as PIXI from '../lib/pixi.mjs';
+import { path } from 'pixi.js';
 
 export interface IToolHandler {
     onPointerDown?(event: PointerEvent): Promise<void>;
@@ -478,6 +479,105 @@ export class PingTool implements IToolHandler {
         await this.context.addEntityCallback(ping);
         await delay(50);
         await this.context.removeEntityCallback(ping.id);
+    }
+}
+
+export class DrawShapeTool implements IToolHandler {
+    private context: InteractionContext;
+    private shapeOptions: Tools.ShapeOptions;
+    private path: Tools.Point[] = [];
+    private entitiyId: string | null = null;
+
+    constructor(context: InteractionContext, shapeOptions: Tools.ShapeOptions) {
+        this.context = context;
+        this.shapeOptions = shapeOptions;
+
+        this.onPointerDown = this.onPointerDown.bind(this);
+        this.onPointerMove = this.onPointerMove.bind(this);
+        this.onPointerUp = this.onPointerUp.bind(this);
+    }
+
+    async onPointerDown(event: PointerEvent) {
+        if (event.button !== 0) return;
+        const pos = getPosition(event, this.context);
+        if (this.shapeOptions.shapeType === Tools.ShapeType.Circle ||
+            this.shapeOptions.shapeType === Tools.ShapeType.Square) {
+
+            this.entitiyId = crypto.randomUUID();
+            this.path = [pos];
+            return;
+        }
+
+        if (this.shapeOptions.shapeType === Tools.ShapeType.Polygon) {
+            if (this.path.length === 0) {
+                this.entitiyId = crypto.randomUUID();
+                this.path.push(pos);
+                return;
+            }
+
+            if (calculateDistance(this.path[0], pos) < 5) {
+                const shape = this.createShape(this.path);
+                if (shape)
+                    await this.context.addEntityCallback(shape);
+                this.path = [];
+                return;
+            }
+
+            this.path.push(pos);
+        }
+    }
+
+    async onPointerMove(event: PointerEvent) {
+        const pos = getPosition(event, this.context);
+        if (this.shapeOptions.shapeType === Tools.ShapeType.Circle ||
+            this.shapeOptions.shapeType === Tools.ShapeType.Square) {
+            if ((event.buttons & 1) !== 1) return;
+            if (this.path.length === 0) return;
+            const shape = this.createShape([...this.path, pos]);
+            if (shape)
+                await this.context.setPreviewEntityCallback(shape);
+            return;
+        }
+
+        if (this.shapeOptions.shapeType === Tools.ShapeType.Polygon) {
+            if (this.path.length === 0)
+                return;
+            const shape = this.createShape([...this.path, pos]);
+            if (shape)
+                await this.context.setPreviewEntityCallback(shape);
+            return;
+        }
+    }
+
+    async onPointerUp(event: PointerEvent) {
+        const pos = getPosition(event, this.context);
+        if (this.shapeOptions.shapeType === Tools.ShapeType.Circle ||
+            this.shapeOptions.shapeType === Tools.ShapeType.Square) {
+            if (event.button !== 0) return;
+            if (this.path.length === 0) return;
+            const shape = this.createShape([...this.path, pos]);
+            if (shape)
+                await this.context.addEntityCallback(shape);
+            return;
+        }
+    }
+
+    private createShape(path: Tools.Point[]): Tools.Entity {
+        const position = { x: path[0].x, y: path[0].y };
+
+        const shape: Tools.Entity = {
+            id: this.entitiyId!,
+            position: position,
+            toolType: Tools.ToolType.AddShape,
+            shapeType: this.shapeOptions.shapeType,
+            path: path,
+            primaryColor: this.shapeOptions.outlineColor,
+            primarySize: this.shapeOptions.outlineThickness,
+            lineStyle: this.shapeOptions.outlineStyle,
+            secondaryColor: this.shapeOptions.fillColor
+        };
+
+        return shape;
     }
 }
 

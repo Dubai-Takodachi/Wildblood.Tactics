@@ -29,8 +29,8 @@ export var LineEnd;
 ;
 export var ShapeType;
 (function (ShapeType) {
-    ShapeType[ShapeType["Square"] = 0] = "Square";
-    ShapeType[ShapeType["Circle"] = 1] = "Circle";
+    ShapeType[ShapeType["Circle"] = 0] = "Circle";
+    ShapeType[ShapeType["Square"] = 1] = "Square";
     ShapeType[ShapeType["Polygon"] = 2] = "Polygon";
 })(ShapeType || (ShapeType = {}));
 ;
