@@ -148,7 +148,7 @@
         <MudTabPanel Icon="@Icons.Material.Filled.TextFields" @onclick="() => ChangeTool(Models.Tools.ToolType.AddText)" ToolTip="Add Text">
             <MudPaper>
                 <MudText Class="my-3">Icon Label:</MudText>
-                <MudTextField T="string" Value="TacticToolService.AllOptions.TextOptions!.Text" TextChanged="OnTextOptionsTextChanged" />
+                <MudTextField Lines="3" T="string" Value="TacticToolService.AllOptions.TextOptions!.Text" TextChanged="OnTextOptionsTextChanged" />
                 <MudSlider Class="my-3" T="int" Min="1" Max="100" Value="TacticToolService.AllOptions.TextOptions!.Size" ValueLabel="true" ValueChanged="OnTextOptionsSizeChanged" Color="Color.Secondary">Icon Label Size</MudSlider>
                 <MudColorPicker Label="Icon Label Color" Value="TacticToolService.AllOptions.TextOptions!.Color" Text="@AllOptions.TextOptions!.Color" TextChanged="OnTextOptionsColorChanged" />
                 <MudCheckBox T="bool" ValueChanged="OnTextOptionsBackgroundBoolChanged" Value="TacticToolService.AllOptions.TextOptions!.HasBackground" Label="Add Background"></MudCheckBox>

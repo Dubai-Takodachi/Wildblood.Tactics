@@ -1,6 +1,5 @@
 import * as Tools from './tools-types.js';
 import * as PIXI from '../lib/pixi.mjs';
-import { path } from 'pixi.js';
 
 export interface IToolHandler {
     onPointerDown?(event: PointerEvent): Promise<void>;
