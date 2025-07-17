@@ -232,6 +232,47 @@ function getSmoothCurve(points: { x: number, y: number }[], segments = 16, tensi
     return result;
 }
 
+function getSmoothClosedCurve(
+    points: { x: number, y: number }[],
+    segments = 16,
+    tension = 0.2
+): { x: number, y: number }[] {
+    const result: { x: number, y: number }[] = [];
+
+    const count = points.length;
+    if (count < 2) return result;
+
+    for (let i = 0; i < count; i++) {
+        const p0 = points[(i - 1 + count) % count];
+        const p1 = points[i];
+        const p2 = points[(i + 1) % count];
+        const p3 = points[(i + 2) % count];
+
+        for (let t = 0; t <= segments; t++) {
+            const s = t / segments;
+            const s2 = s * s;
+            const s3 = s2 * s;
+
+            const m0x = (p2.x - p0.x) * tension;
+            const m0y = (p2.y - p0.y) * tension;
+            const m1x = (p3.x - p1.x) * tension;
+            const m1y = (p3.y - p1.y) * tension;
+
+            const a = 2 * s3 - 3 * s2 + 1;
+            const b = s3 - 2 * s2 + s;
+            const c = -2 * s3 + 3 * s2;
+            const d = s3 - s2;
+
+            const x = a * p1.x + b * m0x + c * p2.x + d * m1x;
+            const y = a * p1.y + b * m0y + c * p2.y + d * m1y;
+
+            result.push({ x, y });
+        }
+    }
+
+    return result;
+}
+
 async function drawIcon(entity: Tools.Entity): Promise<PIXI.Graphics | null> {
     const graphic = new PIXI.Graphics();
     let texture: PIXI.Texture;
@@ -302,32 +343,57 @@ function drawShape(entity: Tools.Entity): PIXI.Graphics | null {
     if (!entity) return null;
     if (!entity.path) return null;
     let graphics = new PIXI.Graphics();
-
-    const radius = getDistance(entity!.path[0], entity!.path[1])
+    let path: Tools.Point[] = [];
 
     if (entity.shapeType === Tools.ShapeType.Circle) {
-        graphics.circle(0, 0, radius).fill({ color: entity.secondaryColor });
-
-        const path: Tools.Point[] = [];
-
-        const angleStep = (Math.PI * 2) / 64;
-
-        graphics.moveTo(
-            Math.cos(0) * radius,
-            Math.sin(0) * radius
-        );
-
-        for (let i = 0; i <= 64; i++) {
-            const angle = angleStep * i;
-            const x = Math.cos(angle) * radius;
-            const y = Math.sin(angle) * radius;
-            path.push({ x: x, y: y });
-        }
-
-        graphics = drawPath(graphics, entity, path);
+        path = getCirclePath(entity!.path[0], entity!.path[1]);
+    }
+    else if (entity.shapeType === Tools.ShapeType.Square) {
+        path = getRectanglePath(entity!.path[0], entity!.path[1]);
+    }
+    else if (entity.shapeType === Tools.ShapeType.Polygon) {
+        path = [...entity.path, entity.path[0]];
+    }
+    else if (entity.shapeType === Tools.ShapeType.Area) {
+        path = getSmoothClosedCurve(entity.path);
     }
 
+    graphics.moveTo(path[0].x, path[0].y);
+
+    for (let i = 0; i <= path.length - 1; i++) {
+        graphics.lineTo(path[i].x, path[i].y);
+    }
+
+    graphics.fill({ color: entity.secondaryColor });
+    graphics = drawPath(graphics, entity, path);
     return graphics;
+}
+
+function getCirclePath(a: Tools.Point, b: Tools.Point): Tools.Point[] {
+    const radius = getDistance(a, b) / 2
+    const center = {
+        x: ((a.x + b.x) / 2),
+        y: ((a.y + b.y) / 2)
+    }
+
+    const path: Tools.Point[] = [];
+    const angleStep = (Math.PI * 2) / 64;
+
+    for (let i = 0; i <= 64; i++) {
+        const angle = angleStep * i;
+        const x = center.x + (Math.cos(angle) * radius);
+        const y = center.y + (Math.sin(angle) * radius);
+        path.push({ x: x, y: y });
+    }
+
+    return path;
+}
+
+function getRectanglePath(a: Tools.Point, c: Tools.Point): Tools.Point[] {
+    const b: Tools.Point = { x: a.x, y: c.y };
+    const d: Tools.Point = { x: c.x, y: a.y };
+    const path: Tools.Point[] = [a, b, c, d, a];
+    return path;
 }
 
 function getDistance(a: Tools.Point, b: Tools.Point): number{

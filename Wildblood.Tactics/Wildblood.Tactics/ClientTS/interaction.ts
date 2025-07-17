@@ -508,14 +508,15 @@ export class DrawShapeTool implements IToolHandler {
             return;
         }
 
-        if (this.shapeOptions.shapeType === Tools.ShapeType.Polygon) {
+        if (this.shapeOptions.shapeType === Tools.ShapeType.Polygon ||
+            this.shapeOptions.shapeType === Tools.ShapeType.Area) {
             if (this.path.length === 0) {
                 this.entitiyId = crypto.randomUUID();
                 this.path.push(pos);
                 return;
             }
 
-            if (calculateDistance(this.path[0], pos) < 5) {
+            if (calculateDistance(this.path[this.path.length - 1], pos) < 5) {
                 const shape = this.createShape(this.path);
                 if (shape)
                     await this.context.addEntityCallback(shape);
@@ -539,7 +540,8 @@ export class DrawShapeTool implements IToolHandler {
             return;
         }
 
-        if (this.shapeOptions.shapeType === Tools.ShapeType.Polygon) {
+        if (this.shapeOptions.shapeType === Tools.ShapeType.Polygon ||
+            this.shapeOptions.shapeType === Tools.ShapeType.Area) {
             if (this.path.length === 0)
                 return;
             const shape = this.createShape([...this.path, pos]);
@@ -563,7 +565,7 @@ export class DrawShapeTool implements IToolHandler {
     }
 
     private createShape(path: Tools.Point[]): Tools.Entity {
-        const position = { x: path[0].x, y: path[0].y };
+        const position: Tools.Point = { x: 0, y: 0 };
 
         const shape: Tools.Entity = {
             id: this.entitiyId!,

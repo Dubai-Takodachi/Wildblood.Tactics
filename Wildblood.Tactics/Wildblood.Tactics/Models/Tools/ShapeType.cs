@@ -5,4 +5,5 @@ public enum ShapeType
     Circle,
     Rectangle,
     Polygon,
+    Area,
 }

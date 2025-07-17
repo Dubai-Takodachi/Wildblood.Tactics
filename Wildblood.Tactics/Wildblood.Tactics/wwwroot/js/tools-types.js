@@ -32,6 +32,7 @@ export var ShapeType;
     ShapeType[ShapeType["Circle"] = 0] = "Circle";
     ShapeType[ShapeType["Square"] = 1] = "Square";
     ShapeType[ShapeType["Polygon"] = 2] = "Polygon";
+    ShapeType[ShapeType["Area"] = 3] = "Area";
 })(ShapeType || (ShapeType = {}));
 ;
 //# sourceMappingURL=tools-types.js.map
