@@ -524,6 +524,10 @@ export class DrawShapeTool implements IToolHandler {
             }
 
             this.path.push(pos);
+
+            const shape = this.createShape(this.path);
+            if (shape)
+                await this.context.addEntityCallback(shape);
         }
     }
 

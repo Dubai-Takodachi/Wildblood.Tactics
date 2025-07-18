@@ -427,6 +427,9 @@ export class DrawShapeTool {
                 return;
             }
             this.path.push(pos);
+            const shape = this.createShape(this.path);
+            if (shape)
+                await this.context.addEntityCallback(shape);
         }
     }
     async onPointerMove(event) {
