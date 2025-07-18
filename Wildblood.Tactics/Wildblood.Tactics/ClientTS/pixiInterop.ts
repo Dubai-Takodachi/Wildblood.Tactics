@@ -89,7 +89,7 @@ namespace PixiInterop {
             }
         });
 
-        app.canvas.addEventListener("mouseleave", () => {
+        app.canvas.addEventListener("mouseleave", async () => {
             isDragging = false;
             lastDragPos = null;
         });
@@ -192,6 +192,9 @@ namespace PixiInterop {
         if (interactionHandler?.onPointerUp) {
             app.canvas.removeEventListener("pointerup", interactionHandler.onPointerUp);
         }
+        if (interactionHandler?.onPointerLeave) {
+            app.canvas.removeEventListener("pointerleave", interactionHandler.onPointerLeave);
+        }
 
         currentTool = options;
 
@@ -206,6 +209,9 @@ namespace PixiInterop {
         }
         if (interactionHandler?.onPointerUp) {
             app.canvas.addEventListener("pointerup", interactionHandler.onPointerUp);
+        }
+        if (interactionHandler?.onPointerLeave) {
+            app.canvas.addEventListener("pointerleave", interactionHandler.onPointerLeave);
         }
     }
 
@@ -267,7 +273,7 @@ namespace PixiInterop {
     }
 
     async function setPreviewEntity(entity: Tools.Entity | null): Promise<void> {
-        if (temporaryEntity && drawnSpriteByEntityId[temporaryEntity.id] && !currentEntities[temporaryEntity.id]) {
+        if (temporaryEntity && drawnSpriteByEntityId[temporaryEntity.id] /*&& !currentEntities[temporaryEntity.id]*/) {
             entityContainer.removeChild(drawnSpriteByEntityId[temporaryEntity.id]);
             drawnSpriteByEntityId[temporaryEntity.id].destroy();
         }

@@ -5,6 +5,7 @@ export interface IToolHandler {
     onPointerDown?(event: PointerEvent): Promise<void>;
     onPointerMove?(event: PointerEvent): Promise<void>;
     onPointerUp?(event: PointerEvent): Promise<void>;
+    onPointerLeave?(event: PointerEvent): Promise<void>;
 }
 
 export interface InteractionContext {
@@ -28,6 +29,7 @@ export class DrawLineTool implements IToolHandler {
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
         this.onPointerUp = this.onPointerUp.bind(this);
+        this.onPointerLeave = this.onPointerLeave.bind(this);
     }
 
     async onPointerDown(event: PointerEvent) {
@@ -53,6 +55,22 @@ export class DrawLineTool implements IToolHandler {
     async onPointerUp(event: PointerEvent) {
         if (event.button !== 0) return;
 
+        if (!this.start || !this.entitiyId) {
+            this.start = null;
+            this.entitiyId = null;
+            return;
+        }
+
+        const pos = getPosition(event, this.context);
+        const line = this.createLine(pos.x, pos.y, this.entitiyId);
+        if (line)
+            await this.context.addEntityCallback(line);
+        this.start = null;
+        this.entitiyId = null;
+        this.context.setPreviewEntityCallback(null);
+    }
+
+    async onPointerLeave(event: PointerEvent) {
         if (!this.start || !this.entitiyId) {
             this.start = null;
             this.entitiyId = null;
@@ -109,6 +127,7 @@ export class DrawCurve implements IToolHandler {
 
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
+        this.onPointerLeave = this.onPointerLeave.bind(this);
     }
 
     async onPointerDown(event: PointerEvent) {
@@ -154,6 +173,19 @@ export class DrawCurve implements IToolHandler {
             await this.context.setPreviewEntityCallback(curve);
     }
 
+    async onPointerLeave(event: PointerEvent) {
+        if (this.path.length === 0) return;
+
+        const pos = getPosition(event, this.context);
+
+        this.path.push(pos);
+
+        const curve = this.createCurve(this.path);
+        if (curve)
+            await this.context.addEntityCallback(curve);
+        this.path = [];
+    }
+
     private calculateDistance(a: Tools.Point, b: Tools.Point): number {
         return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
     }
@@ -195,6 +227,7 @@ export class DrawFree implements IToolHandler {
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
         this.onPointerUp = this.onPointerUp.bind(this);
+        this.onPointerLeave = this.onPointerLeave.bind(this);
     }
 
     async onPointerDown(event: PointerEvent) {
@@ -219,6 +252,16 @@ export class DrawFree implements IToolHandler {
 
     async onPointerUp(event: PointerEvent) {
         if (event.button !== 0) return;
+        if (this.path.length === 0) return;
+
+        const freeDrawing = this.createFreeDrawing(this.path);
+        if (freeDrawing)
+            await this.context.addEntityCallback(freeDrawing);
+        this.path = [];
+        this.entityId = null;
+    }
+
+    async onPointerLeave(event: PointerEvent) {
         if (this.path.length === 0) return;
 
         const freeDrawing = this.createFreeDrawing(this.path);
@@ -263,6 +306,7 @@ export class PlaceIconTool implements IToolHandler {
 
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
+        this.onPointerLeave = this.onPointerLeave.bind(this);
     }
 
     async onPointerDown(event: PointerEvent) {
@@ -286,6 +330,10 @@ export class PlaceIconTool implements IToolHandler {
             this.entitiyId);
         if (icon)
             await this.context.setPreviewEntityCallback(icon);
+    }
+
+    async onPointerLeave(event: PointerEvent) {
+        await this.context.setPreviewEntityCallback(null);
     }
 
     private createIcon(x: number, y: number, entityId: string): Tools.Entity | null {
@@ -322,6 +370,7 @@ export class PlaceTextTool implements IToolHandler {
 
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
+        this.onPointerLeave = this.onPointerLeave.bind(this);
     }
 
     async onPointerDown(event: PointerEvent) {
@@ -339,6 +388,10 @@ export class PlaceTextTool implements IToolHandler {
         const text = this.createText(pos.x, pos.y, this.entitiyId);
         if (text)
             await this.context.setPreviewEntityCallback(text);
+    }
+
+    async onPointerLeave(event: PointerEvent) {
+        await this.context.setPreviewEntityCallback(null);
     }
 
     private createText(x: number, y: number, entityId: string): Tools.Entity | null {
@@ -365,6 +418,7 @@ export class PlaceTextTool implements IToolHandler {
 export class MoveTool implements IToolHandler {
     private context: InteractionContext;
     private entityId: string | null = null;
+    private entityDragStartPosition: Tools.Point | null = null;
     private entityClickedPosition: Tools.Point | null = null;
     private drawnSpriteByEntityId: Record<string, PIXI.Sprite>;
     private currentEntities: Record<string, Tools.Entity>;
@@ -381,6 +435,7 @@ export class MoveTool implements IToolHandler {
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
         this.onPointerUp = this.onPointerUp.bind(this);
+        this.onPointerLeave = this.onPointerLeave.bind(this);
     }
 
     async onPointerDown(event: PointerEvent) {
@@ -398,6 +453,7 @@ export class MoveTool implements IToolHandler {
 
             if (hitTestPixelPerfect(sprite, spriteLocal, this.context.app)) {
                 this.entityClickedPosition = entityLocal;
+                this.entityDragStartPosition = entity.position;
                 this.entityId = key;
                 break;
             }
@@ -421,6 +477,29 @@ export class MoveTool implements IToolHandler {
         await this.context.addEntityCallback({ ...this.currentEntities[this.entityId] });
         this.entityId = null;
         this.entityClickedPosition = null;
+        this.entityDragStartPosition = null;
+    }
+
+    async onPointerLeave(event: PointerEvent) {
+        if (!this.entityId) return;
+
+        this.currentEntities[this.entityId].position = {
+            x: this.entityDragStartPosition!.x + 1,
+            y: this.entityDragStartPosition!.y
+        };
+
+        await this.context.addEntityCallback({ ...this.currentEntities[this.entityId] });
+
+        this.currentEntities[this.entityId].position = {
+            x: this.entityDragStartPosition!.x,
+            y: this.entityDragStartPosition!.y
+        };
+
+        await this.context.addEntityCallback({ ...this.currentEntities[this.entityId] });
+
+        this.entityId = null;
+        this.entityClickedPosition = null;
+        this.entityDragStartPosition = null;
     }
 }
 

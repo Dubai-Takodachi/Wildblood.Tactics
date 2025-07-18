@@ -286,11 +286,8 @@ function drawShape(entity) {
     else if (entity.shapeType === Tools.ShapeType.Area) {
         path = getSmoothClosedCurve(entity.path);
     }
-    graphics.moveTo(path[0].x, path[0].y);
-    for (let i = 0; i <= path.length - 1; i++) {
-        graphics.lineTo(path[i].x, path[i].y);
-    }
-    graphics.fill({ color: entity.secondaryColor });
+    graphics.poly(path, true);
+    graphics.fill({ color: entity.secondaryColor, });
     graphics = drawPath(graphics, entity, path);
     return graphics;
 }

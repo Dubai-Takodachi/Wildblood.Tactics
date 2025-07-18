@@ -11,6 +11,7 @@ export class DrawLineTool {
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
         this.onPointerUp = this.onPointerUp.bind(this);
+        this.onPointerLeave = this.onPointerLeave.bind(this);
     }
     async onPointerDown(event) {
         if (event.button !== 0)
@@ -33,6 +34,20 @@ export class DrawLineTool {
     async onPointerUp(event) {
         if (event.button !== 0)
             return;
+        if (!this.start || !this.entitiyId) {
+            this.start = null;
+            this.entitiyId = null;
+            return;
+        }
+        const pos = getPosition(event, this.context);
+        const line = this.createLine(pos.x, pos.y, this.entitiyId);
+        if (line)
+            await this.context.addEntityCallback(line);
+        this.start = null;
+        this.entitiyId = null;
+        this.context.setPreviewEntityCallback(null);
+    }
+    async onPointerLeave(event) {
         if (!this.start || !this.entitiyId) {
             this.start = null;
             this.entitiyId = null;
@@ -80,6 +95,7 @@ export class DrawCurve {
         this.lineOptions = lineOptions;
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
+        this.onPointerLeave = this.onPointerLeave.bind(this);
     }
     async onPointerDown(event) {
         if (event.button !== 0)
@@ -116,6 +132,16 @@ export class DrawCurve {
         if (curve)
             await this.context.setPreviewEntityCallback(curve);
     }
+    async onPointerLeave(event) {
+        if (this.path.length === 0)
+            return;
+        const pos = getPosition(event, this.context);
+        this.path.push(pos);
+        const curve = this.createCurve(this.path);
+        if (curve)
+            await this.context.addEntityCallback(curve);
+        this.path = [];
+    }
     calculateDistance(a, b) {
         return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
     }
@@ -151,6 +177,7 @@ export class DrawFree {
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
         this.onPointerUp = this.onPointerUp.bind(this);
+        this.onPointerLeave = this.onPointerLeave.bind(this);
     }
     async onPointerDown(event) {
         if (event.button !== 0)
@@ -173,6 +200,15 @@ export class DrawFree {
     async onPointerUp(event) {
         if (event.button !== 0)
             return;
+        if (this.path.length === 0)
+            return;
+        const freeDrawing = this.createFreeDrawing(this.path);
+        if (freeDrawing)
+            await this.context.addEntityCallback(freeDrawing);
+        this.path = [];
+        this.entityId = null;
+    }
+    async onPointerLeave(event) {
         if (this.path.length === 0)
             return;
         const freeDrawing = this.createFreeDrawing(this.path);
@@ -211,6 +247,7 @@ export class PlaceIconTool {
         this.iconOptions = iconOptions;
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
+        this.onPointerLeave = this.onPointerLeave.bind(this);
     }
     async onPointerDown(event) {
         if (event.button !== 0)
@@ -226,6 +263,9 @@ export class PlaceIconTool {
         const icon = this.createIcon(pos.x - (this.iconOptions.iconSize / 2), pos.y - (this.iconOptions.iconSize / 2), this.entitiyId);
         if (icon)
             await this.context.setPreviewEntityCallback(icon);
+    }
+    async onPointerLeave(event) {
+        await this.context.setPreviewEntityCallback(null);
     }
     createIcon(x, y, entityId) {
         const position = {
@@ -256,6 +296,7 @@ export class PlaceTextTool {
         this.textOptions = textOptions;
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
+        this.onPointerLeave = this.onPointerLeave.bind(this);
     }
     async onPointerDown(event) {
         if (event.button !== 0)
@@ -271,6 +312,9 @@ export class PlaceTextTool {
         const text = this.createText(pos.x, pos.y, this.entitiyId);
         if (text)
             await this.context.setPreviewEntityCallback(text);
+    }
+    async onPointerLeave(event) {
+        await this.context.setPreviewEntityCallback(null);
     }
     createText(x, y, entityId) {
         const position = {
@@ -293,6 +337,7 @@ export class PlaceTextTool {
 export class MoveTool {
     context;
     entityId = null;
+    entityDragStartPosition = null;
     entityClickedPosition = null;
     drawnSpriteByEntityId;
     currentEntities;
@@ -303,6 +348,7 @@ export class MoveTool {
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
         this.onPointerUp = this.onPointerUp.bind(this);
+        this.onPointerLeave = this.onPointerLeave.bind(this);
     }
     async onPointerDown(event) {
         if (event.button !== 0)
@@ -318,6 +364,7 @@ export class MoveTool {
             const entityLocal = { x: pos.x - entity.position.x, y: pos.y - entity.position.y };
             if (hitTestPixelPerfect(sprite, spriteLocal, this.context.app)) {
                 this.entityClickedPosition = entityLocal;
+                this.entityDragStartPosition = entity.position;
                 this.entityId = key;
                 break;
             }
@@ -341,6 +388,24 @@ export class MoveTool {
         await this.context.addEntityCallback({ ...this.currentEntities[this.entityId] });
         this.entityId = null;
         this.entityClickedPosition = null;
+        this.entityDragStartPosition = null;
+    }
+    async onPointerLeave(event) {
+        if (!this.entityId)
+            return;
+        this.currentEntities[this.entityId].position = {
+            x: this.entityDragStartPosition.x + 1,
+            y: this.entityDragStartPosition.y
+        };
+        await this.context.addEntityCallback({ ...this.currentEntities[this.entityId] });
+        this.currentEntities[this.entityId].position = {
+            x: this.entityDragStartPosition.x,
+            y: this.entityDragStartPosition.y
+        };
+        await this.context.addEntityCallback({ ...this.currentEntities[this.entityId] });
+        this.entityId = null;
+        this.entityClickedPosition = null;
+        this.entityDragStartPosition = null;
     }
 }
 export class EraseTool {

@@ -71,7 +71,7 @@ var PixiInterop;
                 lastDragPos = null;
             }
         });
-        app.canvas.addEventListener("mouseleave", () => {
+        app.canvas.addEventListener("mouseleave", async () => {
             isDragging = false;
             lastDragPos = null;
         });
@@ -149,6 +149,9 @@ var PixiInterop;
         if (interactionHandler?.onPointerUp) {
             app.canvas.removeEventListener("pointerup", interactionHandler.onPointerUp);
         }
+        if (interactionHandler?.onPointerLeave) {
+            app.canvas.removeEventListener("pointerleave", interactionHandler.onPointerLeave);
+        }
         currentTool = options;
         if (currentTool.tool || currentTool.tool === 0)
             interactionHandler = createInteractionHandler[currentTool.tool]?.();
@@ -160,6 +163,9 @@ var PixiInterop;
         }
         if (interactionHandler?.onPointerUp) {
             app.canvas.addEventListener("pointerup", interactionHandler.onPointerUp);
+        }
+        if (interactionHandler?.onPointerLeave) {
+            app.canvas.addEventListener("pointerleave", interactionHandler.onPointerLeave);
         }
     }
     PixiInterop.setToolOptions = setToolOptions;
@@ -223,7 +229,7 @@ var PixiInterop;
         dotNetObjRef.invokeMethodAsync('UpdateServerEntities', entities, removedEntityIds);
     }
     async function setPreviewEntity(entity) {
-        if (temporaryEntity && drawnSpriteByEntityId[temporaryEntity.id] && !currentEntities[temporaryEntity.id]) {
+        if (temporaryEntity && drawnSpriteByEntityId[temporaryEntity.id] /*&& !currentEntities[temporaryEntity.id]*/) {
             entityContainer.removeChild(drawnSpriteByEntityId[temporaryEntity.id]);
             drawnSpriteByEntityId[temporaryEntity.id].destroy();
         }
