@@ -59,15 +59,15 @@ public class TacticToolService : ITacticToolService
         {
             Color = "#000000",
             LineStyle = LineStyle.Normal,
-            Thickness = 5,
+            Thickness = 20,
             LineEnd = LineEnd.Normal,
-            EndSize = 20,
+            EndSize = 80,
         };
 
         var defaultTextOptions = new TextOptions
         {
             Text = string.Empty,
-            Size = 30,
+            Size = 120,
             Color = "#000000",
             HasBackground = false,
             BackgroundColor = "#aaaaaa",
@@ -78,7 +78,7 @@ public class TacticToolService : ITacticToolService
             Tool = ToolType.AddIcon,
             IconOptions = new IconOptions
             {
-                IconSize = 60,
+                IconSize = 120,
                 IconType = IconType.Azaps,
                 LabelOptions = defaultTextOptions,
             },
@@ -90,7 +90,7 @@ public class TacticToolService : ITacticToolService
                 ShapeType = ShapeType.Circle,
                 OutlineColor = "#ff0000ff",
                 OutlineStyle = LineStyle.Normal,
-                OutlineThickness = 5,
+                OutlineThickness = 20,
                 FillColor = "#ff000033",
             },
             TextOptions = defaultTextOptions,

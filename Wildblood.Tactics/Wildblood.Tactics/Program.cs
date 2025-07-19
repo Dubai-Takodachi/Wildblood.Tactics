@@ -57,7 +57,6 @@ public class Program
         builder.Services.AddScoped<ITacticExplorerService, TacticExplorerService>();
         builder.Services.AddScoped<ITacticMemberListService, TacticMemberListService>();
         builder.Services.AddScoped<ITacticMapSelectorService, TacticMapSelectorService>();
-        builder.Services.AddScoped<ITacticZoomService, TacticZoomService>();
         builder.Services.AddScoped<ITacticCanvasService, TacticCanvasService>();
 
         builder.Services.AddAuthentication().AddGoogle(googleOptions =>

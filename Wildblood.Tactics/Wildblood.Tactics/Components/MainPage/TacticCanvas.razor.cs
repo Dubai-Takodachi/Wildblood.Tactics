@@ -82,13 +82,6 @@ public partial class TacticCanvas : IDisposable
         }
     }
 
-    private async Task OnMouseScroll(WheelEventArgs args)
-    {
-        var newZoom = TacticCanvasService.ZoomLevel - (float)args.DeltaY * 0.001f;
-        await TacticCanvasService.SetZoom(newZoom);
-        await JS.InvokeVoidAsync("PixiInterop.setZoom", newZoom);
-    }
-
     public void Dispose()
     {
         objectReference.Dispose();

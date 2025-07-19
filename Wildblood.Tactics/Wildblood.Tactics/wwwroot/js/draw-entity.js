@@ -102,7 +102,11 @@ function drawLineEnd(g, entity, a, b) {
     if (entity.lineEnd === Tools.LineEnd.Arrow) {
         const headLength = entity.secondarySize;
         const angle = Math.atan2(b.y - a.y, b.x - a.x);
-        const arrowAngle1 = angle - Math.PI / 6; // 30 degrees
+        const c = {
+            x: b.x + headLength * Math.cos(angle),
+            y: b.y + headLength * Math.sin(angle),
+        };
+        const arrowAngle1 = angle - Math.PI / 6;
         const arrowAngle2 = angle + Math.PI / 6;
         const arrowPoint1 = {
             x: b.x - headLength * Math.cos(arrowAngle1),
@@ -112,11 +116,11 @@ function drawLineEnd(g, entity, a, b) {
             x: b.x - headLength * Math.cos(arrowAngle2),
             y: b.y - headLength * Math.sin(arrowAngle2),
         };
-        g.moveTo(b.x, b.y)
-            .lineTo(arrowPoint1.x, arrowPoint1.y)
-            .moveTo(b.x, b.y)
-            .lineTo(arrowPoint2.x, arrowPoint2.y)
-            .stroke({ width: entity.primarySize, color: entity.primaryColor });
+        g.moveTo(c.x, c.y);
+        g.lineTo(arrowPoint1.x, arrowPoint1.y);
+        g.lineTo(arrowPoint2.x, arrowPoint2.y);
+        g.closePath();
+        g.fill(entity.primaryColor);
     }
     else if (entity.lineEnd === Tools.LineEnd.Flat) {
         const headLength = entity.secondarySize;
@@ -147,10 +151,10 @@ function drawPingAnimation(entity) {
     const animate = (now) => {
         const delta = (now - lastTime) / 1000;
         lastTime = now;
-        size += 50 * delta;
+        size += 200 * delta;
         alpha -= 500 * delta;
         ring.clear();
-        ring.circle(0, 0, size + 5).fill({
+        ring.circle(0, 0, size + 20).fill({
             color: "#ff0000" + Math.max(0, Math.floor(alpha)).toString(16).padStart(2, '0')
         });
         ring.circle(0, 0, size).cut();

@@ -26,6 +26,7 @@ public partial class TacticTool
     private static string arrowHead = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\"><title>arrow-top-right-thin</title><path d=\"M11.93 5L14.76 7.83L5 17.59L6.42 19L16.18 9.25L19 12.07V5H11.93Z\" /></svg>";
     private static string straightArrow = "<svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\r\n  <!-- Diagonale Linie -->\r\n  <line x1=\"2\" y1=\"22\" x2=\"22\" y2=\"2\" stroke=\"white\" stroke-width=\"2\" stroke-linecap=\"round\" />\r\n\r\n  <!-- Querlinie (90° zur Diagonale, also gedreht) -->\r\n  <line x1=\"-3\" y1=\"0\" x2=\"3\" y2=\"0\" stroke=\"white\" stroke-width=\"2\" stroke-linecap=\"round\"\r\n        transform=\"translate(22 2) rotate(45)\" />\r\n</svg>\r\n";
     private static string eraserIcon = "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\" viewBox=\"0 -960 960 960\" width=\"24px\" fill=\"#e3e3e3\"><path d=\"M690-240h190v80H610l80-80Zm-500 80-85-85q-23-23-23.5-57t22.5-58l440-456q23-24 56.5-24t56.5 23l199 199q23 23 23 57t-23 57L520-160H190Zm296-80 314-322-198-198-442 456 64 64h262Zm-6-240Z\"/></svg>";
+
     private LineStyle cosmeticLineStyle;
     private LineEnd cosmeticLineEnd;
     private LineStyle cosmeticCurveStyle;
@@ -33,6 +34,7 @@ public partial class TacticTool
     private LineStyle cosmeticFreeStyle;
     private LineEnd cosmeticFreeEnd;
     private ShapeType cosmeticShapeType;
+    private IconType cosmeticIcon = 0;
     private ToolOptions AllOptions => TacticToolService.AllOptions;
 
     protected override void OnInitialized()
@@ -70,6 +72,7 @@ public partial class TacticTool
     private async Task SelectedUnit(IconType iconType)
     {
         await UpdateTool(iconOptions: AllOptions.IconOptions! with { IconType = iconType });
+        cosmeticIcon = iconType;
     }
 
     private async Task OnLineColorChanged(string color)
@@ -142,6 +145,36 @@ public partial class TacticTool
     private async Task OnIconSizeChanged(int size)
     {
         await UpdateTool(iconOptions: AllOptions.IconOptions! with { IconSize = size });
+    }
+
+    private async Task OnLineThicknessChanged(int size)
+    {
+        await UpdateTool(lineOptions: AllOptions.LineDrawOptions! with { Thickness = size });
+    }
+
+    private async Task OnCurveThicknessChanged(int size)
+    {
+        await UpdateTool(curveOptions: AllOptions.CurveDrawOptions! with { Thickness = size });
+    }
+
+    private async Task OnFreeDrawThicknessChanged(int size)
+    {
+        await UpdateTool(freeDrawOptions: AllOptions.FreeDrawOptions! with { Thickness = size });
+    }
+
+    private async Task OnLineEndThicknessChanged(int size)
+    {
+        await UpdateTool(lineOptions: AllOptions.LineDrawOptions! with { EndSize = size });
+    }
+
+    private async Task OnCurveEndThicknessChanged(int size)
+    {
+        await UpdateTool(curveOptions: AllOptions.CurveDrawOptions! with { EndSize = size });
+    }
+
+    private async Task OnFreeDrawEndThicknessChanged(int size)
+    {
+        await UpdateTool(freeDrawOptions: AllOptions.FreeDrawOptions! with { EndSize = size });
     }
 
     private async Task OnIconTextOptionsTextChanged(string text)

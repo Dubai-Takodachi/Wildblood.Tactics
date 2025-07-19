@@ -16,24 +16,18 @@ public class TacticCanvasService : ITacticCanvasService
 
     public Slide CurrentSlide => tacticExplorerService.CurrentSlide;
 
-    public float ZoomLevel => tacticZoomService.ZoomLevel;
-
     public ToolOptions CurrentOptions => tacticToolService.CurrentOptions;
 
-    private ITacticZoomService tacticZoomService;
     private ITacticExplorerService tacticExplorerService;
     private ITacticToolService tacticToolService;
 
     public TacticCanvasService(
-        ITacticZoomService tacticZoomService,
         ITacticExplorerService tacticExplorerService,
         ITacticToolService tacticToolService)
     {
-        this.tacticZoomService = tacticZoomService;
         this.tacticExplorerService = tacticExplorerService;
         this.tacticToolService = tacticToolService;
 
-        tacticZoomService.OnZoomChanged += RefreshZoom;
         tacticExplorerService.OnTacticChanged += RefreshTactic;
         tacticToolService.OnToolChanged += RefreshTool;
     }
@@ -70,11 +64,6 @@ public class TacticCanvasService : ITacticCanvasService
         {
             await OnToolChanged.Invoke();
         }
-    }
-
-    public async Task SetZoom(float zoomLevel)
-    {
-        await tacticZoomService.SetZoomLevel(zoomLevel);
     }
 
     public async Task UpdateEntites(Entity[] entities, string[] removedEntityIds)

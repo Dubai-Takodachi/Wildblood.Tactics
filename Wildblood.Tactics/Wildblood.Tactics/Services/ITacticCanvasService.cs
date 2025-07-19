@@ -16,15 +16,11 @@ public interface ITacticCanvasService
 
     public Slide CurrentSlide { get; }
 
-    public float ZoomLevel { get; }
-
     public ToolOptions CurrentOptions { get; }
 
     public List<Entity> GetRedrawEntities();
 
     public string GetMap();
-
-    public Task SetZoom(float zoomLevel);
 
     public Task UpdateEntites(Entity[] entities, string[] removedEntityIds);
 }
