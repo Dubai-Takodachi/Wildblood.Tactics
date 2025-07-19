@@ -143,12 +143,17 @@ function drawPingAnimation(entity) {
     const ring = new PIXI.Graphics();
     let size = 0;
     let alpha = 255;
-    const animate = () => {
+    let lastTime = performance.now();
+    const animate = (now) => {
+        const delta = (now - lastTime) / 1000;
+        lastTime = now;
+        size += 50 * delta;
+        alpha -= 500 * delta;
         ring.clear();
-        ring.circle(0, 0, size + 5).fill({ color: "#ff0000" + alpha.toString(16).padStart(2, '0') });
+        ring.circle(0, 0, size + 5).fill({
+            color: "#ff0000" + Math.max(0, Math.floor(alpha)).toString(16).padStart(2, '0')
+        });
         ring.circle(0, 0, size).cut();
-        size += 1;
-        alpha -= 10;
         if (alpha <= 0) {
             ring.parent?.removeChild(ring);
             ring.destroy();
@@ -247,7 +252,7 @@ async function drawIcon(entity) {
     return graphic;
 }
 function drawText(entity) {
-    const graphic = new PIXI.Graphics();
+    const container = new PIXI.Container();
     if (entity.text && entity.text !== "") {
         const textStyle = new PIXI.TextStyle({
             fontSize: entity.primarySize,
@@ -257,15 +262,24 @@ function drawText(entity) {
         const labelPadding = 4;
         const labelWidth = label.width + labelPadding * 2;
         const labelHeight = label.height + labelPadding * 2;
-        const labelX = 0 + (graphic.width - labelWidth) / 2;
-        const labelY = 0 + (graphic.height - labelHeight) / 2;
+        const labelX = 0 + (container.width - labelWidth) / 2;
+        const labelY = 0 + (container.height - labelHeight) / 2;
+        label.x = labelX + labelPadding;
+        label.y = labelY + labelPadding;
+        const bitmap = convertTextToBitmapText(label);
         if (entity.hasBackground)
-            graphic.rect(labelX, labelY, labelWidth, labelHeight)
-                .fill(entity.secondaryColor);
-        const textTexture = app.renderer.textureGenerator.generateTexture(label);
-        graphic.texture(textTexture, "#ffffffff", labelX + labelPadding, labelY + labelPadding);
+            container.addChild(new PIXI.Graphics()
+                .rect(labelX, labelY, labelWidth, labelHeight)
+                .fill(entity.secondaryColor));
+        container.addChild(bitmap);
     }
-    return graphic;
+    return container;
+}
+function convertTextToBitmapText(text) {
+    const bitmapText = new PIXI.BitmapText(text);
+    bitmapText.position.copyFrom(text.position);
+    bitmapText.anchor?.set?.(text.anchor?.x || 0, text.anchor?.y || 0);
+    return bitmapText;
 }
 function drawShape(entity) {
     if (!entity)
@@ -286,7 +300,7 @@ function drawShape(entity) {
     else if (entity.shapeType === Tools.ShapeType.Area) {
         path = getSmoothClosedCurve(entity.path);
     }
-    graphics.poly(path, true);
+    graphics.poly(path);
     graphics.fill({ color: entity.secondaryColor, });
     graphics = drawPath(graphics, entity, path);
     return graphics;

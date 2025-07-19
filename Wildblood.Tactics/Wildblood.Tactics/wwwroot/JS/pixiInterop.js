@@ -98,8 +98,8 @@ var PixiInterop;
     PixiInterop.createApp = createApp;
     function updateViewSize() {
         const ratio = app.renderer.width / app.renderer.height;
-        VIRTUAL_WIDTH = 1000;
-        VIRTUAL_HEIGHT = 1000 * (1 / ratio);
+        VIRTUAL_WIDTH = 4000;
+        VIRTUAL_HEIGHT = 4000 * (1 / ratio);
         const screenWidth = app.renderer.width;
         const screenHeight = app.renderer.height;
         const widthScale = screenWidth / VIRTUAL_WIDTH;
@@ -239,12 +239,12 @@ var PixiInterop;
         }
     }
     async function drawEntityToScreen(entity) {
-        const graphic = await Draw.drawEntity(entity);
-        if (graphic) {
+        const container = await Draw.drawEntity(entity);
+        if (container) {
             if (entity.toolType === Tools.ToolType.Ping) {
-                graphic.x = entity.position.x;
-                graphic.y = entity.position.y;
-                entityContainer.addChild(graphic);
+                container.x = entity.position.x;
+                container.y = entity.position.y;
+                entityContainer.addChild(container);
                 return;
             }
             if (drawnSpriteByEntityId[entity.id]) {
@@ -252,18 +252,29 @@ var PixiInterop;
                 drawnSpriteByEntityId[entity.id].destroy();
             }
             const padding = 2;
-            const bounds = graphic.getBounds();
+            const bounds = container.getBounds();
             const paddedBounds = new PIXI.Rectangle(bounds.x - padding, bounds.y - padding, bounds.width + padding * 2, bounds.height + padding * 2);
-            const sprite = new PIXI.Sprite(app.renderer.generateTexture({
-                target: graphic,
-                frame: paddedBounds,
-            }));
-            sprite.x = entity.position.x + graphic.bounds.minX;
-            sprite.y = entity.position.y + graphic.bounds.minY;
+            const sprite = createSafeSprite(container, paddedBounds);
+            sprite.x = entity.position.x + container.getBounds().minX;
+            sprite.y = entity.position.y + container.getBounds().minY;
             currentEntities[entity.id] = entity;
             drawnSpriteByEntityId[entity.id] = sprite;
             entityContainer.addChild(sprite);
         }
+    }
+    function createSafeSprite(container, bounds) {
+        const webGlRenderer = app.renderer;
+        const maxSize = webGlRenderer.gl.getParameter(webGlRenderer.gl.MAX_TEXTURE_SIZE) / 2;
+        const scaleFactor = Math.min(1, maxSize / Math.max(bounds.width, bounds.height));
+        const texture = app.renderer.generateTexture({
+            target: container,
+            resolution: scaleFactor,
+            frame: bounds,
+        });
+        console.log("w " + texture.width);
+        console.log("h " + texture.height);
+        const sprite = new PIXI.Sprite(texture);
+        return sprite;
     }
     async function setBackground(imageUrl) {
         if (bgSprite && app) {
