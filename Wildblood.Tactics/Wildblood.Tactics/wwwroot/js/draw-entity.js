@@ -155,7 +155,7 @@ function drawPingAnimation(entity) {
         alpha -= 500 * delta;
         ring.clear();
         ring.circle(0, 0, size + 20).fill({
-            color: "#ff0000" + Math.max(0, Math.floor(alpha)).toString(16).padStart(2, '0')
+            color: entity.primaryColor + Math.max(0, Math.floor(alpha)).toString(16).padStart(2, '0')
         });
         ring.circle(0, 0, size).cut();
         if (alpha <= 0) {

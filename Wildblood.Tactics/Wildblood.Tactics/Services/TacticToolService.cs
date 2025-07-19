@@ -21,6 +21,7 @@ public class TacticToolService : ITacticToolService
         AllOptions = AllOptions with
         {
             Tool = newOptions?.Tool ?? AllOptions.Tool,
+            PingOptions = newOptions?.PingOptions ?? AllOptions.PingOptions,
             IconOptions = newOptions?.IconOptions ?? AllOptions.IconOptions,
             LineDrawOptions = newOptions?.LineDrawOptions ?? AllOptions.LineDrawOptions,
             CurveDrawOptions = newOptions?.CurveDrawOptions ?? AllOptions.CurveDrawOptions,
@@ -49,6 +50,7 @@ public class TacticToolService : ITacticToolService
             ToolType.DrawFree => currentBase with { FreeDrawOptions = AllOptions.FreeDrawOptions },
             ToolType.AddText => currentBase with { TextOptions = AllOptions.TextOptions },
             ToolType.AddShape => currentBase with { ShapeOptions = AllOptions.ShapeOptions },
+            ToolType.Ping => currentBase with { PingOptions = AllOptions.PingOptions },
             _ => currentBase,
         };
     }
@@ -76,6 +78,7 @@ public class TacticToolService : ITacticToolService
         return new ToolOptions
         {
             Tool = ToolType.AddIcon,
+            PingOptions = new PingOptions { Color = "ff0000" },
             IconOptions = new IconOptions
             {
                 IconSize = 120,

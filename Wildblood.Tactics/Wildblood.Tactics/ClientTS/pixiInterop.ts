@@ -253,7 +253,8 @@ namespace PixiInterop {
             return new Interactions.EraseTool(interactionContext, drawnSpriteByEntityId);
         },
         [Tools.ToolType.Ping]: function (): Interactions.IToolHandler | null {
-            return new Interactions.PingTool(interactionContext);
+            if (!currentTool.pingOptions) return null;
+            return new Interactions.PingTool(interactionContext, currentTool.pingOptions);
         }
     };
 

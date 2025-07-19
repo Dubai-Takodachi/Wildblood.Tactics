@@ -27,12 +27,17 @@ export interface Entity {
 
 export interface ToolOptions {
     tool?: ToolType;
+    pingOptions?: PingOptions;
     iconOptions?: IconOptions;
     freeDrawOptions?: LineOptions;
     lineDrawOptions?: LineOptions;
     curveDrawOptions?: LineOptions;
     shapeOptions?: ShapeOptions;
     textOptions?: TextOptions;
+}
+
+export interface PingOptions {
+    color: string;
 }
 
 export interface IconOptions {

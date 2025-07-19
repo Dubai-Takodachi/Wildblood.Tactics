@@ -497,10 +497,12 @@ export class EraseTool implements IToolHandler {
 
 export class PingTool implements IToolHandler {
     private context: InteractionContext;
+    private pingOptions: Tools.PingOptions;
     private lastPingTime = 0;
 
-    constructor(context: InteractionContext) {
+    constructor(context: InteractionContext, pingOptions: Tools.PingOptions) {
         this.context = context;
+        this.pingOptions = pingOptions;
 
         this.onPointerMove = this.onPointerMove.bind(this);
     }
@@ -514,6 +516,7 @@ export class PingTool implements IToolHandler {
             id: crypto.randomUUID(),
             toolType: Tools.ToolType.Ping,
             position: getPosition(event, this.context),
+            primaryColor: this.pingOptions.color,
         }
 
         await this.context.addEntityCallback(ping);

@@ -4,6 +4,8 @@ public record ToolOptions
 {
     public ToolType? Tool { get; init; }
 
+    public PingOptions? PingOptions { get; init; }
+
     public IconOptions? IconOptions { get; init; }
 
     public LineOptions? FreeDrawOptions { get; init; }

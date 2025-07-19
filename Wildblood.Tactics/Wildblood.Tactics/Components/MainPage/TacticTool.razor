@@ -4,7 +4,7 @@
 <MudPaper style="grid-area:2/2/span 3/2" Class="mx-2">
     <MudTabs MinimumTabWidth="20px" Position="Position.Left">
         <MudTabPanel Icon="@Icons.Material.Filled.CrisisAlert" @onclick="() => ChangeTool(Models.Tools.ToolType.Ping)" ToolTip="Ping">
-
+            <MudColorPicker Label="Ping Color" Text="@AllOptions.PingOptions!.Color" TextChanged="OnPingColorChanged" DisableAlpha="true" Class="my-6" />
         </MudTabPanel>
         <MudTabPanel Icon="@swordsIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.AddIcon)" ToolTip="Place Icons">
             <div>

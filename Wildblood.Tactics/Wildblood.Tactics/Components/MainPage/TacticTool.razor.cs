@@ -75,6 +75,12 @@ public partial class TacticTool
         cosmeticIcon = iconType;
     }
 
+    private async Task OnPingColorChanged(string color)
+    {
+        var safeColor = color.Length > 7 ? color.Substring(0, 7) : color;
+        await UpdateTool(pingOptions: AllOptions.PingOptions! with { Color = safeColor });
+    }
+
     private async Task OnLineColorChanged(string color)
     {
         await UpdateTool(lineOptions: AllOptions.LineDrawOptions! with { Color = color });
@@ -240,6 +246,7 @@ public partial class TacticTool
 
     private async Task UpdateTool(
         ToolType? toolType = null,
+        PingOptions? pingOptions = null,
         IconOptions? iconOptions = null,
         LineOptions? lineOptions = null,
         LineOptions? curveOptions = null,
@@ -250,6 +257,7 @@ public partial class TacticTool
         var toolPatch = new ToolOptions
         {
             Tool = toolType,
+            PingOptions = pingOptions,
             IconOptions = iconOptions,
             LineDrawOptions = lineOptions,
             CurveDrawOptions = curveOptions,

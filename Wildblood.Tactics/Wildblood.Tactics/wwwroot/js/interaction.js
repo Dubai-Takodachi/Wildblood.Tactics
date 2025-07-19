@@ -404,9 +404,11 @@ export class EraseTool {
 }
 export class PingTool {
     context;
+    pingOptions;
     lastPingTime = 0;
-    constructor(context) {
+    constructor(context, pingOptions) {
         this.context = context;
+        this.pingOptions = pingOptions;
         this.onPointerMove = this.onPointerMove.bind(this);
     }
     async onPointerMove(event) {
@@ -419,6 +421,7 @@ export class PingTool {
             id: crypto.randomUUID(),
             toolType: Tools.ToolType.Ping,
             position: getPosition(event, this.context),
+            primaryColor: this.pingOptions.color,
         };
         await this.context.addEntityCallback(ping);
         await delay(50);
