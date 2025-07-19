@@ -271,8 +271,6 @@ var PixiInterop;
             resolution: scaleFactor,
             frame: bounds,
         });
-        console.log("w " + texture.width);
-        console.log("h " + texture.height);
         const sprite = new PIXI.Sprite(texture);
         return sprite;
     }
