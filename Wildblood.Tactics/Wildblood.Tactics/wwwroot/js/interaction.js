@@ -11,10 +11,11 @@ export class DrawLineTool {
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
         this.onPointerUp = this.onPointerUp.bind(this);
-        this.onPointerLeave = this.onPointerLeave.bind(this);
     }
     async onPointerDown(event) {
         if (event.button !== 0)
+            return;
+        if (this.start)
             return;
         const pos = getPosition(event, this.context);
         this.start = pos;
@@ -34,20 +35,6 @@ export class DrawLineTool {
     async onPointerUp(event) {
         if (event.button !== 0)
             return;
-        if (!this.start || !this.entitiyId) {
-            this.start = null;
-            this.entitiyId = null;
-            return;
-        }
-        const pos = getPosition(event, this.context);
-        const line = this.createLine(pos.x, pos.y, this.entitiyId);
-        if (line)
-            await this.context.addEntityCallback(line);
-        this.start = null;
-        this.entitiyId = null;
-        this.context.setPreviewEntityCallback(null);
-    }
-    async onPointerLeave(event) {
         if (!this.start || !this.entitiyId) {
             this.start = null;
             this.entitiyId = null;
@@ -95,7 +82,6 @@ export class DrawCurve {
         this.lineOptions = lineOptions;
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
-        this.onPointerLeave = this.onPointerLeave.bind(this);
     }
     async onPointerDown(event) {
         if (event.button !== 0)
@@ -132,16 +118,6 @@ export class DrawCurve {
         if (curve)
             await this.context.setPreviewEntityCallback(curve);
     }
-    async onPointerLeave(event) {
-        if (this.path.length === 0)
-            return;
-        const pos = getPosition(event, this.context);
-        this.path.push(pos);
-        const curve = this.createCurve(this.path);
-        if (curve)
-            await this.context.addEntityCallback(curve);
-        this.path = [];
-    }
     calculateDistance(a, b) {
         return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
     }
@@ -177,16 +153,19 @@ export class DrawFree {
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
         this.onPointerUp = this.onPointerUp.bind(this);
-        this.onPointerLeave = this.onPointerLeave.bind(this);
     }
     async onPointerDown(event) {
         if (event.button !== 0)
+            return;
+        if (this.entityId)
             return;
         const pos = getPosition(event, this.context);
         this.entityId = crypto.randomUUID();
         this.path = [pos];
     }
     async onPointerMove(event) {
+        if ((event.buttons & 1) !== 1)
+            return;
         if (this.path.length === 0)
             return;
         const pos = getPosition(event, this.context);
@@ -200,15 +179,6 @@ export class DrawFree {
     async onPointerUp(event) {
         if (event.button !== 0)
             return;
-        if (this.path.length === 0)
-            return;
-        const freeDrawing = this.createFreeDrawing(this.path);
-        if (freeDrawing)
-            await this.context.addEntityCallback(freeDrawing);
-        this.path = [];
-        this.entityId = null;
-    }
-    async onPointerLeave(event) {
         if (this.path.length === 0)
             return;
         const freeDrawing = this.createFreeDrawing(this.path);

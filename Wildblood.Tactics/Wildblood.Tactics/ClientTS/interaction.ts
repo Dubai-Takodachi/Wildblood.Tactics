@@ -29,11 +29,12 @@ export class DrawLineTool implements IToolHandler {
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
         this.onPointerUp = this.onPointerUp.bind(this);
-        this.onPointerLeave = this.onPointerLeave.bind(this);
     }
 
     async onPointerDown(event: PointerEvent) {
         if (event.button !== 0) return;
+        if (this.start) return;
+
         const pos = getPosition(event, this.context);
         this.start = pos;
         this.entitiyId = crypto.randomUUID();
@@ -55,22 +56,6 @@ export class DrawLineTool implements IToolHandler {
     async onPointerUp(event: PointerEvent) {
         if (event.button !== 0) return;
 
-        if (!this.start || !this.entitiyId) {
-            this.start = null;
-            this.entitiyId = null;
-            return;
-        }
-
-        const pos = getPosition(event, this.context);
-        const line = this.createLine(pos.x, pos.y, this.entitiyId);
-        if (line)
-            await this.context.addEntityCallback(line);
-        this.start = null;
-        this.entitiyId = null;
-        this.context.setPreviewEntityCallback(null);
-    }
-
-    async onPointerLeave(event: PointerEvent) {
         if (!this.start || !this.entitiyId) {
             this.start = null;
             this.entitiyId = null;
@@ -127,7 +112,6 @@ export class DrawCurve implements IToolHandler {
 
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
-        this.onPointerLeave = this.onPointerLeave.bind(this);
     }
 
     async onPointerDown(event: PointerEvent) {
@@ -173,19 +157,6 @@ export class DrawCurve implements IToolHandler {
             await this.context.setPreviewEntityCallback(curve);
     }
 
-    async onPointerLeave(event: PointerEvent) {
-        if (this.path.length === 0) return;
-
-        const pos = getPosition(event, this.context);
-
-        this.path.push(pos);
-
-        const curve = this.createCurve(this.path);
-        if (curve)
-            await this.context.addEntityCallback(curve);
-        this.path = [];
-    }
-
     private calculateDistance(a: Tools.Point, b: Tools.Point): number {
         return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
     }
@@ -227,11 +198,11 @@ export class DrawFree implements IToolHandler {
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
         this.onPointerUp = this.onPointerUp.bind(this);
-        this.onPointerLeave = this.onPointerLeave.bind(this);
     }
 
     async onPointerDown(event: PointerEvent) {
         if (event.button !== 0) return;
+        if (this.entityId) return;
 
         const pos = getPosition(event, this.context);
         this.entityId = crypto.randomUUID();
@@ -239,6 +210,7 @@ export class DrawFree implements IToolHandler {
     }
 
     async onPointerMove(event: PointerEvent) {
+        if ((event.buttons & 1) !== 1) return;
         if (this.path.length === 0) return;
 
         const pos = getPosition(event, this.context);
@@ -252,16 +224,6 @@ export class DrawFree implements IToolHandler {
 
     async onPointerUp(event: PointerEvent) {
         if (event.button !== 0) return;
-        if (this.path.length === 0) return;
-
-        const freeDrawing = this.createFreeDrawing(this.path);
-        if (freeDrawing)
-            await this.context.addEntityCallback(freeDrawing);
-        this.path = [];
-        this.entityId = null;
-    }
-
-    async onPointerLeave(event: PointerEvent) {
         if (this.path.length === 0) return;
 
         const freeDrawing = this.createFreeDrawing(this.path);
