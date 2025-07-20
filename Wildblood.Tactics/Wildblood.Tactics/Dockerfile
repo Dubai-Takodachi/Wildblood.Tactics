@@ -23,6 +23,7 @@ RUN dotnet restore "./Wildblood.Tactics/Wildblood.Tactics/Wildblood.Tactics.cspr
 # Gesamtes Projekt kopieren und bauen
 COPY . .
 WORKDIR "/src/Wildblood.Tactics/Wildblood.Tactics"
+RUN npm install
 RUN dotnet build "./Wildblood.Tactics.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # --- Publish-Stage ---

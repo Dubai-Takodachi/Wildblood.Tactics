@@ -1,5 +1,6 @@
 namespace Wildblood.Tactics;
 
+using System.Net;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
@@ -82,9 +83,30 @@ public class Program
             .AddSignInManager()
             .AddDefaultTokenProviders();
 
+	builder.WebHost.ConfigureKestrel((context, options) =>
+	{
+		var config = context.Configuration;
+    		var certPath = Environment.GetEnvironmentVariable("ASPNETCORE_Kestrel__Certificates__Default__Path");
+    		var certPassword = Environment.GetEnvironmentVariable("ASPNETCORE_Kestrel__Certificates__Default__Password");
+
+    	options.Listen(IPAddress.Any, 8081, listenOptions =>
+    	{
+       		listenOptions.UseHttps(certPath, certPassword);
+    	});
+
+	options.Listen(IPAddress.Any, 8080); // Optional: HTTP
+	});
+
+
         builder.Services.AddTransient<IEmailSender<ApplicationUser>, EmailSender>();
 
         var app = builder.Build();
+
+	using (var scope = app.Services.CreateScope())
+	{
+    		var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    		dbContext.Database.Migrate();  // This applies any pending migrations
+	}
 
         using (var scope = app.Services.CreateScope())
         {

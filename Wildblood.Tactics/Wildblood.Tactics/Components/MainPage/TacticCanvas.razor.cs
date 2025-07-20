@@ -21,10 +21,14 @@ public partial class TacticCanvas : IDisposable
 
     protected override void OnInitialized()
     {
-        objectReference = DotNetObjectReference.Create(this);
+	if (OperatingSystem.IsBrowser())
+	{
+    		objectReference = DotNetObjectReference.Create(this);
 
-        TacticCanvasService.OnGameStateChanged += RedrawIcons;
-        TacticCanvasService.OnToolChanged += SetSelectedUnit;
+    		TacticCanvasService.OnGameStateChanged += RedrawIcons;
+    		TacticCanvasService.OnToolChanged += SetSelectedUnit;
+	}
+        
     }
 
     [JSInvokable]
@@ -42,7 +46,7 @@ public partial class TacticCanvas : IDisposable
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (firstRender && OperatingSystem.IsBrowser())
         {
             pixiModule = await JS.InvokeAsync<IJSObjectReference>(
                 "import",
