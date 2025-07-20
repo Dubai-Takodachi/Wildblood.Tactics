@@ -24,7 +24,7 @@ public partial class TacticCanvas : IDisposable
         objectReference = DotNetObjectReference.Create(this);
 
         TacticCanvasService.OnGameStateChanged += RedrawIcons;
-        TacticCanvasService.OnToolChanged += SetSelectedUnit;
+        TacticCanvasService.OnToolChanged += SetToolOptions;
     }
 
     [JSInvokable]
@@ -33,8 +33,21 @@ public partial class TacticCanvas : IDisposable
         await TacticCanvasService.UpdateEntites(entities, removedEntityIds);
     }
 
-    private async Task SetSelectedUnit()
+    private async Task SetToolOptions()
     {
+        // Wait for the module to load, with timeout to prevent deadlocks
+        var start = DateTime.UtcNow;
+        while (pixiModule == null)
+        {
+            if ((DateTime.UtcNow - start).TotalSeconds > 10)
+            {
+                Console.WriteLine("WARNING: pixiModule was not initialized in time.");
+                return;
+            }
+
+            await Task.Delay(50);
+        }
+
         await pixiModule.InvokeVoidAsync(
             "default.setToolOptions",
             TacticCanvasService.CurrentOptions);
@@ -87,6 +100,6 @@ public partial class TacticCanvas : IDisposable
         objectReference.Dispose();
 
         TacticCanvasService.OnGameStateChanged -= RedrawIcons;
-        TacticCanvasService.OnToolChanged -= SetSelectedUnit;
+        TacticCanvasService.OnToolChanged -= SetToolOptions;
     }
 }

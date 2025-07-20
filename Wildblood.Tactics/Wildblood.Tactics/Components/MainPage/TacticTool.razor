@@ -166,8 +166,10 @@
             </MudPaper>
         </MudTabPanel>
         <MudTabPanel Icon="@Icons.Material.Filled.BackHand" @onclick="() => ChangeTool(Models.Tools.ToolType.Move)" ToolTip="Enable Dragging">
+            <MudText>Selection is prioritizing small Items</MudText>
         </MudTabPanel>
         <MudTabPanel Icon="@eraserIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.Erase)" ToolTip="Erase">
+            <MudText>Selection is prioritizing small Items</MudText>
         </MudTabPanel>
     </MudTabs>
 </MudPaper>

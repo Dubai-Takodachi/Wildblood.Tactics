@@ -406,20 +406,37 @@ export class MoveTool implements IToolHandler {
         const pos = getPosition(event, this.context);
 
         const keys = Object.keys(this.drawnSpriteByEntityId).reverse();
+        const clickedEntityKeys = []
         for (const key of keys) {
             const sprite = this.drawnSpriteByEntityId[key];
             if (!sprite.position) continue;
-            const entity = this.currentEntities[key];
             const spriteLocal = { x: pos.x - sprite.x, y: pos.y - sprite.y };
-            const entityLocal = { x: pos.x - entity.position.x, y: pos.y - entity.position.y };
 
             if (hitTestPixelPerfect(sprite, spriteLocal, this.context.app)) {
-                this.entityClickedPosition = entityLocal;
-                this.entityDragStartPosition = entity.position;
-                this.entityId = key;
-                break;
+                clickedEntityKeys.push(key);
             }
         }
+
+        if (clickedEntityKeys.length === 0) return;
+
+        let smallestEntityKey = clickedEntityKeys[0];
+        for (const key of clickedEntityKeys) {
+            const sprite = this.drawnSpriteByEntityId[key];
+            if (sprite.width *
+                sprite.height <
+                this.drawnSpriteByEntityId[smallestEntityKey].width *
+                this.drawnSpriteByEntityId[smallestEntityKey].height)
+            {
+                smallestEntityKey = key;
+            }
+        }
+
+        const clickedEntity = this.currentEntities[smallestEntityKey];
+        const entityLocal = { x: pos.x - clickedEntity.position.x, y: pos.y - clickedEntity.position.y };
+
+        this.entityClickedPosition = entityLocal;
+        this.entityDragStartPosition = clickedEntity.position;
+        this.entityId = smallestEntityKey;
     }
 
     async onPointerMove(event: PointerEvent) {
@@ -474,7 +491,41 @@ export class EraseTool implements IToolHandler {
         this.context = context;
         this.drawnSpriteByEntityId = drawnSpriteByEntityId;
 
+        this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
+    }
+
+    async onPointerDown(event: PointerEvent) {
+        if (event.button !== 0) return;
+
+        const pos = getPosition(event, this.context);
+
+        const keys = Object.keys(this.drawnSpriteByEntityId).reverse();
+        const clickedEntityKeys = []
+        for (const key of keys) {
+            const sprite = this.drawnSpriteByEntityId[key];
+            if (!sprite.position) continue;
+            const spriteLocal = { x: pos.x - sprite.x, y: pos.y - sprite.y };
+
+            if (hitTestPixelPerfect(sprite, spriteLocal, this.context.app)) {
+                clickedEntityKeys.push(key);
+            }
+        }
+
+        if (clickedEntityKeys.length === 0) return;
+
+        let smallestEntityKey = clickedEntityKeys[0];
+        for (const key of clickedEntityKeys) {
+            const sprite = this.drawnSpriteByEntityId[key];
+            if (sprite.width *
+                sprite.height <
+                this.drawnSpriteByEntityId[smallestEntityKey].width *
+                this.drawnSpriteByEntityId[smallestEntityKey].height) {
+                smallestEntityKey = key;
+            }
+        }
+
+        this.context.removeEntityCallback(smallestEntityKey);
     }
 
     async onPointerMove(event: PointerEvent) {
@@ -642,9 +693,10 @@ function calculateDistance(a: Tools.Point, b: Tools.Point): number {
 }
 
 function hitTestPixelPerfect(sprite: PIXI.Sprite, localPos: Tools.Point, app: PIXI.Application): boolean {
-    const bounds = sprite.getBounds();
-
-    if (localPos.x < 0 || localPos.y < 0 || localPos.x >= bounds.width || localPos.y >= bounds.height) {
+    if (localPos.x < 0 ||
+        localPos.y < 0 ||
+        localPos.x >= sprite.width ||
+        localPos.y >= sprite.height) {
         return false;
     }
 
@@ -653,6 +705,7 @@ function hitTestPixelPerfect(sprite: PIXI.Sprite, localPos: Tools.Point, app: PI
         target: tempSprite,
         frame: new PIXI.Rectangle(localPos.x, localPos.y, 1, 1),
     }).pixels;
+
     return pixels[3] > 0;
 }
 

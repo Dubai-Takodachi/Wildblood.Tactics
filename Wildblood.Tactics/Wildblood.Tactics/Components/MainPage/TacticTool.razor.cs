@@ -77,7 +77,8 @@ public partial class TacticTool
 
     private async Task OnPingColorChanged(string color)
     {
-        var safeColor = color.Length > 7 ? color.Substring(0, 7) : color;
+        var length = color[0] == '#' ? 7 : 6;
+        var safeColor = color.Length > length ? color.Substring(0, length) : color;
         await UpdateTool(pingOptions: AllOptions.PingOptions! with { Color = safeColor });
     }
 

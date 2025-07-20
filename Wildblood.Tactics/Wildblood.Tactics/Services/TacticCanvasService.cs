@@ -42,14 +42,6 @@ public class TacticCanvasService : ITacticCanvasService
         return CurrentSlide.MapPath!;
     }
 
-    private async Task RefreshZoom()
-    {
-        if (OnGameStateChanged != null)
-        {
-            await OnGameStateChanged.Invoke();
-        }
-    }
-
     private async Task RefreshTactic()
     {
         if (OnGameStateChanged != null)

@@ -226,7 +226,7 @@ function getSmoothClosedCurve(points, segments = 16, tension = 0.2) {
     return result;
 }
 async function drawIcon(entity) {
-    const graphic = new PIXI.Graphics();
+    const container = new PIXI.Container();
     let texture;
     if (!ImageCache[entity.iconType]) {
         texture = await PIXI.Assets.load("ConquerorsBladeData/Units/" + iconFileNamesByType[entity.iconType]);
@@ -235,7 +235,14 @@ async function drawIcon(entity) {
     else {
         texture = ImageCache[entity.iconType];
     }
-    graphic.texture(texture, "#ffffffff", 0, 0, entity.primarySize, entity.primarySize);
+    const sprite = new PIXI.Sprite({
+        texture: texture,
+        x: 0,
+        y: 0,
+        width: entity.primarySize,
+        height: entity.primarySize
+    });
+    container.addChild(sprite);
     if (entity.text && entity.text !== "") {
         const labelStyle = new PIXI.TextStyle({
             fontSize: entity.secondarySize,
@@ -245,15 +252,18 @@ async function drawIcon(entity) {
         const labelPadding = 4;
         const labelWidth = label.width + labelPadding * 2;
         const labelHeight = label.height + labelPadding * 2;
-        const labelX = 0 + (graphic.width - labelWidth) / 2;
-        const labelY = 0 + graphic.height + 5;
+        const labelX = 0 + (container.width - labelWidth) / 2;
+        const labelY = 0 + container.height + 5;
+        label.x = labelX + labelPadding;
+        label.y = labelY + labelPadding;
+        const bitmap = convertTextToBitmapText(label);
         if (entity.hasBackground)
-            graphic.rect(labelX, labelY, labelWidth, labelHeight)
-                .fill(entity.secondaryColor);
-        const textTexture = app.renderer.textureGenerator.generateTexture(label);
-        graphic.texture(textTexture, "#ffffffff", labelX + labelPadding, labelY + labelPadding);
+            container.addChild(new PIXI.Graphics()
+                .rect(labelX, labelY, labelWidth, labelHeight)
+                .fill(entity.secondaryColor));
+        container.addChild(bitmap);
     }
-    return graphic;
+    return container;
 }
 function drawText(entity) {
     const container = new PIXI.Container();

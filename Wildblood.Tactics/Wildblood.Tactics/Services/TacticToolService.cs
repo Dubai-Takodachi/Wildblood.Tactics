@@ -77,7 +77,7 @@ public class TacticToolService : ITacticToolService
 
         return new ToolOptions
         {
-            Tool = ToolType.AddIcon,
+            Tool = ToolType.Ping,
             PingOptions = new PingOptions { Color = "ff0000" },
             IconOptions = new IconOptions
             {

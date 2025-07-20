@@ -286,8 +286,9 @@ function getSmoothClosedCurve(
     return result;
 }
 
-async function drawIcon(entity: Tools.Entity): Promise<PIXI.Graphics | null> {
-    const graphic = new PIXI.Graphics();
+async function drawIcon(entity: Tools.Entity): Promise<PIXI.Container | null> {
+    const container = new PIXI.Container();
+
     let texture: PIXI.Texture;
     if (!ImageCache[entity.iconType!]) {
         texture = await PIXI.Assets.load(
@@ -297,7 +298,16 @@ async function drawIcon(entity: Tools.Entity): Promise<PIXI.Graphics | null> {
     else {
         texture = ImageCache[entity.iconType!];
     }
-    graphic.texture(texture, "#ffffffff", 0, 0, entity.primarySize, entity.primarySize);
+
+    const sprite = new PIXI.Sprite({
+        texture: texture,
+        x: 0,
+        y: 0,
+        width: entity.primarySize,
+        height: entity.primarySize
+    });
+
+    container.addChild(sprite);
 
     if (entity.text && entity.text !== "") {
         const labelStyle = new PIXI.TextStyle({
@@ -310,18 +320,24 @@ async function drawIcon(entity: Tools.Entity): Promise<PIXI.Graphics | null> {
         const labelPadding = 4;
         const labelWidth = label.width + labelPadding * 2;
         const labelHeight = label.height + labelPadding * 2;
-        const labelX = 0 + (graphic.width - labelWidth) / 2;
-        const labelY = 0 + graphic.height + 5;
+        const labelX = 0 + (container.width - labelWidth) / 2;
+        const labelY = 0 + container.height + 5;
+
+        label.x = labelX + labelPadding;
+        label.y = labelY + labelPadding;
+
+        const bitmap = convertTextToBitmapText(label);
 
         if (entity.hasBackground)
-            graphic.rect(labelX, labelY, labelWidth, labelHeight)
-                .fill(entity.secondaryColor);
+            container.addChild(
+                new PIXI.Graphics()
+                    .rect(labelX, labelY, labelWidth, labelHeight)
+                    .fill(entity.secondaryColor));
 
-        const textTexture = app.renderer.textureGenerator.generateTexture(label);
-        graphic.texture(textTexture, "#ffffffff", labelX + labelPadding, labelY + labelPadding);
+        container.addChild(bitmap);
     }
 
-    return graphic;
+    return container;
 }
 
 function drawText(entity: Tools.Entity): PIXI.Container | null {
