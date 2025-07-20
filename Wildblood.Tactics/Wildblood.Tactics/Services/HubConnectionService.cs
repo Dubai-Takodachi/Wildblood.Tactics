@@ -41,7 +41,7 @@ public class HubConnectionService : IHubConnectionService, IAsyncDisposable
     }
 
     public async Task UpdateTactic(
-        string tacticId, string slideId, string folderId, UpdateTacticMessage message)
+        string tacticId, string folderId, string slideId, UpdateTacticMessage message)
     {
         await hubConnection.SendAsync("UpdateTactic", tacticId, folderId, slideId, message);
     }

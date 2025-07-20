@@ -2,6 +2,8 @@
 
 public class TacticMapSelectorService : ITacticMapSelectorService
 {
+    public event Func<Task>? OnMapChanged;
+
     public string CurrentMap => tacticExplorerService.CurrentSlide.MapPath ?? string.Empty;
 
     public List<string> Maps { get; private set; }
@@ -18,6 +20,8 @@ public class TacticMapSelectorService : ITacticMapSelectorService
             .Select(f => Path.GetFileName(f)
             .Split('.')[0])
             .ToList();
+
+        this.tacticExplorerService.OnTacticChanged += RefreshMapSelection;
     }
 
     public async Task UpdateCurrentMap(string map)
@@ -27,6 +31,14 @@ public class TacticMapSelectorService : ITacticMapSelectorService
             tacticExplorerService.CurrentSlide.MapPath = map;
             await tacticExplorerService.UpdateMap(CurrentMap);
             await tacticExplorerService.SendTacticUpdate();
+        }
+    }
+
+    private async Task RefreshMapSelection()
+    {
+        if (OnMapChanged is not null)
+        {
+            await OnMapChanged.Invoke();
         }
     }
 }

@@ -15,14 +15,24 @@ public partial class TacticMapSelector
 
     private List<string> maps = [];
 
+    private string selectedMap = string.Empty;
+
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
         maps = TacticMapSelectorService.Maps.ToList();
+        TacticMapSelectorService.OnMapChanged += RefreshSelectedMap;
+
     }
 
     public async Task MapChanged(string map)
     {
         await TacticMapSelectorService.UpdateCurrentMap(map);
+    }
+
+    private async Task RefreshSelectedMap()
+    {
+        selectedMap = TacticMapSelectorService.CurrentMap;
+        await InvokeAsync(StateHasChanged);
     }
 }

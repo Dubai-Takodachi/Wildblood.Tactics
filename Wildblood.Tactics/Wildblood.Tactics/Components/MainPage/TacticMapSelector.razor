@@ -1,5 +1,5 @@
 ﻿<div id="MapSelectionDiv">
-    <MudSelect T="string" Label="Maps" ValueChanged="MapChanged">
+    <MudSelect T="string" Label="Maps" ValueChanged="MapChanged" Value="@selectedMap">
         @foreach (var map in maps)
         {
             <MudSelectItem Value="@map">@map</MudSelectItem>
