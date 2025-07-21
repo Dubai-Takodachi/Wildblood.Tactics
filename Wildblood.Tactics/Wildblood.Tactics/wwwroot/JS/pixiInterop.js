@@ -94,6 +94,17 @@ var PixiInterop;
             clampWorldScale();
         });
         updateViewSize();
+        if (parent) {
+            const initialWidth = parent.offsetWidth;
+            const resizeObserver = new ResizeObserver((e) => {
+                if (e.length < 0)
+                    return;
+                if (Math.round(e[0].contentRect.width) !== initialWidth) {
+                    location.reload();
+                }
+            });
+            resizeObserver.observe(parent);
+        }
     }
     PixiInterop.createApp = createApp;
     function updateViewSize() {
