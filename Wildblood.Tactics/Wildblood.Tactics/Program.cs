@@ -51,7 +51,6 @@ public class Program
         builder.Services.AddScoped<AuthenticationStateProvider, PersistingRevalidatingAuthenticationStateProvider>();
         builder.Services.AddMudServices();
 
-        builder.Services.AddScoped<IHubConnectionService, HubConnectionService>();
         builder.Services.AddScoped<IUserService, UserService>();
         builder.Services.AddScoped<ITacticToolService, TacticToolService>();
         builder.Services.AddScoped<ITacticExplorerService, TacticExplorerService>();
