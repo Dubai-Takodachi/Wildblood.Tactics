@@ -336,7 +336,7 @@ namespace PixiInterop {
 
     function createSafeSprite(container: PIXI.Container, bounds: PIXI.Rectangle): PIXI.Sprite {
         const webGlRenderer = app.renderer as PIXI.WebGLRenderer;
-        const maxSize = webGlRenderer.gl.getParameter(webGlRenderer.gl.MAX_TEXTURE_SIZE) / 2;
+        const maxSize = Math.sqrt(webGlRenderer.gl.getParameter(webGlRenderer.gl.MAX_TEXTURE_SIZE)) * 25;
         const scaleFactor = Math.min(1, maxSize / Math.max(bounds.width, bounds.height));
 
         const texture = app.renderer.generateTexture({

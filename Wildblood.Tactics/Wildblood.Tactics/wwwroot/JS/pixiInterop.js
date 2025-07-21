@@ -277,7 +277,7 @@ var PixiInterop;
     }
     function createSafeSprite(container, bounds) {
         const webGlRenderer = app.renderer;
-        const maxSize = webGlRenderer.gl.getParameter(webGlRenderer.gl.MAX_TEXTURE_SIZE) / 2;
+        const maxSize = Math.sqrt(webGlRenderer.gl.getParameter(webGlRenderer.gl.MAX_TEXTURE_SIZE)) * 25;
         const scaleFactor = Math.min(1, maxSize / Math.max(bounds.width, bounds.height));
         const texture = app.renderer.generateTexture({
             target: container,
