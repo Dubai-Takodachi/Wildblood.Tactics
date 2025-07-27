@@ -11,41 +11,41 @@
 <input type="checkbox" title="Navigation menu" class="navbar-toggler" />
 
 <MudNavMenu Color="Color.Primary" Dense="true" Rounded="true">
-            <MudNavLink href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">
-                Home
-            </MudNavLink>
+    <MudNavLink href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">
+        Home
+    </MudNavLink>
 
-            <MudNavLink href="/auth">
-                Auth Required
-            </MudNavLink>
+    <MudNavLink href="/auth">
+        Auth Required
+    </MudNavLink>
 
-        <AuthorizeView>
-            <Authorized>
-                <MudNavLink href="/Account/Manage">
-                    @context.User.Identity?.Name
-                </MudNavLink>
-                <MudNavLink href="/SavedTactics" Icon="@Icons.Material.Filled.Map">
-                        Saved Tactics
-                </MudNavLink>
-                <MudNavLink >
-                    <form action="Account/Logout" method="post">
-                        <AntiforgeryToken />
-                        <input type="hidden" name="ReturnUrl" value="@currentUrl" />
-                        <MudButton ButtonType="ButtonType.Submit" class="nav-link">
-                            <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
-                        </MudButton>
-                    </form>
-                </MudNavLink>
-            </Authorized>
-            <NotAuthorized>
-                <MudNavLink  href="/Account/Register">
-                    Register
-                </MudNavLink>
-                <MudNavLink  href="/Account/Login">
-                    Login
-                </MudNavLink>
-            </NotAuthorized>
-        </AuthorizeView>
+    <AuthorizeView>
+        <Authorized>
+            <MudNavLink href="/Account/Manage">
+                @context.User.Identity?.Name
+            </MudNavLink>
+            <MudNavLink href="/SavedTactics" Icon="@Icons.Material.Filled.Map">
+                Saved Tactics
+            </MudNavLink>
+            <MudNavLink >
+                <form action="Account/Logout" method="post">
+                    <AntiforgeryToken />
+                    <input type="hidden" name="ReturnUrl" value="@currentUrl" />
+                    <MudButton ButtonType="ButtonType.Submit" class="nav-link">
+                        <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
+                    </MudButton>
+                </form>
+            </MudNavLink>
+        </Authorized>
+        <NotAuthorized>
+            <MudNavLink  href="/Account/Register">
+                Register
+            </MudNavLink>
+            <MudNavLink  href="/Account/Login">
+                Login
+            </MudNavLink>
+        </NotAuthorized>
+    </AuthorizeView>
 </MudNavMenu>
 
 @code {

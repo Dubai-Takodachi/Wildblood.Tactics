@@ -1,8 +1,18 @@
 ﻿<div id="MapSelectionDiv">
     <MudSelect T="string" Label="Maps" ValueChanged="MapChanged" Value="@selectedMap">
-        @foreach (var map in maps)
+        @foreach (var map in SortedMaps)
         {
-            <MudSelectItem Value="@map">@map</MudSelectItem>
+            <MudSelectItem Value="@map">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <MudIconButton
+                        Icon="@(favoriteMaps.Contains(map) ? Icons.Material.Filled.Star : Icons.Material.Outlined.StarBorder)"
+                        Color="@(favoriteMaps.Contains(map) ? Color.Warning : Color.Default)"
+                        Size="Size.Small"
+                        StopPropagation="true"
+                        @onclick="() => ToggleFavorite(map)" />
+                    <span>@map</span>
+                </div>
+            </MudSelectItem>
         }
     </MudSelect>
 </div>

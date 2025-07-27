@@ -9,6 +9,7 @@ var PixiInterop;
     let VIRTUAL_HEIGHT = 3000;
     let app;
     let dotNetObjRef;
+    let iconNameMemory;
     let mainContainer = new PIXI.Container();
     let entityContainer = new PIXI.Container();
     let bgSprite = null;
@@ -25,11 +26,12 @@ var PixiInterop;
             app.destroy(true, { children: true });
         }
         dotNetObjRef = dotNetRef;
+        iconNameMemory = iconNames;
         const parent = document.getElementById("tacticsCanvasContainer");
         if (!parent)
             return;
         app = new PIXI.Application();
-        Draw.init(iconNames, app);
+        Draw.init(iconNameMemory, app);
         await app.init({
             background: '#FFFFFF',
             resizeTo: parent,
@@ -48,8 +50,11 @@ var PixiInterop;
             app: app,
             container: mainContainer,
         };
+        app.canvas.addEventListener("contextmenu", (event) => {
+            event.preventDefault();
+        });
         app.canvas.addEventListener("mousedown", (event) => {
-            if (event.button === 1) {
+            if (event.button === 1 || event.button === 2) {
                 isDragging = true;
                 lastDragPos = { x: event.clientX, y: event.clientY };
                 event.preventDefault();
@@ -66,7 +71,7 @@ var PixiInterop;
             }
         });
         app.canvas.addEventListener("mouseup", (event) => {
-            if (event.button === 1) {
+            if (event.button === 1 || event.button === 2) {
                 isDragging = false;
                 lastDragPos = null;
             }
@@ -99,7 +104,7 @@ var PixiInterop;
             const resizeObserver = new ResizeObserver((e) => {
                 if (e.length < 0)
                     return;
-                if (Math.round(e[0].contentRect.width) !== initialWidth) {
+                if (Math.abs(Math.round(e[0].contentRect.width) - initialWidth) > 5) {
                     location.reload();
                 }
             });

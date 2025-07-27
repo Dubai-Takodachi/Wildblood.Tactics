@@ -11,6 +11,7 @@ namespace PixiInterop {
 
     let app: PIXI.Application;
     let dotNetObjRef: DotNetObjectReference;
+    let iconNameMemory: Record<string, string>;
 
     let mainContainer: PIXI.Container = new PIXI.Container();
     let entityContainer: PIXI.Container = new PIXI.Container();
@@ -34,10 +35,11 @@ namespace PixiInterop {
             app.destroy(true, { children: true });
         }
         dotNetObjRef = dotNetRef;
+        iconNameMemory = iconNames;
         const parent = document.getElementById("tacticsCanvasContainer");
         if (!parent) return;
         app = new PIXI.Application();
-        Draw.init(iconNames, app);
+        Draw.init(iconNameMemory, app);
         await app.init({
             background: '#FFFFFF',
             resizeTo: parent,
@@ -60,8 +62,12 @@ namespace PixiInterop {
             container: mainContainer,
         }
 
+        app.canvas.addEventListener("contextmenu", (event: MouseEvent) => {
+            event.preventDefault();
+        });
+
         app.canvas.addEventListener("mousedown", (event) => {
-            if (event.button === 1) {
+            if (event.button === 1 || event.button === 2) {
                 isDragging = true;
                 lastDragPos = { x: event.clientX, y: event.clientY };
                 event.preventDefault();
@@ -83,7 +89,7 @@ namespace PixiInterop {
         });
 
         app.canvas.addEventListener("mouseup", (event) => {
-            if (event.button === 1) {
+            if (event.button === 1 || event.button === 2) {
                 isDragging = false;
                 lastDragPos = null;
             }
@@ -125,7 +131,7 @@ namespace PixiInterop {
             const resizeObserver = new ResizeObserver((e) => {
                 if (e.length < 0) return;
 
-                if (Math.round(e[0].contentRect.width) !== initialWidth) {
+                if (Math.abs(Math.round(e[0].contentRect.width) - initialWidth) > 5) {
                     location.reload();
                 }
             });
