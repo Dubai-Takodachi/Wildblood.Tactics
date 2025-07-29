@@ -31,7 +31,7 @@ var PixiInterop;
         if (!parent)
             return;
         app = new PIXI.Application();
-        Draw.init(iconNameMemory, app);
+        Draw.init(iconNameMemory, app, removeEntityOnServer);
         await app.init({
             background: '#FFFFFF',
             resizeTo: parent,
@@ -50,6 +50,13 @@ var PixiInterop;
             app: app,
             container: mainContainer,
         };
+        app.canvas.setAttribute('draggable', 'false');
+        app.canvas.addEventListener('dragstart', (e) => {
+            e.preventDefault();
+        });
+        app.canvas.addEventListener('selectstart', (e) => {
+            e.preventDefault();
+        });
         app.canvas.addEventListener("contextmenu", (event) => {
             event.preventDefault();
         });

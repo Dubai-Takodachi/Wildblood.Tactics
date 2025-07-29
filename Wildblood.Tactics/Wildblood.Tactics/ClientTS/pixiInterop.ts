@@ -39,7 +39,7 @@ namespace PixiInterop {
         const parent = document.getElementById("tacticsCanvasContainer");
         if (!parent) return;
         app = new PIXI.Application();
-        Draw.init(iconNameMemory, app);
+        Draw.init(iconNameMemory, app, removeEntityOnServer);
         await app.init({
             background: '#FFFFFF',
             resizeTo: parent,
