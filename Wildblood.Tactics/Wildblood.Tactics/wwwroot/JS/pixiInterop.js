@@ -254,9 +254,11 @@ var PixiInterop;
         dotNetObjRef.invokeMethodAsync('UpdateServerEntities', entities, removedEntityIds);
     }
     async function setPreviewEntity(entity) {
-        if (temporaryEntity && drawnSpriteByEntityId[temporaryEntity.id] /*&& !currentEntities[temporaryEntity.id]*/) {
+        if (temporaryEntity && drawnSpriteByEntityId[temporaryEntity.id]) {
             entityContainer.removeChild(drawnSpriteByEntityId[temporaryEntity.id]);
             drawnSpriteByEntityId[temporaryEntity.id].destroy();
+            delete drawnSpriteByEntityId[temporaryEntity.id];
+            delete currentEntities[temporaryEntity.id];
         }
         temporaryEntity = entity;
         if (entity) {
@@ -338,11 +340,17 @@ var PixiInterop;
     }
     async function updateExistingEntities(newCurrentEntities) {
         for (const entity of newCurrentEntities) {
-            if (!currentEntities[entity.id]
-                || (JSON.stringify(currentEntities[entity.id]) === JSON.stringify(entity)) === false) {
+            const existing = currentEntities[entity.id];
+            if (!existing || !areEntitiesEqual(existing, entity)) {
                 await drawEntityToScreen(entity);
             }
         }
+    }
+    function areEntitiesEqual(a, b) {
+        return (a.id === b.id &&
+            a.position.x === b.position.x &&
+            a.position.y === b.position.y &&
+            a.path?.length === b.path?.length);
     }
 })(PixiInterop || (PixiInterop = {}));
 export default PixiInterop;

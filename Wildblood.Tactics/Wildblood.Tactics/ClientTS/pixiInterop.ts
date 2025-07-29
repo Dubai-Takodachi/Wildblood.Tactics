@@ -304,9 +304,11 @@ namespace PixiInterop {
     }
 
     async function setPreviewEntity(entity: Tools.Entity | null): Promise<void> {
-        if (temporaryEntity && drawnSpriteByEntityId[temporaryEntity.id] /*&& !currentEntities[temporaryEntity.id]*/) {
+        if (temporaryEntity && drawnSpriteByEntityId[temporaryEntity.id]) {
             entityContainer.removeChild(drawnSpriteByEntityId[temporaryEntity.id]);
             drawnSpriteByEntityId[temporaryEntity.id].destroy();
+            delete drawnSpriteByEntityId[temporaryEntity.id];
+            delete currentEntities[temporaryEntity.id];
         }
 
         temporaryEntity = entity;
@@ -409,11 +411,21 @@ namespace PixiInterop {
 
     async function updateExistingEntities(newCurrentEntities: Tools.Entity[]): Promise<void> {
         for (const entity of newCurrentEntities) {
-            if (!currentEntities[entity.id]
-                || (JSON.stringify(currentEntities[entity.id]) === JSON.stringify(entity)) === false) {
+            const existing = currentEntities[entity.id];
+
+            if (!existing || !areEntitiesEqual(existing, entity)) {
                 await drawEntityToScreen(entity);
             }
         }
+    }
+
+    function areEntitiesEqual(a: Tools.Entity, b: Tools.Entity): boolean {
+        return (
+            a.id === b.id &&
+            a.position.x === b.position.x &&
+            a.position.y === b.position.y &&
+            a.path?.length === b.path?.length
+        );
     }
 
     interface DotNetObjectReference {
