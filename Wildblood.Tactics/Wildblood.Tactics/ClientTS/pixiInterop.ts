@@ -62,6 +62,16 @@ namespace PixiInterop {
             container: mainContainer,
         }
 
+        app.canvas.setAttribute('draggable', 'false');
+
+        app.canvas.addEventListener('dragstart', (e) => {
+            e.preventDefault();
+        });
+
+        app.canvas.addEventListener('selectstart', (e) => {
+            e.preventDefault();
+        });
+
         app.canvas.addEventListener("contextmenu", (event: MouseEvent) => {
             event.preventDefault();
         });
