@@ -9,15 +9,13 @@
 <MudSnackbarProvider @rendermode=InteractiveServer />
 @inherits LayoutComponentBase
 
-<div class="page" data-bs-theme="dark">
+<div class="page" data-bs-theme="dark" style="height:100vh; overflow: hidden;">
     <div>
         <NavMenu />
     </div>
 
-    <main style="height:99vh;">
-        <article class="content px-4" style="height:100%">
-            @Body
-        </article>
+    <main>
+        @Body
     </main>
 </div>
 

@@ -9,6 +9,7 @@ var PixiInterop;
     let VIRTUAL_HEIGHT = 3000;
     let app;
     let dotNetObjRef;
+    let iconNameMemory;
     let mainContainer = new PIXI.Container();
     let entityContainer = new PIXI.Container();
     let bgSprite = null;
@@ -25,11 +26,12 @@ var PixiInterop;
             app.destroy(true, { children: true });
         }
         dotNetObjRef = dotNetRef;
+        iconNameMemory = iconNames;
         const parent = document.getElementById("tacticsCanvasContainer");
         if (!parent)
             return;
         app = new PIXI.Application();
-        Draw.init(iconNames, app);
+        Draw.init(iconNameMemory, app, removeEntityOnServer);
         await app.init({
             background: '#FFFFFF',
             resizeTo: parent,
@@ -48,8 +50,18 @@ var PixiInterop;
             app: app,
             container: mainContainer,
         };
+        app.canvas.setAttribute('draggable', 'false');
+        app.canvas.addEventListener('dragstart', (e) => {
+            e.preventDefault();
+        });
+        app.canvas.addEventListener('selectstart', (e) => {
+            e.preventDefault();
+        });
+        app.canvas.addEventListener("contextmenu", (event) => {
+            event.preventDefault();
+        });
         app.canvas.addEventListener("mousedown", (event) => {
-            if (event.button === 1) {
+            if (event.button === 1 || event.button === 2) {
                 isDragging = true;
                 lastDragPos = { x: event.clientX, y: event.clientY };
                 event.preventDefault();
@@ -66,7 +78,7 @@ var PixiInterop;
             }
         });
         app.canvas.addEventListener("mouseup", (event) => {
-            if (event.button === 1) {
+            if (event.button === 1 || event.button === 2) {
                 isDragging = false;
                 lastDragPos = null;
             }
@@ -99,7 +111,7 @@ var PixiInterop;
             const resizeObserver = new ResizeObserver((e) => {
                 if (e.length < 0)
                     return;
-                if (Math.round(e[0].contentRect.width) !== initialWidth) {
+                if (Math.abs(Math.round(e[0].contentRect.width) - initialWidth) > 5) {
                     location.reload();
                 }
             });
@@ -242,9 +254,11 @@ var PixiInterop;
         dotNetObjRef.invokeMethodAsync('UpdateServerEntities', entities, removedEntityIds);
     }
     async function setPreviewEntity(entity) {
-        if (temporaryEntity && drawnSpriteByEntityId[temporaryEntity.id] /*&& !currentEntities[temporaryEntity.id]*/) {
+        if (temporaryEntity && drawnSpriteByEntityId[temporaryEntity.id]) {
             entityContainer.removeChild(drawnSpriteByEntityId[temporaryEntity.id]);
             drawnSpriteByEntityId[temporaryEntity.id].destroy();
+            delete drawnSpriteByEntityId[temporaryEntity.id];
+            delete currentEntities[temporaryEntity.id];
         }
         temporaryEntity = entity;
         if (entity) {
@@ -326,11 +340,17 @@ var PixiInterop;
     }
     async function updateExistingEntities(newCurrentEntities) {
         for (const entity of newCurrentEntities) {
-            if (!currentEntities[entity.id]
-                || (JSON.stringify(currentEntities[entity.id]) === JSON.stringify(entity)) === false) {
+            const existing = currentEntities[entity.id];
+            if (!existing || !areEntitiesEqual(existing, entity)) {
                 await drawEntityToScreen(entity);
             }
         }
+    }
+    function areEntitiesEqual(a, b) {
+        return (a.id === b.id &&
+            a.position.x === b.position.x &&
+            a.position.y === b.position.y &&
+            a.path?.length === b.path?.length);
     }
 })(PixiInterop || (PixiInterop = {}));
 export default PixiInterop;

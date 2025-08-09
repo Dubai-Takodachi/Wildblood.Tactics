@@ -1,7 +1,6 @@
 ﻿namespace Wildblood.Tactics.Components.MainPage;
 
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.JSInterop;
 using Wildblood.Tactics.Entities;
 using Wildblood.Tactics.Mappings;
@@ -23,7 +22,7 @@ public partial class TacticCanvas : IDisposable
     {
         objectReference = DotNetObjectReference.Create(this);
 
-        TacticCanvasService.OnGameStateChanged += RedrawIcons;
+        TacticCanvasService.OnGameStateChanged += RedrawEntities;
         TacticCanvasService.OnToolChanged += SetToolOptions;
     }
 
@@ -35,19 +34,6 @@ public partial class TacticCanvas : IDisposable
 
     private async Task SetToolOptions()
     {
-        // Wait for the module to load, with timeout to prevent deadlocks
-        var start = DateTime.UtcNow;
-        while (pixiModule == null)
-        {
-            if ((DateTime.UtcNow - start).TotalSeconds > 10)
-            {
-                Console.WriteLine("WARNING: pixiModule was not initialized in time.");
-                return;
-            }
-
-            await Task.Delay(50);
-        }
-
         await pixiModule.InvokeVoidAsync(
             "default.setToolOptions",
             TacticCanvasService.CurrentOptions);
@@ -66,21 +52,15 @@ public partial class TacticCanvas : IDisposable
                 objectReference,
                 IconMapping.FileNameByIconType);
 
-            if (TacticCanvasService.CurrentSlide.MapPath != null)
-            {
-                await pixiModule.InvokeVoidAsync(
-                    "default.setBackground",
-                    TacticCanvasService.CurrentSlide.MapPath);
-            }
-
-            await RedrawIcons();
+            await SetToolOptions();
+            await RedrawEntities();
         }
     }
 
-    private async Task RedrawIcons()
+    private async Task RedrawEntities()
     {
-        var icons = TacticCanvasService.GetRedrawEntities();
-        if (icons != null)
+        var entities = TacticCanvasService.GetRedrawEntities();
+        if (entities != null)
         {
             await pixiModule.InvokeVoidAsync(
                 "default.redrawEntities",
@@ -99,7 +79,7 @@ public partial class TacticCanvas : IDisposable
     {
         objectReference.Dispose();
 
-        TacticCanvasService.OnGameStateChanged -= RedrawIcons;
+        TacticCanvasService.OnGameStateChanged -= RedrawEntities;
         TacticCanvasService.OnToolChanged -= SetToolOptions;
     }
 }

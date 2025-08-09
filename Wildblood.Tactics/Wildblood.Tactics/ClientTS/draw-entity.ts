@@ -4,10 +4,16 @@ import * as Tools from './tools-types.js';
 let iconFileNamesByType: Record<string, string>;
 let ImageCache: Record<string, PIXI.Texture> = {};
 let app: PIXI.Application;
+let removeEntityCallback: (entityId: string) => Promise<void>
 
-export function init(iconNames: Record<string, string>, application: PIXI.Application): void {
+export function init(
+    iconNames: Record<string, string>,
+    application: PIXI.Application,
+    removeEntity: (entityId: string) => Promise<void>): void {
+
     iconFileNamesByType = iconNames;
     app = application;
+    removeEntityCallback = removeEntity;
 }
 
 export async function drawEntity(entity: Tools.Entity): Promise<PIXI.Container | null> {
@@ -181,6 +187,8 @@ function drawPingAnimation(entity: Tools.Entity): PIXI.Graphics | null {
 
     let lastTime = performance.now();
 
+    const baseColor = normalizeColor(entity.primaryColor!);
+
     const animate = (now: number) => {
         const delta = (now - lastTime) / 1000;
         lastTime = now;
@@ -190,13 +198,15 @@ function drawPingAnimation(entity: Tools.Entity): PIXI.Graphics | null {
 
         ring.clear();
         ring.circle(0, 0, size + 20).fill({
-            color: entity.primaryColor + Math.max(0, Math.floor(alpha)).toString(16).padStart(2, '0')
+            color: baseColor,
+            alpha: Math.max(0, alpha / 255)
         });
         ring.circle(0, 0, size).cut();
 
         if (alpha <= 0) {
             ring.parent?.removeChild(ring);
             ring.destroy();
+            removeEntityCallback(entity.id);
             return;
         }
 
@@ -208,6 +218,26 @@ function drawPingAnimation(entity: Tools.Entity): PIXI.Graphics | null {
     });
 
     return ring;
+}
+
+function normalizeColor(input: string): string {
+    let hex = input.trim().toLowerCase();
+
+    // Remove leading #
+    if (hex.startsWith('#')) hex = hex.slice(1);
+
+    // Remove alpha if 8 chars (rrggbbaa)
+    if (hex.length === 8) hex = hex.slice(0, 6);
+
+    // If only 3 chars (shorthand), expand to 6
+    if (hex.length === 3) {
+        hex = hex.split('').map(c => c + c).join('');
+    }
+
+    // Pad if needed (e.g. rrggb -> rrggb0)
+    hex = hex.padEnd(6, '0');
+
+    return `#${hex}`;
 }
 
 function getSmoothCurve(points: { x: number, y: number }[], segments = 16, tension = 0.2): { x: number, y: number } [] {

@@ -12,14 +12,16 @@
 @rendermode InteractiveServer
 <PageTitle>Home</PageTitle>
 
-<AuthorizeView>
-    <Authorized>
-        <div>
-            <h1>Welcome To Wildblood.Tactics!</h1>
-            <input type="button" class="btn btn-primary" value="Create New Tactic" @onclick="CreateNewTactic" />
-        </div>
-    </Authorized>
-</AuthorizeView>
+<article Style="padding-left: 2rem; padding-right: 1.5rem;">
+    <AuthorizeView>
+        <Authorized>
+            <div>
+                <h1>Welcome To Wildblood.Tactics!</h1>
+                <input type="button" class="btn btn-primary" value="Create New Tactic" @onclick="CreateNewTactic" />
+            </div>
+        </Authorized>
+    </AuthorizeView>
+</article>
 
 @code {
 
@@ -30,7 +32,8 @@
 
         if (user.Identity?.IsAuthenticated == true)
         {
-            var userId = user.FindFirst(c => c.Type == "sub")?.Value ?? user.FindFirst(c => c.Type == "nameidentifier")?.Value ?? user.Identity.Name;
+            var userId = user.FindFirst(c => c.Type == "sub")?.Value ??
+                user.FindFirst(c => c.Type == "nameidentifier")?.Value ?? user.Identity.Name;
             var tactic = CreateTacticDocument(userId, user.Identity.Name);
             var collection = Database.GetCollection<Tactic>("Tactics");
             collection.InsertOne(tactic);

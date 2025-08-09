@@ -8,12 +8,14 @@
 @inject NavigationManager NavigationManager
 @rendermode InteractiveServer
 
-<MudDataGrid Items="Tactics" RowClick="OnRowClicked" T="Tactic">
-    <Columns>
-        <PropertyColumn Property="item => item.Name" Title="Name" />
-        <PropertyColumn Property="item => item.UserId" Title="Creator" />
-    </Columns>
-</MudDataGrid>
+<article Style="padding-left: 2rem; padding-right: 1.5rem;">
+    <MudDataGrid Items="Tactics" RowClick="OnRowClicked" T="Tactic">
+        <Columns>
+            <PropertyColumn Property="item => item.Name" Title="Name" />
+            <PropertyColumn Property="item => item.UserId" Title="Creator" />
+        </Columns>
+    </MudDataGrid>
+</article>
 
 
 @code {

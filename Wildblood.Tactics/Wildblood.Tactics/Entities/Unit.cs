@@ -1,14 +1,18 @@
 ﻿namespace Wildblood.Tactics.Entities;
 
-using Wildblood.Tactics.Models.Tools;
+using Wildblood.Tactics.Mappings;
 
 public record Unit
 {
-    public string Name { get; init; } = string.Empty;
+    public required UnitName Name { get; init; }
 
-    public int Influence { get; init; } = 0;
+    public required int Influence { get; init; }
 
-    public string Path { get; init; } = string.Empty;
+    public required string Path { get; init; }
 
-    public IconType IconType { get; init; } = IconType.Azaps;
+    public required UnitEra Era { get; init; }
+
+    public required PrimaryUnitType PrimaryType { get; init; }
+
+    public required SecondaryUnitType SecondaryType { get; init; }
 }
