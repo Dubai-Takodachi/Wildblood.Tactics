@@ -1,17 +1,17 @@
 import * as PIXI from '../lib/pixi.mjs';
 import * as Tools from './tools-types.js';
 
-let iconFileNamesByType: Record<string, string>;
+let units: Tools.Unit[];
 let ImageCache: Record<string, PIXI.Texture> = {};
 let app: PIXI.Application;
 let removeEntityCallback: (entityId: string) => Promise<void>
 
 export function init(
-    iconNames: Record<string, string>,
+    initUnits: Tools.Unit[],
     application: PIXI.Application,
     removeEntity: (entityId: string) => Promise<void>): void {
 
-    iconFileNamesByType = iconNames;
+    units = initUnits;
     app = application;
     removeEntityCallback = removeEntity;
 }
@@ -319,14 +319,11 @@ function getSmoothClosedCurve(
 async function drawIcon(entity: Tools.Entity): Promise<PIXI.Container | null> {
     const container = new PIXI.Container();
 
-    let texture: PIXI.Texture;
-    if (!ImageCache[entity.iconType!]) {
-        texture = await PIXI.Assets.load(
-            "ConquerorsBladeData/Units/" + iconFileNamesByType[entity.iconType!]);
-        ImageCache[entity.iconType!] = texture;
-    }
-    else {
-        texture = ImageCache[entity.iconType!];
+    const texture = await PIXI.Assets.load(
+        "ConquerorsBladeData/Units/" + units.find(u => u.name == entity.unitName!)?.path);
+
+    if (!texture) {
+        return null;
     }
 
     const sprite = new PIXI.Sprite({

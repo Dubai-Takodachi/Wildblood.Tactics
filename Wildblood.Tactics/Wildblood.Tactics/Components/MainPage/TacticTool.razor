@@ -11,15 +11,17 @@
         <MudTabPanel Icon="@swordsIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.AddIcon)" ToolTip="Place Icons">
             <div>
                 <MudPaper Class="flex-wrap d-flex" Width="100%">
-                    @foreach (var unit in IconMapping.FileNameByIconType)
+                    @foreach (var unit in UnitDataSet.Entries)
                     {
-                        bool isSelected = cosmeticIcon == unit.Key;
+                        bool isSelected = cosmeticIcon == unit.Name;
                         string borderColor = isSelected ? "#1976d2" : "transparent";
                         string style = $"border: 2px solid {borderColor}; border-radius: 4px; box-sizing: border-box;";
 
-                        <MudPaper Class="ma-1" Style="@style" @onclick="@(async (args) => await SelectedUnit(unit.Key))">
-                            <img src="@(IconMapping.BlazorBasePath + unit.Value)" helazorBight="40" width="40" />
-                        </MudPaper>
+                        <MudTooltip Text="@unit.Name.ToString()">
+                            <MudPaper Class="ma-1" Style="@style" @onclick="@(async (args) => await SelectedUnit(unit.Name))">
+                                <img src="@(IconMapping.BlazorBasePath + unit.Path)" helazorBight="40" width="40" />
+                            </MudPaper>
+                        </MudTooltip>
                     }
                 </MudPaper>
                 <MudSlider Class="my-3" T="int" Min="80" Max="400" Value="TacticToolService.AllOptions.IconOptions!.IconSize" ValueLabel="true" ValueChanged="OnIconSizeChanged" Color="Color.Primary">Icon Size:</MudSlider>

@@ -2,6 +2,7 @@
 
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
+using Wildblood.Tactics.Mappings;
 using Wildblood.Tactics.Models.Tools;
 using Wildblood.Tactics.Services;
 
@@ -34,7 +35,7 @@ public partial class TacticTool
     private LineStyle cosmeticFreeStyle;
     private LineEnd cosmeticFreeEnd;
     private ShapeType cosmeticShapeType;
-    private IconType cosmeticIcon = 0;
+    private UnitName cosmeticIcon = 0;
     private ToolOptions AllOptions => TacticToolService.AllOptions;
 
     protected override void OnInitialized()
@@ -69,10 +70,10 @@ public partial class TacticTool
         await UpdateTool(toolType: tool);
     }
 
-    private async Task SelectedUnit(IconType iconType)
+    private async Task SelectedUnit(UnitName unitName)
     {
-        await UpdateTool(iconOptions: AllOptions.IconOptions! with { IconType = iconType });
-        cosmeticIcon = iconType;
+        await UpdateTool(iconOptions: AllOptions.IconOptions! with { UnitName = unitName });
+        cosmeticIcon = unitName;
     }
 
     private async Task OnPingColorChanged(string color)

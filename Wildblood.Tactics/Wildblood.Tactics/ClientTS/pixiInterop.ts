@@ -11,7 +11,7 @@ namespace PixiInterop {
 
     let app: PIXI.Application;
     let dotNetObjRef: DotNetObjectReference;
-    let iconNameMemory: Record<string, string>;
+    let unitsMemory: Tools.Unit[];
 
     let mainContainer: PIXI.Container = new PIXI.Container();
     let entityContainer: PIXI.Container = new PIXI.Container();
@@ -30,16 +30,16 @@ namespace PixiInterop {
 
     export async function createApp(
             dotNetRef: DotNetObjectReference,
-            iconNames: Record<string, string>): Promise<void> {
+            units: Tools.Unit[]): Promise<void> {
         if (app) {
             app.destroy(true, { children: true });
         }
         dotNetObjRef = dotNetRef;
-        iconNameMemory = iconNames;
+        unitsMemory = units;
         const parent = document.getElementById("tacticsCanvasContainer");
         if (!parent) return;
         app = new PIXI.Application();
-        Draw.init(iconNameMemory, app, removeEntityOnServer);
+        Draw.init(unitsMemory, app, removeEntityOnServer);
         await app.init({
             background: '#FFFFFF',
             resizeTo: parent,

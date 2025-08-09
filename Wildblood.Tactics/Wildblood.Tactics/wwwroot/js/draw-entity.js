@@ -1,11 +1,11 @@
 import * as PIXI from '../lib/pixi.mjs';
 import * as Tools from './tools-types.js';
-let iconFileNamesByType;
+let units;
 let ImageCache = {};
 let app;
 let removeEntityCallback;
-export function init(iconNames, application, removeEntity) {
-    iconFileNamesByType = iconNames;
+export function init(initUnits, application, removeEntity) {
+    units = initUnits;
     app = application;
     removeEntityCallback = removeEntity;
 }
@@ -248,13 +248,9 @@ function getSmoothClosedCurve(points, segments = 16, tension = 0.2) {
 }
 async function drawIcon(entity) {
     const container = new PIXI.Container();
-    let texture;
-    if (!ImageCache[entity.iconType]) {
-        texture = await PIXI.Assets.load("ConquerorsBladeData/Units/" + iconFileNamesByType[entity.iconType]);
-        ImageCache[entity.iconType] = texture;
-    }
-    else {
-        texture = ImageCache[entity.iconType];
+    const texture = await PIXI.Assets.load("ConquerorsBladeData/Units/" + units.find(u => u.name == entity.unitName)?.path);
+    if (!texture) {
+        return null;
     }
     const sprite = new PIXI.Sprite({
         texture: texture,

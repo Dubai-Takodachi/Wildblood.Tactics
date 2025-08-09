@@ -1,5 +1,6 @@
 ﻿namespace Wildblood.Tactics.Entities;
 
+using Wildblood.Tactics.Mappings;
 using Wildblood.Tactics.Models.Tools;
 
 public record Entity
@@ -12,7 +13,7 @@ public record Entity
 
     public List<Point>? Path { get; init; }
 
-    public IconType? IconType { get; init; }
+    public UnitName? UnitName { get; init; }
 
     public LineStyle? LineStyle { get; init; }
 

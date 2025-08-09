@@ -1,5 +1,6 @@
 ﻿namespace Wildblood.Tactics.Services;
 
+using Wildblood.Tactics.Mappings;
 using Wildblood.Tactics.Models.Tools;
 
 public class TacticToolService : ITacticToolService
@@ -82,7 +83,7 @@ public class TacticToolService : ITacticToolService
             IconOptions = new IconOptions
             {
                 IconSize = 120,
-                IconType = IconType.Azaps,
+                UnitName = UnitName.Azaps,
                 LabelOptions = defaultTextOptions,
             },
             LineDrawOptions = defaultLineOptions,
