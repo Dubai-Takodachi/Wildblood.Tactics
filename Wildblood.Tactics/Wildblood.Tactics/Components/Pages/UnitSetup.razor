@@ -1,0 +1,65 @@
+﻿@page "/UnitSetup"
+@using Wildblood.Tactics.Entities
+@using Wildblood.Tactics.Models
+@rendermode InteractiveServer
+
+<MudContainer>
+    <MudPaper>
+        <MudDataGrid T="PlayerSetup" ReadOnly="false" Items="@players" EditMode="DataGridEditMode.Cell">
+            <Columns>
+                <PropertyColumn Property="x => x.Number" Title="Nr." Editable="true" />
+                <PropertyColumn Property="x => x.Name" Title="Name" Editable="true" />
+                <PropertyColumn Property="x => x.Class" Title="Class" Editable="true" >
+                    <EditTemplate>a
+                        <MudSelect T="Classes" @bind-Value="context.Item.Class">
+                            <MudSelectItem Value="Models.Classes.Longbow">Longbow</MudSelectItem>
+                            <MudSelectItem Value="Models.Classes.Shortbow">Short Bow</MudSelectItem>
+                            <MudSelectItem Value="Models.Classes.Dualblades">Dual Blades</MudSelectItem>
+                            <MudSelectItem Value="Models.Classes.Scimitar">Scimitar</MudSelectItem>
+                            <MudSelectItem Value="Models.Classes.Spear">Spear</MudSelectItem>
+                            <MudSelectItem Value="Models.Classes.Pike">Pike</MudSelectItem>
+                            <MudSelectItem Value="Models.Classes.Nodachi">Nodachi</MudSelectItem>
+                            <MudSelectItem Value="Models.Classes.Musket">Musket</MudSelectItem>
+                            <MudSelectItem Value="Models.Classes.SpearAndShield">Spear and Shield</MudSelectItem>
+                            <MudSelectItem Value="Models.Classes.Maul">Maul</MudSelectItem>
+                            <MudSelectItem Value="Models.Classes.LongSword">Long Sword</MudSelectItem>
+                            <MudSelectItem Value="Models.Classes.Glaive">Glaive</MudSelectItem>
+                            <MudSelectItem Value="Models.Classes.ShortSword">Short Sword</MudSelectItem>
+                            <MudSelectItem Value="Models.Classes.Poleaxe">Poleaxe</MudSelectItem>
+                        </MudSelect>
+                    </EditTemplate>
+                </PropertyColumn>
+                <PropertyColumn Property="x => x.Influence" Title="Influence" Editable="true" />"
+                <PropertyColumn Property="x => x.Units[0]" Title="First Unit" Editable="true" />
+                <PropertyColumn Property="x => x.Units[1]" Title="Second Unit" Editable="true" />
+                <PropertyColumn Property="x => x.Units[2]" Title="Third Unit" Editable="true" />
+                <PropertyColumn Property="x => x.Units[3]" Title="Fourth Unit" Editable="true" />
+            </Columns>
+        </MudDataGrid>
+        <MudButton ButtonType="ButtonType.Button" Variant=" Variant.Outlined" Color="@Color.Success" OnClick="OnAddButtonClick" />
+    </MudPaper>
+</MudContainer>
+
+
+
+@code {
+    private List<PlayerSetup> players = new List<PlayerSetup>();
+
+    void OnAddButtonClick()
+    {
+        players.Add(new PlayerSetup
+        {
+            Number = players.Count + 1,
+            Name = "New Player",
+            Class = Models.Classes.Maul,
+            Influence = 700,
+            Units = new List<Unit>
+            {
+                new Unit { Name = "Azaps" },
+                new Unit { Name = "ShieldMaiden" },
+                new Unit { Name = "Unit 3" },
+                new Unit { Name = "Unit 4" }
+            }
+        });
+    }
+}
