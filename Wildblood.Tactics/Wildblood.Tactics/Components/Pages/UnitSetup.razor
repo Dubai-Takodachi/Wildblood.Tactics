@@ -1,5 +1,6 @@
 ﻿@page "/UnitSetup"
 @using Wildblood.Tactics.Entities
+@using Wildblood.Tactics.Mappings
 @using Wildblood.Tactics.Models
 @rendermode InteractiveServer
 
@@ -10,7 +11,7 @@
                 <PropertyColumn Property="x => x.Number" Title="Nr." Editable="true" />
                 <PropertyColumn Property="x => x.Name" Title="Name" Editable="true" />
                 <PropertyColumn Property="x => x.Class" Title="Class" Editable="true" >
-                    <EditTemplate>a
+                    <EditTemplate>
                         <MudSelect T="Classes" @bind-Value="context.Item.Class">
                             <MudSelectItem Value="Models.Classes.Longbow">Longbow</MudSelectItem>
                             <MudSelectItem Value="Models.Classes.Shortbow">Short Bow</MudSelectItem>
@@ -55,10 +56,10 @@
             Influence = 700,
             Units = new List<Unit>
             {
-                new Unit { Name = "Azaps" },
-                new Unit { Name = "ShieldMaiden" },
-                new Unit { Name = "Unit 3" },
-                new Unit { Name = "Unit 4" }
+                UnitDataSet.Entries.First(unit => unit.Name == UnitName.Alchemists),
+                UnitDataSet.Entries.First(unit => unit.Name == UnitName.ArcherMilitia),
+                UnitDataSet.Entries.First(unit => unit.Name == UnitName.ArmingerLancers),
+                UnitDataSet.Entries.First(unit => unit.Name == UnitName.AxeRaiders),
             }
         });
     }
