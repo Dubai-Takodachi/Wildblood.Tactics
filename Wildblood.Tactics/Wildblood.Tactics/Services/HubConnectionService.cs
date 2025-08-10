@@ -11,7 +11,7 @@ public class HubConnectionService : IHubConnectionService, IAsyncDisposable
     public HubConnectionService(NavigationManager navigationManager)
     {
         hubConnection = new HubConnectionBuilder()
-            .WithUrl("Wildblood-Tactics.de/tacticsHub", options =>
+            .WithUrl(navigationManager.ToAbsoluteUri("/tacticsHub"), options =>
             {
                 options.HttpMessageHandlerFactory = handler =>
                 {
