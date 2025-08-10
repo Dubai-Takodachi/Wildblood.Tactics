@@ -60,9 +60,12 @@ function drawPath(g: PIXI.Graphics, entity: Tools.Entity, path: Tools.Point[]): 
     if (entity.lineStyle === Tools.LineStyle.Normal) {
         for (var i = 0; i < path.length - 1; i++) {
             g.moveTo(path[i].x, path[i].y)
-                .lineTo(path[i + 1].x, path[i + 1].y)
-                .stroke({ width: entity.primarySize, color: entity.primaryColor })
+                .lineTo(path[i + 1].x, path[i + 1].y);
         }
+
+        g.closePath()
+            .stroke({ width: entity.primarySize, color: entity.primaryColor, join: 'round', cap: 'round' });
+
     } else if (entity.lineStyle === Tools.LineStyle.Dotted) {
         const stepSize = entity.primarySize! * 3;
         const spacedPath = getEvenlySpacedPoints(path, stepSize);
