@@ -36,13 +36,6 @@ public partial class TacticTool
     private LineStyle cosmeticFreeStyle;
     private LineEnd cosmeticFreeEnd;
     private ShapeType cosmeticShapeType;
-    private UnitName cosmeticIcon = 0;
-    private string unitSearchText = string.Empty;
-    private UnitEra? selectedUnitEra;
-    private PrimaryUnitType? selectedUnitPrimaryType;
-    private SecondaryUnitType? selectedUnitSecondaryType;
-    private string unitSortBy = "Name";
-    private HashSet<UnitName> favoriteUnits = new();
 
     private ToolOptions AllOptions => TacticToolService.AllOptions;
 
@@ -70,12 +63,6 @@ public partial class TacticTool
                     .Contains(Path.GetExtension(file).ToLower()))
                 .Select(file => file.Replace("wwwroot/", string.Empty))
                 .ToList();
-
-            var savedFavorites = await JS.InvokeAsync<string>("localStorage.getItem", "favoriteUnits");
-            if (!string.IsNullOrWhiteSpace(savedFavorites))
-            {
-                favoriteUnits = [.. savedFavorites.Split(',').Select(Enum.Parse<UnitName>)];
-            }
         }
     }
 
@@ -84,63 +71,9 @@ public partial class TacticTool
         await UpdateTool(toolType: tool);
     }
 
-    private IEnumerable<Unit> GetFilteredAndSortedUnits()
+    private async Task OnUnitSelected(Unit unit)
     {
-        var query = UnitDataSet.Entries.AsEnumerable();
-
-        if (!string.IsNullOrWhiteSpace(unitSearchText))
-        {
-            query = query.Where(u => u
-                .Name.ToString().Contains(unitSearchText, StringComparison.OrdinalIgnoreCase));
-        }
-
-        if (selectedUnitEra.HasValue)
-        {
-            query = query.Where(u => u.Era == selectedUnitEra.Value);
-        }
-
-        if (selectedUnitPrimaryType.HasValue)
-        {
-            query = query.Where(u => u.PrimaryType == selectedUnitPrimaryType.Value);
-        }
-
-        if (selectedUnitSecondaryType.HasValue)
-        {
-            query = query.Where(u => u.SecondaryType == selectedUnitSecondaryType.Value);
-        }
-
-        var orderedQuery = query.OrderByDescending(u => favoriteUnits.Contains(u.Name));
-
-        orderedQuery = unitSortBy switch
-        {
-            "Name" => orderedQuery.ThenBy(u => u.Name.ToString()),
-            "Influence" => orderedQuery.ThenBy(u => u.Influence),
-            "InfluenceDesc" => orderedQuery.ThenByDescending(u => u.Influence),
-            _ => orderedQuery,
-        };
-
-        return orderedQuery;
-    }
-
-    private async Task ToggleFavorite(UnitName name)
-    {
-        if (!favoriteUnits.Remove(name))
-        {
-            favoriteUnits.Add(name);
-        }
-
-        await JS.InvokeVoidAsync(
-            "localStorage.setItem",
-            "favoriteUnits",
-            string.Join(",", favoriteUnits));
-    }
-
-    private bool IsFavorite(UnitName name) => favoriteUnits.Contains(name);
-
-    private async Task SelectedUnit(UnitName unitName)
-    {
-        await UpdateTool(iconOptions: AllOptions.IconOptions! with { UnitName = unitName });
-        cosmeticIcon = unitName;
+        await UpdateTool(iconOptions: AllOptions.IconOptions! with { UnitName = unit.Name });
     }
 
     private async Task OnPingColorChanged(string color)
