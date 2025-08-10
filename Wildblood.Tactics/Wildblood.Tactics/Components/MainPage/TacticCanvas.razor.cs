@@ -50,7 +50,7 @@ public partial class TacticCanvas : IDisposable
             await pixiModule.InvokeVoidAsync(
                 "default.createApp",
                 objectReference,
-                IconMapping.FileNameByIconType);
+                UnitDataSet.Entries);
 
             await SetToolOptions();
             await RedrawEntities();

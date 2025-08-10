@@ -9,7 +9,7 @@ var PixiInterop;
     let VIRTUAL_HEIGHT = 3000;
     let app;
     let dotNetObjRef;
-    let iconNameMemory;
+    let unitsMemory;
     let mainContainer = new PIXI.Container();
     let entityContainer = new PIXI.Container();
     let bgSprite = null;
@@ -21,17 +21,17 @@ var PixiInterop;
     let interactionHandler = null;
     let interactionContext;
     let temporaryEntity = null;
-    async function createApp(dotNetRef, iconNames) {
+    async function createApp(dotNetRef, units) {
         if (app) {
             app.destroy(true, { children: true });
         }
         dotNetObjRef = dotNetRef;
-        iconNameMemory = iconNames;
+        unitsMemory = units;
         const parent = document.getElementById("tacticsCanvasContainer");
         if (!parent)
             return;
         app = new PIXI.Application();
-        Draw.init(iconNameMemory, app, removeEntityOnServer);
+        Draw.init(unitsMemory, app, removeEntityOnServer);
         await app.init({
             background: '#FFFFFF',
             resizeTo: parent,

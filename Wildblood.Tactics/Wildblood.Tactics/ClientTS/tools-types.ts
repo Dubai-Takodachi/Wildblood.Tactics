@@ -13,7 +13,7 @@ export interface Entity {
     toolType: ToolType;
     position: Point;
     path?: Point[];
-    iconType?: string;
+    unitName?: string;
     lineStyle?: LineStyle;
     lineEnd?: LineEnd;
     shapeType?: ShapeType;
@@ -41,7 +41,7 @@ export interface PingOptions {
 }
 
 export interface IconOptions {
-    iconType: string;
+    unitName: string;
     iconSize: number;
     labelOptions: TextOptions;
 }
@@ -70,4 +70,13 @@ export interface TextOptions {
     color: string;
     hasBackground: boolean;
     backgroundColor: string;
+}
+
+export interface Unit {
+    name: string;
+    influence: number;
+    path: string;
+    era: string;
+    primaryType: string;
+    secondaryType: string;
 }

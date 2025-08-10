@@ -246,7 +246,7 @@ export class PlaceIconTool {
             id: entityId,
             toolType: Tools.ToolType.AddIcon,
             position: position,
-            iconType: this.iconOptions.iconType,
+            unitName: this.iconOptions.unitName,
             primarySize: this.iconOptions.iconSize,
             text: this.iconOptions.labelOptions.text,
             secondarySize: this.iconOptions.labelOptions.size,
