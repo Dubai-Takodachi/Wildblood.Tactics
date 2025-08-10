@@ -32,6 +32,7 @@ public partial class TacticMapSelector
         TacticMapSelectorService.OnMapChanged += RefreshSelectedMap;
         favoriteMaps.Clear();
         favoriteMaps.Add(maps[3]);
+        await RefreshSelectedMap();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
