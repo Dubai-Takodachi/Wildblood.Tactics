@@ -2,6 +2,7 @@
 
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
+using Wildblood.Tactics.Entities;
 using Wildblood.Tactics.Mappings;
 using Wildblood.Tactics.Models.Tools;
 using Wildblood.Tactics.Services;
@@ -36,6 +37,12 @@ public partial class TacticTool
     private LineEnd cosmeticFreeEnd;
     private ShapeType cosmeticShapeType;
     private UnitName cosmeticIcon = 0;
+    private string unitSearchText = string.Empty;
+    private UnitEra? selectedUnitEra;
+    private PrimaryUnitType? selectedUnitPrimaryType;
+    private SecondaryUnitType? selectedUnitSecondaryType;
+    private string unitSortBy = "Name";
+
     private ToolOptions AllOptions => TacticToolService.AllOptions;
 
     protected override void OnInitialized()
@@ -68,6 +75,42 @@ public partial class TacticTool
     private async Task ChangeTool(ToolType tool)
     {
         await UpdateTool(toolType: tool);
+    }
+
+    private IEnumerable<Unit> GetFilteredAndSortedUnits()
+    {
+        var query = UnitDataSet.Entries.AsEnumerable();
+
+        if (!string.IsNullOrWhiteSpace(unitSearchText))
+        {
+            query = query.Where(u => u
+                .Name.ToString().Contains(unitSearchText, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (selectedUnitEra.HasValue)
+        {
+            query = query.Where(u => u.Era == selectedUnitEra.Value);
+        }
+
+        if (selectedUnitPrimaryType.HasValue)
+        {
+            query = query.Where(u => u.PrimaryType == selectedUnitPrimaryType.Value);
+        }
+
+        if (selectedUnitSecondaryType.HasValue)
+        {
+            query = query.Where(u => u.SecondaryType == selectedUnitSecondaryType.Value);
+        }
+
+        query = unitSortBy switch
+        {
+            "Name" => query.OrderBy(u => u.Name.ToString()),
+            "Influence" => query.OrderBy(u => u.Influence),
+            "InfluenceDesc" => query.OrderByDescending(u => u.Influence),
+            _ => query,
+        };
+
+        return query;
     }
 
     private async Task SelectedUnit(UnitName unitName)

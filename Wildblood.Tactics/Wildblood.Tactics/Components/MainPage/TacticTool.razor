@@ -10,10 +10,42 @@
         </MudTabPanel>
         <MudTabPanel Icon="@swordsIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.AddIcon)" ToolTip="Place Icons">
             <div>
+                <!-- Filters -->
+                <MudPaper Class="pa-2 d-flex flex-wrap gap-2">
+                    <MudTextField T="string" Label="Search" @bind-Value="unitSearchText" Immediate="true" Placeholder="Search by name..." />
+
+                    <MudSelect T="UnitEra?" Label="Era" @bind-Value="selectedUnitEra" FullWidth="true" Clearable="true">
+                        @foreach (var era in Enum.GetValues<UnitEra>())
+                        {
+                            <MudSelectItem T="UnitEra?" Value="era">@era</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    <MudSelect T="PrimaryUnitType?" Label="Primary Type" @bind-Value="selectedUnitPrimaryType" FullWidth="true" Clearable="true">
+                        @foreach (var ptype in Enum.GetValues<PrimaryUnitType>())
+                        {
+                            <MudSelectItem T="PrimaryUnitType?" Value="ptype">@ptype</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    <MudSelect T="SecondaryUnitType?" Label="Secondary Type" @bind-Value="selectedUnitSecondaryType" FullWidth="true" Clearable="true">
+                        @foreach (var stype in Enum.GetValues<SecondaryUnitType>())
+                        {
+                            <MudSelectItem T="SecondaryUnitType?"  Value="stype">@stype</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    <MudSelect T="string" Label="Sort By" @bind-Value="unitSortBy" FullWidth="true">
+                        <MudSelectItem Value=@("Name")>Name (A–Z)</MudSelectItem>
+                        <MudSelectItem Value=@("Influence")>Influence (Low → High)</MudSelectItem>
+                        <MudSelectItem Value=@("InfluenceDesc")>Influence (High → Low)</MudSelectItem>
+                    </MudSelect>
+                </MudPaper>
+
                 <MudPaper Class="flex-wrap d-flex" Width="100%">
-                    @foreach (var unit in UnitDataSet.Entries)
+                    @foreach (var unit in GetFilteredAndSortedUnits())
                     {
-                        bool isSelected = cosmeticIcon == unit.Name;
+                       bool isSelected = cosmeticIcon == unit.Name;
                         string borderColor = isSelected ? "#1976d2" : "transparent";
                         string style = $"border: 2px solid {borderColor}; border-radius: 4px; box-sizing: border-box;";
 
