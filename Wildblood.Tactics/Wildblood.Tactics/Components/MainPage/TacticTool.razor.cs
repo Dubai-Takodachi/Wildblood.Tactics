@@ -42,6 +42,7 @@ public partial class TacticTool
     private PrimaryUnitType? selectedUnitPrimaryType;
     private SecondaryUnitType? selectedUnitSecondaryType;
     private string unitSortBy = "Name";
+    private HashSet<UnitName> favoriteUnits = new();
 
     private ToolOptions AllOptions => TacticToolService.AllOptions;
 
@@ -69,6 +70,12 @@ public partial class TacticTool
                     .Contains(Path.GetExtension(file).ToLower()))
                 .Select(file => file.Replace("wwwroot/", string.Empty))
                 .ToList();
+
+            var savedFavorites = await JS.InvokeAsync<string>("localStorage.getItem", "favoriteUnits");
+            if (!string.IsNullOrWhiteSpace(savedFavorites))
+            {
+                favoriteUnits = [.. savedFavorites.Split(',').Select(Enum.Parse<UnitName>)];
+            }
         }
     }
 
@@ -102,16 +109,33 @@ public partial class TacticTool
             query = query.Where(u => u.SecondaryType == selectedUnitSecondaryType.Value);
         }
 
-        query = unitSortBy switch
+        var orderedQuery = query.OrderByDescending(u => favoriteUnits.Contains(u.Name));
+
+        orderedQuery = unitSortBy switch
         {
-            "Name" => query.OrderBy(u => u.Name.ToString()),
-            "Influence" => query.OrderBy(u => u.Influence),
-            "InfluenceDesc" => query.OrderByDescending(u => u.Influence),
-            _ => query,
+            "Name" => orderedQuery.ThenBy(u => u.Name.ToString()),
+            "Influence" => orderedQuery.ThenBy(u => u.Influence),
+            "InfluenceDesc" => orderedQuery.ThenByDescending(u => u.Influence),
+            _ => orderedQuery,
         };
 
-        return query;
+        return orderedQuery;
     }
+
+    private async Task ToggleFavorite(UnitName name)
+    {
+        if (!favoriteUnits.Remove(name))
+        {
+            favoriteUnits.Add(name);
+        }
+
+        await JS.InvokeVoidAsync(
+            "localStorage.setItem",
+            "favoriteUnits",
+            string.Join(",", favoriteUnits));
+    }
+
+    private bool IsFavorite(UnitName name) => favoriteUnits.Contains(name);
 
     private async Task SelectedUnit(UnitName unitName)
     {

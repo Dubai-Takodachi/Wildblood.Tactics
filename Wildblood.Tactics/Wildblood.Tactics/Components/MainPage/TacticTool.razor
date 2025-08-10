@@ -45,13 +45,21 @@
                 <MudPaper Class="flex-wrap d-flex" Width="100%">
                     @foreach (var unit in GetFilteredAndSortedUnits())
                     {
-                       bool isSelected = cosmeticIcon == unit.Name;
+                        bool isSelected = cosmeticIcon == unit.Name;
                         string borderColor = isSelected ? "#1976d2" : "transparent";
-                        string style = $"border: 2px solid {borderColor}; border-radius: 4px; box-sizing: border-box;";
+                        string style = $"border: 2px solid {borderColor}; border-radius: 4px; box-sizing: border-box; cursor: pointer;";
 
                         <MudTooltip Text="@unit.Name.ToString()">
-                            <MudPaper Class="ma-1" Style="@style" @onclick="@(async (args) => await SelectedUnit(unit.Name))">
-                                <img src="@(IconMapping.BlazorBasePath + unit.Path)" helazorBight="40" width="40" />
+                            <MudPaper Class="ma-1" Style="@style" @onclick="@(async () => await SelectedUnit(unit.Name))">
+                                <div style="position: relative; display: inline-block;">
+                                    <img src="@(IconMapping.BlazorBasePath + unit.Path)" height="40" width="40" />
+
+                                    <MudIcon
+                                        Icon="@Icons.Material.Filled.Star"
+                                        Color="@(IsFavorite(unit.Name) ? Color.Warning : Color.Default)"
+                                        Style="position: absolute; top: 2px; right: 2px; font-size: 16px; cursor: pointer;"
+                                        @onclick="(e) => ToggleFavorite(unit.Name)" />
+                                </div>
                             </MudPaper>
                         </MudTooltip>
                     }
