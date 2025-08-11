@@ -4,6 +4,10 @@ using Wildblood.Tactics.Models;
 
 public record PlayerSetup
 {
+    public int Id { get; set; }
+
+    public string UserId { get; set; } = string.Empty;
+
     public string Name { get; set; } = string.Empty;
 
     public Classes Class { get; set; } = Classes.Maul;

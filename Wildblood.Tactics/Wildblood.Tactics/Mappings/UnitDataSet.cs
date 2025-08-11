@@ -4,6 +4,8 @@ using Wildblood.Tactics.Entities;
 
 public static class UnitDataSet
 {
+    public static readonly string BlazorBasePath = "ConquerorsBladeData/Units/";
+
     public static readonly IReadOnlyList<Unit> Entries = new List<Unit>
     {
         new() { Name = UnitName.Alchemists,             Influence = 60,     Path = "Alchemists.png",                        Era = UnitEra.Silver,       PrimaryType = PrimaryUnitType.MeleeInfantry,        SecondaryType = SecondaryUnitType.Special },
@@ -63,7 +65,6 @@ public static class UnitDataSet
         new() { Name = UnitName.IconcapArquebusiers,    Influence = 95,     Path = "Ironcap-Arquebusiers.png",              Era = UnitEra.Chivalric,    PrimaryType = PrimaryUnitType.RangedInfantry,       SecondaryType = SecondaryUnitType.Arquebusier },
         new() { Name = UnitName.IconcapBowriders,       Influence = 80,     Path = "Ironcap-Bowriders.png",                 Era = UnitEra.Chivalric,    PrimaryType = PrimaryUnitType.Cavalry,              SecondaryType = SecondaryUnitType.Archer },
         new() { Name = UnitName.IroncapScoutCavalry,    Influence = 110,    Path = "Ironcap-Scouts.png",                    Era = UnitEra.Chivalric,    PrimaryType = PrimaryUnitType.Cavalry,              SecondaryType = SecondaryUnitType.Melee },
-        new() { Name = UnitName.IconcapSpearmen,        Influence = 30,     Path = string.Empty,                            Era = UnitEra.Rustic,       PrimaryType = PrimaryUnitType.MeleeInfantry,        SecondaryType = SecondaryUnitType.TowerShield },
         new() { Name = UnitName.IconcapSwordsmen,       Influence = 75,     Path = "Ironcap-Swordsmen.png",                 Era = UnitEra.Chivalric,    PrimaryType = PrimaryUnitType.MeleeInfantry,        SecondaryType = SecondaryUnitType.BucklerShield },
         new() { Name = UnitName.Jangjus,                Influence = 145,    Path = "Jangjus.png",                           Era = UnitEra.Silver,       PrimaryType = PrimaryUnitType.MeleeInfantry,        SecondaryType = SecondaryUnitType.Special },
         new() { Name = UnitName.Janissaries,            Influence = 160,    Path = "Janissaries.png",                       Era = UnitEra.Silver,       PrimaryType = PrimaryUnitType.RangedInfantry,       SecondaryType = SecondaryUnitType.Arquebusier },

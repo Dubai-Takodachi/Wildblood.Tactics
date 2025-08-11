@@ -1,7 +1,12 @@
 ﻿@page "/UnitSetup"
+@using System.Security.Claims
+@using Microsoft.EntityFrameworkCore
+@using Wildblood.Tactics.Data
 @using Wildblood.Tactics.Entities
 @using Wildblood.Tactics.Mappings
 @using Wildblood.Tactics.Models
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject ApplicationDbContext DbContext
 @rendermode InteractiveServer
 
 <MudContainer>
@@ -30,11 +35,41 @@
                         </MudSelect>
                     </EditTemplate>
                 </PropertyColumn>
-                <PropertyColumn Property="x => x.Influence" Title="Influence" Editable="true" />"
-                <PropertyColumn Property="x => x.Units[0]" Title="First Unit" Editable="true" />
-                <PropertyColumn Property="x => x.Units[1]" Title="Second Unit" Editable="true" />
-                <PropertyColumn Property="x => x.Units[2]" Title="Third Unit" Editable="true" />
-                <PropertyColumn Property="x => x.Units[3]" Title="Fourth Unit" Editable="true" />
+                <PropertyColumn Property="x => x.Influence" Title="Influence" Editable="true" />
+                <TemplateColumn Title="First Unit">
+                    <EditTemplate>
+                        <MudPaper>
+                            <MudButton Variant="Variant.Filled" OnClick="OnButtonChangeClick">
+                                <MudText>@context.Item.Units[0].Name</MudText>
+                                <img src="ConquerorsBladeData/Units/@context.Item.Units[0].Path" />
+                            </MudButton>
+                        </MudPaper>
+                    </EditTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="Second Unit">
+                    <EditTemplate>
+                        <MudPaper>
+                            <MudText>@context.Item.Units[1].Name</MudText>
+                            <img src="ConquerorsBladeData/Units/@context.Item.Units[1].Path" />
+                        </MudPaper>
+                    </EditTemplate>
+                </TemplateColumn>
+                <TemplateColumn Title="Third Unit">
+                    <EditTemplate>
+                        <MudPaper>
+                            <MudText>@context.Item.Units[2].Name</MudText>
+                            <img src="ConquerorsBladeData/Units/@context.Item.Units[2].Path" />
+                        </MudPaper>
+                    </EditTemplate>
+                </TemplateColumn>
+                <TemplateColumn >
+                    <EditTemplate>
+                        <MudStack>
+                            <MudText>@context.Item.Units[3].Name</MudText>
+                            <img src="ConquerorsBladeData/Units/@context.Item.Units[3].Path" />
+                        </MudStack>
+                    </EditTemplate>
+                </TemplateColumn>
             </Columns>
         </MudDataGrid>
         <MudButton ButtonType="ButtonType.Button" Variant=" Variant.Outlined" Color="@Color.Success" OnClick="OnAddButtonClick" />
@@ -44,9 +79,26 @@
 
 
 @code {
+
     private List<PlayerSetup> players = new List<PlayerSetup>();
 
-    void OnAddButtonClick()
+    private string currentUserId = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        currentUserId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+
+        // Load only the current user's player setups
+        if (!string.IsNullOrEmpty(currentUserId))
+        {
+            players = await DbContext.PlayerSetups
+                .Where(p => p.UserId == currentUserId)
+                .ToListAsync();
+        }
+    }
+
+    async Task OnAddButtonClick()
     {
         players.Add(new PlayerSetup
         {
@@ -60,7 +112,17 @@
                 UnitDataSet.Entries.First(unit => unit.Name == UnitName.ArcherMilitia),
                 UnitDataSet.Entries.First(unit => unit.Name == UnitName.ArmingerLancers),
                 UnitDataSet.Entries.First(unit => unit.Name == UnitName.AxeRaiders),
-            }
+            },
+            UserId = currentUserId
+
         });
+
+        DbContext.PlayerSetups.Add(players.Last());
+        await DbContext.SaveChangesAsync();
+    }
+
+    async Task OnButtonChangeClick()
+    {
+        
     }
 }
