@@ -1,6 +1,7 @@
 ﻿namespace Wildblood.Tactics.Services;
 
 using Microsoft.AspNetCore.SignalR.Client;
+using Wildblood.Tactics.Entities;
 using Wildblood.Tactics.Models.Messages;
 
 public interface IHubConnectionService
@@ -12,4 +13,7 @@ public interface IHubConnectionService
 
     public Task UpdateEntities(
         string tacticId, string slideId, string folderId, UpdateEntitiesMessage message);
+
+    public Task Ping(
+        string tacticId, string slideId, string folderId, Entity ping);
 }

@@ -2,6 +2,7 @@
 
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
+using Wildblood.Tactics.Entities;
 using Wildblood.Tactics.Models.Messages;
 
 public class HubConnectionService : IHubConnectionService, IAsyncDisposable
@@ -50,6 +51,11 @@ public class HubConnectionService : IHubConnectionService, IAsyncDisposable
         string tacticId, string folderId, string slideId, UpdateEntitiesMessage message)
     {
         await hubConnection.SendAsync("UpdateEntities", tacticId, folderId, slideId, message);
+    }
+
+    public async Task Ping(string tacticId, string folderId, string slideId, Entity ping)
+    {
+        await hubConnection.SendAsync("Ping", tacticId, folderId, slideId, ping);
     }
 
     public async ValueTask DisposeAsync()

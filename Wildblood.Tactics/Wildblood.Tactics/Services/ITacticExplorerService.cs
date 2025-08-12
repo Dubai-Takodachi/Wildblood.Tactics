@@ -7,6 +7,8 @@ public interface ITacticExplorerService
 {
     public event Func<Task>? OnTacticChanged;
 
+    public event Func<Entity, Task>? OnPing;
+
     public Tactic CurrentTactic { get; }
 
     public Folder CurrentFolder { get; }
@@ -17,6 +19,8 @@ public interface ITacticExplorerService
 
     public Task SendEntitiesUpdate(
         IEnumerable<Entity>? overwriteEntities, IEnumerable<string>? entityIdsToRemove);
+
+    public Task PingToServer(Entity ping);
 
     public Tactic? GetTactic(string? id);
 

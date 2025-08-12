@@ -12,6 +12,8 @@ public class TacticExplorerService : ITacticExplorerService
 {
     public event Func<Task>? OnTacticChanged;
 
+    public event Func<Entity, Task>? OnPing;
+
     public Tactic CurrentTactic { get; private set; } = null!;
 
     public Folder CurrentFolder { get; private set;  } = null!;
@@ -19,7 +21,6 @@ public class TacticExplorerService : ITacticExplorerService
     public Slide CurrentSlide { get; private set; } = null!;
 
     private readonly JsonSerializerOptions jsonOptions = new() { PropertyNameCaseInsensitive = true };
-    private readonly IMongoDatabase mongoDatabase;
     private readonly IHubConnectionService hubConnectionService;
     private readonly IUserService userService;
     private readonly IMongoCollection<Tactic> tactics;
@@ -31,7 +32,6 @@ public class TacticExplorerService : ITacticExplorerService
         IUserService userService)
     {
         this.hubConnectionService = hubConnectionService;
-        this.mongoDatabase = mongoDatabase;
         this.userService = userService;
         this.tactics = mongoDatabase.GetCollection<Tactic>("Tactics");
 
@@ -92,7 +92,9 @@ public class TacticExplorerService : ITacticExplorerService
             hubConnectionService.Register(hub => hub.On<string, string, string, object>(
                 "UpdateEntities", async (tacticId, folderId, slideId, json) =>
                 {
-                    Console.WriteLine("received: " + tacticId + " " + folderId + " " + slideId);
+                    Console.WriteLine(
+                        "received entity update: " + tacticId + " " + folderId + " " + slideId);
+
                     if (tacticId != CurrentTactic.Id ||
                         folderId != CurrentFolder.Id ||
                         slideId != CurrentSlide.Id)
@@ -121,6 +123,33 @@ public class TacticExplorerService : ITacticExplorerService
                     }
 
                 })));
+
+        connections.Add(
+            hubConnectionService.Register(hub => hub.On<string, string, string, object>(
+                "Ping", async (tacticId, folderId, slideId, json) =>
+                {
+                    Console.WriteLine("received Ping: " + tacticId + " " + folderId + " " + slideId);
+
+                    if (tacticId != CurrentTactic.Id ||
+                        folderId != CurrentFolder.Id ||
+                        slideId != CurrentSlide.Id)
+                    {
+                        return;
+                    }
+
+                    var entity = JsonSerializer.Deserialize<Entity>(json.ToString()!, jsonOptions);
+
+                    if (entity is null)
+                    {
+                        Console.WriteLine($"couldn't deserialize {nameof(Entity)}!");
+                        return;
+                    }
+
+                    if (OnPing != null)
+                    {
+                        await OnPing.Invoke(entity);
+                    }
+                })));
     }
 
     public async Task SendTacticUpdate()
@@ -148,9 +177,13 @@ public class TacticExplorerService : ITacticExplorerService
             EntityIdsToDelete = entityIdsToRemove?.ToList(),
         };
 
-        Console.WriteLine("sending:" + CurrentTactic.Id + " " + CurrentFolder.Id + " " + CurrentSlide.Id);
         await hubConnectionService
             .UpdateEntities(CurrentTactic.Id, CurrentFolder.Id, CurrentSlide.Id, message);
+    }
+
+    public async Task PingToServer(Entity ping)
+    {
+        await hubConnectionService.Ping(CurrentTactic.Id, CurrentFolder.Id, CurrentSlide.Id, ping);
     }
 
     public async Task ChangeTactic(string tacticId)

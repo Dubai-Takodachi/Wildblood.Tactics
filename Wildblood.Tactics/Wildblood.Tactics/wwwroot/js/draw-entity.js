@@ -3,11 +3,9 @@ import * as Tools from './tools-types.js';
 let units;
 let ImageCache = {};
 let app;
-let removeEntityCallback;
-export function init(initUnits, application, removeEntity) {
+export function init(initUnits, application) {
     units = initUnits;
     app = application;
-    removeEntityCallback = removeEntity;
 }
 export async function drawEntity(entity) {
     switch (entity.toolType) {
@@ -148,25 +146,24 @@ function drawLineEnd(g, entity, a, b) {
 }
 function drawPingAnimation(entity) {
     const ring = new PIXI.Graphics();
-    let size = 0;
-    let alpha = 255;
+    let size = -20;
+    let alpha = 400;
     let lastTime = performance.now();
     const baseColor = normalizeColor(entity.primaryColor);
     const animate = (now) => {
         const delta = (now - lastTime) / 1000;
         lastTime = now;
         size += 200 * delta;
-        alpha -= 500 * delta;
+        alpha -= 700 * delta;
         ring.clear();
         ring.circle(0, 0, size + 20).fill({
             color: baseColor,
-            alpha: Math.max(0, alpha / 255)
+            alpha: Math.min(Math.max(0, alpha / 255), 1),
         });
         ring.circle(0, 0, size).cut();
         if (alpha <= 0) {
             ring.parent?.removeChild(ring);
             ring.destroy();
-            removeEntityCallback(entity.id);
             return;
         }
         requestAnimationFrame(animate);

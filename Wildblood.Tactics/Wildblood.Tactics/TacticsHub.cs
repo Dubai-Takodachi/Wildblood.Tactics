@@ -17,5 +17,12 @@
                 $"Received update for entities {tacticId} {folderId} {slideId}: {message}");
             await Clients.Others.SendAsync("UpdateEntities", tacticId, folderId, slideId, message);
         }
+
+        public async Task Ping(string tacticId, string folderId, string slideId, object ping)
+        {
+            Console.WriteLine(
+                $"Received ping {tacticId} {folderId} {slideId}: {ping}");
+            await Clients.All.SendAsync("Ping", tacticId, folderId, slideId, ping);
+        }
     }
 }

@@ -15,6 +15,7 @@ namespace PixiInterop {
 
     let mainContainer: PIXI.Container = new PIXI.Container();
     let entityContainer: PIXI.Container = new PIXI.Container();
+    let pingContainer: PIXI.Container = new PIXI.Container();
     let bgSprite: PIXI.Sprite | null = null;
 
     let isDragging: boolean = false;
@@ -39,7 +40,7 @@ namespace PixiInterop {
         const parent = document.getElementById("tacticsCanvasContainer");
         if (!parent) return;
         app = new PIXI.Application();
-        Draw.init(unitsMemory, app, removeEntityOnServer);
+        Draw.init(unitsMemory, app);
         await app.init({
             background: '#FFFFFF',
             resizeTo: parent,
@@ -50,6 +51,7 @@ namespace PixiInterop {
 
         mainContainer = new PIXI.Container();
         mainContainer.addChild(entityContainer);
+        mainContainer.addChild(pingContainer);
         app.stage.addChild(mainContainer);
 
         bgSprite = null;
@@ -58,6 +60,7 @@ namespace PixiInterop {
             addEntityCallback: addEntityOnServer,
             removeEntityCallback: removeEntityOnServer,
             setPreviewEntityCallback: setPreviewEntity,
+            sendPingCallback: pingToServer,
             app: app,
             container: mainContainer,
         }
@@ -300,7 +303,7 @@ namespace PixiInterop {
     }
 
     async function updateSpecificServerEntities(entities: Tools.Entity[], removedEntityIds: string[]): Promise<void> {
-        dotNetObjRef.invokeMethodAsync('UpdateServerEntities', entities, removedEntityIds);
+        await dotNetObjRef.invokeMethodAsync('UpdateServerEntities', entities, removedEntityIds);
     }
 
     async function setPreviewEntity(entity: Tools.Entity | null): Promise<void> {
@@ -319,37 +322,33 @@ namespace PixiInterop {
     }
 
     async function drawEntityToScreen(entity: Tools.Entity): Promise<void> {
+        if (entity.toolType === Tools.ToolType.Ping) return;
+
         const container = await Draw.drawEntity(entity);
-        if (container) {
-            if (entity.toolType === Tools.ToolType.Ping) {
-                container.x = entity.position.x;
-                container.y = entity.position.y;
-                entityContainer.addChild(container);
-                return;
-            }
 
-            if (drawnSpriteByEntityId[entity.id]) {
-                entityContainer.removeChild(drawnSpriteByEntityId[entity.id]);
-                drawnSpriteByEntityId[entity.id].destroy();
-            }
+        if (!container) return;
 
-            const padding = 2;
-            const bounds = container.getBounds();
-            const paddedBounds = new PIXI.Rectangle(
-                bounds.x - padding,
-                bounds.y - padding,
-                bounds.width + padding * 2,
-                bounds.height + padding * 2
-            );
-
-            const sprite = createSafeSprite(container, paddedBounds);
-
-            sprite.x = entity.position.x + container.getBounds().minX;
-            sprite.y = entity.position.y + container.getBounds().minY;
-            currentEntities[entity.id] = entity;
-            drawnSpriteByEntityId[entity.id] = sprite;
-            entityContainer.addChild(sprite);
+        if (drawnSpriteByEntityId[entity.id]) {
+            entityContainer.removeChild(drawnSpriteByEntityId[entity.id]);
+            drawnSpriteByEntityId[entity.id].destroy();
         }
+
+        const padding = 2;
+        const bounds = container.getBounds();
+        const paddedBounds = new PIXI.Rectangle(
+            bounds.x - padding,
+            bounds.y - padding,
+            bounds.width + padding * 2,
+            bounds.height + padding * 2
+        );
+
+        const sprite = createSafeSprite(container, paddedBounds);
+
+        sprite.x = entity.position.x + container.getBounds().minX;
+        sprite.y = entity.position.y + container.getBounds().minY;
+        currentEntities[entity.id] = entity;
+        drawnSpriteByEntityId[entity.id] = sprite;
+        entityContainer.addChild(sprite);
     }
 
     function createSafeSprite(container: PIXI.Container, bounds: PIXI.Rectangle): PIXI.Sprite {
@@ -383,6 +382,22 @@ namespace PixiInterop {
 
         bgSprite = bg;
         mainContainer.addChildAt(bgSprite, 0);
+    }
+
+    async function pingToServer(ping: Tools.Entity): Promise<void> {
+        dotNetObjRef.invokeMethodAsync('PingToServer', ping);
+    }
+
+    export async function drawPing(ping: Tools.Entity): Promise<void> {
+        if (ping.toolType !== Tools.ToolType.Ping) return;
+
+        const container = await Draw.drawEntity(ping);
+
+        if (!container) return;
+
+        container.x = ping.position.x;
+        container.y = ping.position.y;
+        pingContainer.addChild(container);
     }
 
     export async function redrawEntities(entities: Tools.Entity[]): Promise<void> {

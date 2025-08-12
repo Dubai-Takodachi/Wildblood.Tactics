@@ -10,6 +10,8 @@ public interface ITacticCanvasService
 
     public event Func<Task>? OnToolChanged;
 
+    public event Func<Entity, Task>? OnPing;
+
     public Tactic CurrentTactic { get; }
 
     public Folder CurrentFolder { get; }
@@ -23,4 +25,6 @@ public interface ITacticCanvasService
     public string GetMap();
 
     public Task UpdateEntites(Entity[] entities, string[] removedEntityIds);
+
+    public Task PingToServer(Entity ping);
 }

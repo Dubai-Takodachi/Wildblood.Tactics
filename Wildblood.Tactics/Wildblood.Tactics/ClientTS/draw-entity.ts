@@ -4,16 +4,13 @@ import * as Tools from './tools-types.js';
 let units: Tools.Unit[];
 let ImageCache: Record<string, PIXI.Texture> = {};
 let app: PIXI.Application;
-let removeEntityCallback: (entityId: string) => Promise<void>
 
 export function init(
     initUnits: Tools.Unit[],
-    application: PIXI.Application,
-    removeEntity: (entityId: string) => Promise<void>): void {
+    application: PIXI.Application): void {
 
     units = initUnits;
     app = application;
-    removeEntityCallback = removeEntity;
 }
 
 export async function drawEntity(entity: Tools.Entity): Promise<PIXI.Container | null> {
@@ -185,8 +182,8 @@ function drawLineEnd(g: PIXI.Graphics, entity: Tools.Entity, a: Tools.Point, b: 
 function drawPingAnimation(entity: Tools.Entity): PIXI.Graphics | null {
     const ring = new PIXI.Graphics();
 
-    let size = 0;
-    let alpha = 255;
+    let size = -20;
+    let alpha = 400;
 
     let lastTime = performance.now();
 
@@ -197,19 +194,18 @@ function drawPingAnimation(entity: Tools.Entity): PIXI.Graphics | null {
         lastTime = now;
 
         size += 200 * delta;
-        alpha -= 500 * delta;
+        alpha -= 700 * delta;
 
         ring.clear();
         ring.circle(0, 0, size + 20).fill({
             color: baseColor,
-            alpha: Math.max(0, alpha / 255)
+            alpha: Math.min(Math.max(0, alpha / 255), 1),
         });
         ring.circle(0, 0, size).cut();
 
         if (alpha <= 0) {
             ring.parent?.removeChild(ring);
             ring.destroy();
-            removeEntityCallback(entity.id);
             return;
         }
 

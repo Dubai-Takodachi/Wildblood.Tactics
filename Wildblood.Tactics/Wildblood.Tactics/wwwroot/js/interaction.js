@@ -453,8 +453,15 @@ export class PingTool {
         this.context = context;
         this.pingOptions = pingOptions;
         this.onPointerMove = this.onPointerMove.bind(this);
+        this.onPointerDown = this.onPointerDown.bind(this);
+    }
+    async onPointerDown(event) {
+        await this.sendPing(event);
     }
     async onPointerMove(event) {
+        await this.sendPing(event);
+    }
+    async sendPing(event) {
         if ((event.buttons & 1) !== 1)
             return;
         if (performance.now() - this.lastPingTime < 100)
@@ -466,9 +473,7 @@ export class PingTool {
             position: getPosition(event, this.context),
             primaryColor: this.pingOptions.color,
         };
-        await this.context.addEntityCallback(ping);
-        await delay(50);
-        await this.context.removeEntityCallback(ping.id);
+        await this.context.sendPingCallback(ping);
     }
 }
 export class DrawShapeTool {

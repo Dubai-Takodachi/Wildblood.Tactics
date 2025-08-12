@@ -10,6 +10,8 @@ public class TacticCanvasService : ITacticCanvasService
 
     public event Func<Task>? OnToolChanged;
 
+    public event Func<Entity, Task>? OnPing;
+
     public Tactic CurrentTactic => tacticExplorerService.CurrentTactic;
 
     public Folder CurrentFolder => tacticExplorerService.CurrentFolder;
@@ -29,6 +31,7 @@ public class TacticCanvasService : ITacticCanvasService
         this.tacticToolService = tacticToolService;
 
         tacticExplorerService.OnTacticChanged += RefreshTactic;
+        tacticExplorerService.OnPing += PingToClient;
         tacticToolService.OnToolChanged += RefreshTool;
     }
 
@@ -58,6 +61,14 @@ public class TacticCanvasService : ITacticCanvasService
         }
     }
 
+    private async Task PingToClient(Entity ping)
+    {
+        if (OnPing != null)
+        {
+            await OnPing.Invoke(ping);
+        }
+    }
+
     public async Task UpdateEntites(Entity[] entities, string[] removedEntityIds)
     {
         var combined = CurrentSlide.Entities
@@ -71,6 +82,10 @@ public class TacticCanvasService : ITacticCanvasService
 
         await tacticExplorerService.SendEntitiesUpdate(entities, removedEntityIds);
         await tacticExplorerService.UpdateServerEntities(combined);
+    }
 
+    public async Task PingToServer(Entity ping)
+    {
+        await tacticExplorerService.PingToServer(ping);
     }
 }

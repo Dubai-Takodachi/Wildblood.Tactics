@@ -24,12 +24,19 @@ public partial class TacticCanvas : IDisposable
 
         TacticCanvasService.OnGameStateChanged += RedrawEntities;
         TacticCanvasService.OnToolChanged += SetToolOptions;
+        TacticCanvasService.OnPing += DrawPing;
     }
 
     [JSInvokable]
     public async Task UpdateServerEntities(Entity[] entities, string[] removedEntityIds)
     {
         await TacticCanvasService.UpdateEntites(entities, removedEntityIds);
+    }
+
+    [JSInvokable]
+    public async Task PingToServer(Entity ping)
+    {
+        await TacticCanvasService.PingToServer(ping);
     }
 
     private async Task SetToolOptions()
@@ -72,6 +79,14 @@ public partial class TacticCanvas : IDisposable
             await pixiModule.InvokeVoidAsync(
                 "default.setBackground",
                 TacticCanvasService.CurrentSlide.MapPath);
+        }
+    }
+
+    private async Task DrawPing(Entity ping)
+    {
+        if (pixiModule != null)
+        {
+            await pixiModule.InvokeVoidAsync("default.drawPing", ping);
         }
     }
 

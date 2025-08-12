@@ -12,6 +12,7 @@ var PixiInterop;
     let unitsMemory;
     let mainContainer = new PIXI.Container();
     let entityContainer = new PIXI.Container();
+    let pingContainer = new PIXI.Container();
     let bgSprite = null;
     let isDragging = false;
     let lastDragPos = null;
@@ -31,7 +32,7 @@ var PixiInterop;
         if (!parent)
             return;
         app = new PIXI.Application();
-        Draw.init(unitsMemory, app, removeEntityOnServer);
+        Draw.init(unitsMemory, app);
         await app.init({
             background: '#FFFFFF',
             resizeTo: parent,
@@ -41,12 +42,14 @@ var PixiInterop;
         parent.appendChild(app.canvas);
         mainContainer = new PIXI.Container();
         mainContainer.addChild(entityContainer);
+        mainContainer.addChild(pingContainer);
         app.stage.addChild(mainContainer);
         bgSprite = null;
         interactionContext = {
             addEntityCallback: addEntityOnServer,
             removeEntityCallback: removeEntityOnServer,
             setPreviewEntityCallback: setPreviewEntity,
+            sendPingCallback: pingToServer,
             app: app,
             container: mainContainer,
         };
@@ -251,7 +254,7 @@ var PixiInterop;
         await updateSpecificServerEntities([], [entityId]);
     }
     async function updateSpecificServerEntities(entities, removedEntityIds) {
-        dotNetObjRef.invokeMethodAsync('UpdateServerEntities', entities, removedEntityIds);
+        await dotNetObjRef.invokeMethodAsync('UpdateServerEntities', entities, removedEntityIds);
     }
     async function setPreviewEntity(entity) {
         if (temporaryEntity && drawnSpriteByEntityId[temporaryEntity.id]) {
@@ -266,28 +269,24 @@ var PixiInterop;
         }
     }
     async function drawEntityToScreen(entity) {
+        if (entity.toolType === Tools.ToolType.Ping)
+            return;
         const container = await Draw.drawEntity(entity);
-        if (container) {
-            if (entity.toolType === Tools.ToolType.Ping) {
-                container.x = entity.position.x;
-                container.y = entity.position.y;
-                entityContainer.addChild(container);
-                return;
-            }
-            if (drawnSpriteByEntityId[entity.id]) {
-                entityContainer.removeChild(drawnSpriteByEntityId[entity.id]);
-                drawnSpriteByEntityId[entity.id].destroy();
-            }
-            const padding = 2;
-            const bounds = container.getBounds();
-            const paddedBounds = new PIXI.Rectangle(bounds.x - padding, bounds.y - padding, bounds.width + padding * 2, bounds.height + padding * 2);
-            const sprite = createSafeSprite(container, paddedBounds);
-            sprite.x = entity.position.x + container.getBounds().minX;
-            sprite.y = entity.position.y + container.getBounds().minY;
-            currentEntities[entity.id] = entity;
-            drawnSpriteByEntityId[entity.id] = sprite;
-            entityContainer.addChild(sprite);
+        if (!container)
+            return;
+        if (drawnSpriteByEntityId[entity.id]) {
+            entityContainer.removeChild(drawnSpriteByEntityId[entity.id]);
+            drawnSpriteByEntityId[entity.id].destroy();
         }
+        const padding = 2;
+        const bounds = container.getBounds();
+        const paddedBounds = new PIXI.Rectangle(bounds.x - padding, bounds.y - padding, bounds.width + padding * 2, bounds.height + padding * 2);
+        const sprite = createSafeSprite(container, paddedBounds);
+        sprite.x = entity.position.x + container.getBounds().minX;
+        sprite.y = entity.position.y + container.getBounds().minY;
+        currentEntities[entity.id] = entity;
+        drawnSpriteByEntityId[entity.id] = sprite;
+        entityContainer.addChild(sprite);
     }
     function createSafeSprite(container, bounds) {
         const webGlRenderer = app.renderer;
@@ -316,6 +315,20 @@ var PixiInterop;
         mainContainer.addChildAt(bgSprite, 0);
     }
     PixiInterop.setBackground = setBackground;
+    async function pingToServer(ping) {
+        dotNetObjRef.invokeMethodAsync('PingToServer', ping);
+    }
+    async function drawPing(ping) {
+        if (ping.toolType !== Tools.ToolType.Ping)
+            return;
+        const container = await Draw.drawEntity(ping);
+        if (!container)
+            return;
+        container.x = ping.position.x;
+        container.y = ping.position.y;
+        pingContainer.addChild(container);
+    }
+    PixiInterop.drawPing = drawPing;
     async function redrawEntities(entities) {
         await removeOutdatedEntities(entities);
         await updateExistingEntities(entities);

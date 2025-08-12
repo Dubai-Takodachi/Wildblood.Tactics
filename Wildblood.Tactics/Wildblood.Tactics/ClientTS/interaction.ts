@@ -12,6 +12,7 @@ export interface InteractionContext {
     app: PIXI.Application;
     container: PIXI.Container;
     addEntityCallback: (entity: Tools.Entity) => Promise<void>;
+    sendPingCallback: (entity: Tools.Entity) => Promise<void>;
     setPreviewEntityCallback: (entity: Tools.Entity | null) => Promise<void>;
     removeEntityCallback: (entityId: string) => Promise<void>;
 }
@@ -556,9 +557,18 @@ export class PingTool implements IToolHandler {
         this.pingOptions = pingOptions;
 
         this.onPointerMove = this.onPointerMove.bind(this);
+        this.onPointerDown = this.onPointerDown.bind(this);
+    }
+
+    async onPointerDown(event: PointerEvent) {
+        await this.sendPing(event);
     }
 
     async onPointerMove(event: PointerEvent) {
+        await this.sendPing(event);
+    }
+
+    private async sendPing(event: PointerEvent) {
         if ((event.buttons & 1) !== 1) return;
         if (performance.now() - this.lastPingTime < 100) return;
         this.lastPingTime = performance.now();
@@ -570,9 +580,7 @@ export class PingTool implements IToolHandler {
             primaryColor: this.pingOptions.color,
         }
 
-        await this.context.addEntityCallback(ping);
-        await delay(50);
-        await this.context.removeEntityCallback(ping.id);
+        await this.context.sendPingCallback(ping);
     }
 }
 

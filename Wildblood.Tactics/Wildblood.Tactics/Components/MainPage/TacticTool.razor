@@ -10,7 +10,7 @@
         </MudTabPanel>
         <MudTabPanel Icon="@swordsIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.AddIcon)" ToolTip="Place Icons">
             <div>
-                <UnitSelector Units="@UnitDataSet.Entries" SelectedUnitChanged="OnUnitSelected" />
+                <UnitSelector SelectedUnitChanged="OnUnitSelected" />
                 <MudSlider Class="my-3" T="int" Min="80" Max="400" Value="TacticToolService.AllOptions.IconOptions!.IconSize" ValueLabel="true" ValueChanged="OnIconSizeChanged" Color="Color.Primary">Icon Size:</MudSlider>
                 <MudText Class="my-3">Icon Label:</MudText>
                 <MudTextField T="string" Value="TacticToolService.AllOptions.IconOptions!.LabelOptions.Text" TextChanged="OnIconTextOptionsTextChanged" />
