@@ -94,6 +94,12 @@ public class Program
 
         using (var scope = app.Services.CreateScope())
         {
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            dbContext.Database.Migrate();  // This applies any pending migrations
+        }
+
+        using (var scope = app.Services.CreateScope())
+        {
             var mongoDbInitializer = scope.ServiceProvider.GetRequiredService<MongoDbInitializer>();
             mongoDbInitializer.Initialize();
         }
