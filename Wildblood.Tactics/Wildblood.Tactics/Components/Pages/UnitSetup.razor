@@ -137,7 +137,7 @@
         // Number -1 because 0 based stuff :) 
         var parameters = new DialogParameters<UnitSelectionDialog> { { "selectedUnit", setup.Units[number -1] } };
 
-        var dialog = await DialogService.ShowAsync<UnitSelectionDialog>(number.ToString(), parameters);
+        var dialog = await DialogService.ShowAsync<UnitSelectionDialog>(number.ToString(), parameters, options);
         var result = await dialog.Result;
         if (result.Canceled)
         {
@@ -149,5 +149,6 @@
         players.Where(p => p.Number == setup.Number).First().Units[number - 1] = data;
 
         DbContext.PlayerSetups.Update(players.Where(p => p.Number == setup.Number).First());
+        await DbContext.SaveChangesAsync();
     }
 }
