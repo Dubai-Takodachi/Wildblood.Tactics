@@ -1,19 +1,21 @@
 ﻿@page "/UnitSetup"
 @using System.Security.Claims
 @using Microsoft.EntityFrameworkCore
+@using Wildblood.Tactics.Components.Layout
 @using Wildblood.Tactics.Data
 @using Wildblood.Tactics.Entities
 @using Wildblood.Tactics.Mappings
 @using Wildblood.Tactics.Models
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject ApplicationDbContext DbContext
+@inject IDialogService DialogService
 @rendermode InteractiveServer
 
 <MudContainer>
     <MudPaper>
         <MudDataGrid T="PlayerSetup" ReadOnly="false" Items="@players" EditMode="DataGridEditMode.Cell">
             <Columns>
-                <PropertyColumn Property="x => x.Number" Title="Nr." Editable="true" />
+                <PropertyColumn Property="x => x.Number" Title="Nr." Editable="true" InitialDirection="SortDirection.Ascending"/>
                 <PropertyColumn Property="x => x.Name" Title="Name" Editable="true" />
                 <PropertyColumn Property="x => x.Class" Title="Class" Editable="true" >
                     <EditTemplate>
@@ -39,9 +41,9 @@
                 <TemplateColumn Title="First Unit">
                     <EditTemplate>
                         <MudPaper>
-                            <MudButton Variant="Variant.Filled" OnClick="OnButtonChangeClick">
+                            <MudButton Variant="Variant.Filled" @onclick="() => OnButtonChangeClick(1 ,context.Item)">
                                 <MudText>@context.Item.Units[0].Name</MudText>
-                                <img src="ConquerorsBladeData/Units/@context.Item.Units[0].Path" />
+                                <img src="ConquerorsBladeData/Units/@context.Item.Units[0].Path" style="width:40px; height:40px;"/>
                             </MudButton>
                         </MudPaper>
                     </EditTemplate>
@@ -49,25 +51,31 @@
                 <TemplateColumn Title="Second Unit">
                     <EditTemplate>
                         <MudPaper>
-                            <MudText>@context.Item.Units[1].Name</MudText>
-                            <img src="ConquerorsBladeData/Units/@context.Item.Units[1].Path" />
+                            <MudButton Variant="Variant.Filled" @onclick="() => OnButtonChangeClick(2, context.Item)">
+                                <MudText>@context.Item.Units[1].Name</MudText>
+                                <img src="ConquerorsBladeData/Units/@context.Item.Units[1].Path" style="width:40px; height:40px;" />
+                            </MudButton>
                         </MudPaper>
                     </EditTemplate>
                 </TemplateColumn>
                 <TemplateColumn Title="Third Unit">
                     <EditTemplate>
                         <MudPaper>
-                            <MudText>@context.Item.Units[2].Name</MudText>
-                            <img src="ConquerorsBladeData/Units/@context.Item.Units[2].Path" />
+                            <MudButton Variant="Variant.Filled" @onclick="() => OnButtonChangeClick(3, context.Item)">
+                                <MudText>@context.Item.Units[2].Name</MudText>
+                                <img src="ConquerorsBladeData/Units/@context.Item.Units[2].Path" style="width:40px; height:40px;" />
+                            </MudButton>
                         </MudPaper>
                     </EditTemplate>
                 </TemplateColumn>
                 <TemplateColumn >
                     <EditTemplate>
-                        <MudStack>
-                            <MudText>@context.Item.Units[3].Name</MudText>
-                            <img src="ConquerorsBladeData/Units/@context.Item.Units[3].Path" />
-                        </MudStack>
+                        <MudPaper>
+                            <MudButton Variant="Variant.Filled" @onclick="() => OnButtonChangeClick(3, context.Item)">
+                                <MudText>@context.Item.Units[3].Name</MudText>
+                                <img src="ConquerorsBladeData/Units/@context.Item.Units[3].Path" style="width:40px; height:40px;" />
+                            </MudButton>
+                        </MudPaper>
                     </EditTemplate>
                 </TemplateColumn>
             </Columns>
@@ -94,11 +102,12 @@
         {
             players = await DbContext.PlayerSetups
                 .Where(p => p.UserId == currentUserId)
+                .OrderBy(players => players.Number)
                 .ToListAsync();
         }
     }
 
-    async Task OnAddButtonClick()
+    private async Task OnAddButtonClick()
     {
         players.Add(new PlayerSetup
         {
@@ -121,8 +130,24 @@
         await DbContext.SaveChangesAsync();
     }
 
-    async Task OnButtonChangeClick()
+    private async Task OnButtonChangeClick(byte number ,PlayerSetup setup)
     {
-        
+
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+        // Number -1 because 0 based stuff :) 
+        var parameters = new DialogParameters<UnitSelectionDialog> { { "selectedUnit", setup.Units[number -1] } };
+
+        var dialog = await DialogService.ShowAsync<UnitSelectionDialog>(number.ToString(), parameters);
+        var result = await dialog.Result;
+        if (result.Canceled)
+        {
+            return; // User canceled the dialog
+        }
+
+        var data = result.Data as Unit;
+
+        players.Where(p => p.Number == setup.Number).First().Units[number - 1] = data;
+
+        DbContext.PlayerSetups.Update(players.Where(p => p.Number == setup.Number).First());
     }
 }
