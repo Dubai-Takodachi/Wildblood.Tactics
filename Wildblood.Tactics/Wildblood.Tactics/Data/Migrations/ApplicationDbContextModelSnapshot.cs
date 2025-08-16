@@ -222,11 +222,8 @@ namespace Wildblood.Tactics.Migrations
 
             modelBuilder.Entity("Wildblood.Tactics.Entities.PlayerSetup", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
+                    b.Property<int>("Index")
                         .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<int>("Class")
                         .HasColumnType("int");
@@ -239,9 +236,6 @@ namespace Wildblood.Tactics.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
-                    b.Property<int>("Number")
-                        .HasColumnType("int");
-
                     b.Property<string>("Units")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -250,7 +244,7 @@ namespace Wildblood.Tactics.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.HasKey("Id");
+                    b.HasKey("Index");
 
                     b.HasIndex("UserId");
 

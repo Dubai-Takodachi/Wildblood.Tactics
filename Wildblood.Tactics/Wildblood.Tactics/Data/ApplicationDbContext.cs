@@ -18,10 +18,9 @@ namespace Wildblood.Tactics.Data
             // Configure PlayerSetup entity
             modelBuilder.Entity<PlayerSetup>(entity =>
             {
-                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Index).IsRequired().ValueGeneratedNever();
                 entity.Property(e => e.Name).HasMaxLength(256).IsRequired();
                 entity.Property(e => e.Class).HasConversion<int>();
-                entity.Property(e => e.Number).IsRequired();
                 entity.Property(e => e.Influence).IsRequired();
 
                 // Configure Units as JSON - Fixed column type

@@ -1,13 +1,14 @@
 ﻿namespace Wildblood.Tactics.Mappings;
 
+using System.Collections.Immutable;
 using Wildblood.Tactics.Entities;
 
 public static class UnitDataSet
 {
     public static readonly string BlazorBasePath = "ConquerorsBladeData/Units/";
 
-    public static readonly IReadOnlyList<Unit> Entries = new List<Unit>
-    {
+    public static readonly IReadOnlyList<Unit> Entries =
+    [
         new() { Name = UnitName.Alchemists,             Influence = 60,     Path = "Alchemists.png",                        Era = UnitEra.Silver,       PrimaryType = PrimaryUnitType.MeleeInfantry,        SecondaryType = SecondaryUnitType.Special },
         new() { Name = UnitName.ArcherMilitia,          Influence = 40,     Path = "Archer-Militia.png",                    Era = UnitEra.Feudal,       PrimaryType = PrimaryUnitType.RangedInfantry,       SecondaryType = SecondaryUnitType.Archer },
         new() { Name = UnitName.ArmingerLancers,        Influence = 225,    Path = "Arminger-Lancers.png",                  Era = UnitEra.Heroic,       PrimaryType = PrimaryUnitType.Cavalry,              SecondaryType = SecondaryUnitType.Lancer },
@@ -143,5 +144,8 @@ public static class UnitDataSet
         new() { Name = UnitName.Yoemen,                 Influence = 225,    Path = "Yeomen.png",                            Era = UnitEra.Heroic,       PrimaryType = PrimaryUnitType.Cavalry,              SecondaryType = SecondaryUnitType.Lancer },
         new() { Name = UnitName.Zweihander,             Influence = 310,    Path = "Zweihander.png",                        Era = UnitEra.Golden,       PrimaryType = PrimaryUnitType.MeleeInfantry,        SecondaryType = SecondaryUnitType.Special },
         new() { Name = UnitName.ZykalianMilitia,        Influence = 155,    Path = "Cocos.png",                             Era = UnitEra.Silver,       PrimaryType = PrimaryUnitType.RangedInfantry,       SecondaryType = SecondaryUnitType.Special },
-    };
+    ];
+
+    public static readonly ImmutableDictionary<UnitName, Unit> UnitByUnitName = Entries
+        .ToImmutableDictionary(unit => unit.Name, unit => unit);
 }
