@@ -1,10 +1,10 @@
 ﻿namespace Wildblood.Tactics.Components.Pages;
 
+using System.Collections.Generic;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor;
-using Org.BouncyCastle.Asn1.IsisMtt.X509;
 using Wildblood.Tactics.Components.Layout;
 using Wildblood.Tactics.Data;
 using Wildblood.Tactics.Entities;
@@ -19,9 +19,6 @@ public partial class UnitSetup(
 
     private string currentUserId = null!;
 
-    private int Influence { get; set; } = 700;
-
-
     protected override async Task OnInitializedAsync()
     {
         var authState = await authenticationStateProvider.GetAuthenticationStateAsync();
@@ -31,7 +28,7 @@ public partial class UnitSetup(
         {
             players = await dbContext.PlayerSetups
                 .Where(p => p.UserId == currentUserId)
-                .OrderBy(players => players.Index)
+                .OrderByDescending(players => players.Index)
                 .ToListAsync();
         }
     }
@@ -40,15 +37,24 @@ public partial class UnitSetup(
     {
         int newIndex = newValue - 1;
 
-        if (newIndex < 0 || newIndex >= players.Count)
+        if (newIndex < 0)
         {
             return;
         }
 
         var other = players.FirstOrDefault(p => p.Index == newIndex);
 
-        if (player == null || other == null)
+        if (other == null)
         {
+            var movedPlayer = player with { Index = newIndex };
+
+            players.Remove(player);
+            players.Add(movedPlayer);
+
+            dbContext.PlayerSetups.Remove(player);
+            dbContext.PlayerSetups.Add(movedPlayer);
+
+            await dbContext.SaveChangesAsync();
             return;
         }
 
@@ -62,22 +68,17 @@ public partial class UnitSetup(
 
         dbContext.PlayerSetups.Remove(player);
         dbContext.PlayerSetups.Remove(other);
-        dbContext.PlayerSetups.Update(newPlayer);
-        dbContext.PlayerSetups.Update(newOther);
+        dbContext.PlayerSetups.Add(newPlayer);
+        dbContext.PlayerSetups.Add(newOther);
 
         await dbContext.SaveChangesAsync();
     }
 
     private async Task OnAddButtonClick()
     {
-        if (players.Count >= 15)
-        {
-            return;
-        }
-
         var newPlayer = new PlayerSetup
         {
-            Index = players.Count,
+            Index = FindFirstAvailableIndex(players),
             UserId = currentUserId,
             Name = "New Player",
             Class = Models.Classes.Maul,
@@ -94,22 +95,29 @@ public partial class UnitSetup(
         players.Add(newPlayer);
         dbContext.PlayerSetups.Add(newPlayer);
         await dbContext.SaveChangesAsync();
+
+        static int FindFirstAvailableIndex(List<PlayerSetup> players)
+        {
+            var taken = new HashSet<int>(players.Select(p => p.Index));
+            int i = 0;
+
+            while (taken.Contains(i))
+            {
+                i++;
+            }
+
+            return i;
+        }
     }
 
     private async Task OnButtonChangeClick(byte index, PlayerSetup setup)
     {
-
         var options = new DialogOptions { CloseOnEscapeKey = true };
-        Unit value = null;
-
-        if (index < setup.Units.Count)
-        {
-            value = setup.Units[index];
-        }
+        var existingUnit = index < setup.Units.Count ? setup.Units[index] : null;
 
         var parameters = new DialogParameters<UnitSelectionDialog>
         {
-            { "selectedUnit", value },
+            { "selectedUnit", existingUnit },
         };
 
         var dialog = await dialogService
@@ -123,28 +131,22 @@ public partial class UnitSetup(
         }
 
         var player = players.Single(p => p.Index == setup.Index);
+        var hasIndex = player.Units.Count > index;
 
-        // @Nina refactor this if you want. Its hell
+        Action<List<Unit>>? updateAction = result.Data switch
+        {
+            Unit unit when hasIndex => units => units[index] = unit,
+            Unit unit => units => units.Add(unit),
+            null when hasIndex => units => units.RemoveAt(index),
+            _ => null,
+        };
 
-        if (result.Data == null && player.Units.Count > index)
+        if (updateAction != null)
         {
-            player.Units.RemoveAt(index);
+            updateAction(player.Units);
+            dbContext.PlayerSetups.Update(player);
+            await dbContext.SaveChangesAsync();
         }
-        else if (result.Data is Unit unit && player.Units.Count > index)
-        {
-            player.Units[index] = unit;
-        }
-        else if (result.Data is Unit unitToAdd)
-        {
-            player.Units.Add(unitToAdd);
-        }
-        else
-        {
-            return;
-        }
-
-        dbContext.PlayerSetups.Update(player);
-        await dbContext.SaveChangesAsync();
     }
 
     private async Task OnDeleteButtonClick(PlayerSetup setup)
