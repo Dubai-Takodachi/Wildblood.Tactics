@@ -4,6 +4,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor;
+using Org.BouncyCastle.Asn1.IsisMtt.X509;
 using Wildblood.Tactics.Components.Layout;
 using Wildblood.Tactics.Data;
 using Wildblood.Tactics.Entities;
@@ -17,6 +18,9 @@ public partial class UnitSetup(
     private List<PlayerSetup> players = null!;
 
     private string currentUserId = null!;
+
+    private int Influence { get; set; } = 700;
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -96,9 +100,16 @@ public partial class UnitSetup(
     {
 
         var options = new DialogOptions { CloseOnEscapeKey = true };
+        Unit value = null;
+
+        if (index < setup.Units.Count)
+        {
+            value = setup.Units[index];
+        }
+
         var parameters = new DialogParameters<UnitSelectionDialog>
         {
-            { "selectedUnit", setup.Units[index] },
+            { "selectedUnit", value },
         };
 
         var dialog = await dialogService
@@ -111,13 +122,35 @@ public partial class UnitSetup(
             return;
         }
 
-        if (result.Data is Unit unit)
-        {
-            var player = players.Single(p => p.Index == setup.Index);
-            player.Units[index] = unit;
+        var player = players.Single(p => p.Index == setup.Index);
 
-            dbContext.PlayerSetups.Update(player);
-            await dbContext.SaveChangesAsync();
+        // @Nina refactor this if you want. Its hell
+
+        if (result.Data == null && player.Units.Count > index)
+        {
+            player.Units.RemoveAt(index);
         }
+        else if (result.Data is Unit unit && player.Units.Count > index)
+        {
+            player.Units[index] = unit;
+        }
+        else if (result.Data is Unit unitToAdd)
+        {
+            player.Units.Add(unitToAdd);
+        }
+        else
+        {
+            return;
+        }
+
+        dbContext.PlayerSetups.Update(player);
+        await dbContext.SaveChangesAsync();
+    }
+
+    private async Task OnDeleteButtonClick(PlayerSetup setup)
+    {
+        players.Remove(setup);
+        dbContext.PlayerSetups.Remove(setup);
+        await dbContext.SaveChangesAsync();
     }
 }

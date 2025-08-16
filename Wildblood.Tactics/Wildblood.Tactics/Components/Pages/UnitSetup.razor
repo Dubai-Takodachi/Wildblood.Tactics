@@ -4,7 +4,7 @@
 @rendermode InteractiveServer
 
 <MudPaper>
-    <MudDataGrid T="PlayerSetup" ReadOnly="false" Items="@players" EditMode="DataGridEditMode.Cell">
+    <MudDataGrid T="PlayerSetup" ReadOnly="false" Items="@players" EditMode="DataGridEditMode.Cell" Dense="false">
         <Columns>
             <PropertyColumn Property="p => p.Index + 1" Title="Nr." Sortable="true" InitialDirection="SortDirection.Ascending">
                 <EditTemplate Context="player">
@@ -32,13 +32,27 @@
                     </MudSelect>
                 </EditTemplate>
             </PropertyColumn>
-            <PropertyColumn Property="x => x.Influence" Title="Influence" Editable="true" />
+            <TemplateColumn Title="Influence">
+                <EditTemplate>
+                    <MudStack>
+                        <MudNumericField Label="Influence" @bind-Value="@context.Item.Influence" Variant="Variant.Text" Min="700" Max="800"/>
+                        <MudText>Influence Left: @(context.Item.Influence - @context.Item.Units.Sum(u => u.Influence))</MudText>
+                    </MudStack>
+                </EditTemplate>
+            </TemplateColumn>
             <TemplateColumn Title="First Unit">
                 <EditTemplate>
                     <MudPaper>
                         <MudButton Variant="Variant.Filled" @onclick="() => OnButtonChangeClick(0, context.Item)">
-                            <MudText>@context.Item.Units[0].Name</MudText>
-                            <img src="ConquerorsBladeData/Units/@context.Item.Units[0].Path" style="width:40px; height:40px;"/>
+                            @if (context.Item.Units.Count >= 1)
+                            {
+                                <MudText>@context.Item.Units[0].Name</MudText>
+                                <img src="ConquerorsBladeData/Units/@context.Item.Units[0].Path" style="width:40px; height:40px;"/>
+                            }
+                            else
+                            {
+                                <MudText>No Unit Selected!</MudText>
+                            }
                         </MudButton>
                     </MudPaper>
                 </EditTemplate>
@@ -47,8 +61,15 @@
                 <EditTemplate>
                     <MudPaper>
                         <MudButton Variant="Variant.Filled" @onclick="() => OnButtonChangeClick(1, context.Item)">
-                            <MudText>@context.Item.Units[1].Name</MudText>
-                            <img src="ConquerorsBladeData/Units/@context.Item.Units[1].Path" style="width:40px; height:40px;" />
+                            @if (context.Item.Units.Count >= 2)
+                            {
+                                <MudText>@context.Item.Units[1].Name</MudText>
+                                <img src="ConquerorsBladeData/Units/@context.Item.Units[1].Path" style="width:40px; height:40px;" />
+                            }
+                            else
+                            {
+                                <MudText>No Unit Selected!</MudText>
+                            }
                         </MudButton>
                     </MudPaper>
                 </EditTemplate>
@@ -57,8 +78,15 @@
                 <EditTemplate>
                     <MudPaper>
                         <MudButton Variant="Variant.Filled" @onclick="() => OnButtonChangeClick(2, context.Item)">
-                            <MudText>@context.Item.Units[2].Name</MudText>
-                            <img src="ConquerorsBladeData/Units/@context.Item.Units[2].Path" style="width:40px; height:40px;" />
+                            @if (context.Item.Units.Count >= 3)
+                            {
+                                <MudText>@context.Item.Units[2].Name</MudText>
+                                <img src="ConquerorsBladeData/Units/@context.Item.Units[2].Path" style="width:40px; height:40px;" />
+                            }
+                            else
+                            {
+                                <MudText>No Unit Selected!</MudText>
+                            }
                         </MudButton>
                     </MudPaper>
                 </EditTemplate>
@@ -67,10 +95,24 @@
                 <EditTemplate>
                     <MudPaper>
                         <MudButton Variant="Variant.Filled" @onclick="() => OnButtonChangeClick(3, context.Item)">
-                            <MudText>@context.Item.Units[3].Name</MudText>
-                            <img src="ConquerorsBladeData/Units/@context.Item.Units[3].Path" style="width:40px; height:40px;" />
+                            @if (context.Item.Units.Count >= 4)
+                            {
+                                <MudText>@context.Item.Units[3].Name</MudText>
+                                <img src="ConquerorsBladeData/Units/@context.Item.Units[3].Path" style="width:40px; height:40px;" />
+                            }
+                            else 
+                            {
+                                <MudText>No Unit Selected!</MudText>
+                            }
                         </MudButton>
                     </MudPaper>
+                </EditTemplate>
+            </TemplateColumn>
+            <TemplateColumn>
+                <EditTemplate>
+                    <MudButton Variant="Variant.Filled" Color="@Color.Error" @onclick="() => OnDeleteButtonClick(context.Item)">
+                        <MudText>Delete</MudText>
+                    </MudButton>
                 </EditTemplate>
             </TemplateColumn>
         </Columns>
