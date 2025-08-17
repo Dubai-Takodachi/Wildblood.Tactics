@@ -20,9 +20,9 @@ public partial class UnitSetup(
     [Parameter]
     public int RaidId { get; set; } = 0;
 
-    private List<PlayerSetup> players = new List<PlayerSetup>();
+    private List<PlayerSetup>? players = null;
 
-    private RaidSetup currentRaidSetup = null!;
+    private RaidSetup? currentRaidSetup = null;
 
     private string currentUserId = null!;
 
@@ -35,16 +35,26 @@ public partial class UnitSetup(
         {
             currentRaidSetup = await dbContext.RaidSetups
                 .Where(raid => raid.Id == RaidId)
-                .FirstAsync();
-            players = await dbContext.PlayerSetups
-                .Where(player => player.RaidId == currentRaidSetup.Id)
-                .OrderBy(player => player.Index)
-                .ToListAsync();
+                .Where(raid => raid.UserId == currentUserId)
+                .FirstOrDefaultAsync();
+
+            if (currentRaidSetup != null)
+            {
+                players = await dbContext.PlayerSetups
+                    .Where(player => player.RaidId == currentRaidSetup.Id)
+                    .OrderBy(player => player.Index)
+                    .ToListAsync();
+            }
         }
     }
 
     private async Task OnNrChanged(PlayerSetup player, int newValue)
     {
+        if (players == null)
+        {
+            return;
+        }
+
         int newIndex = newValue - 1;
 
         if (newIndex < 0)
@@ -86,6 +96,11 @@ public partial class UnitSetup(
 
     private async Task OnAddButtonClick()
     {
+        if (currentRaidSetup is null || players is null)
+        {
+            return;
+        }
+
         var newPlayer = new PlayerSetup
         {
             Index = FindFirstAvailableIndex(players),
@@ -122,6 +137,11 @@ public partial class UnitSetup(
 
     private async Task OnButtonChangeClick(byte index, PlayerSetup setup)
     {
+        if (players is null)
+        {
+            return;
+        }
+
         var options = new DialogOptions { CloseOnEscapeKey = true };
         var existingUnit = index < setup.Units.Count ? setup.Units[index] : null;
 
@@ -161,6 +181,11 @@ public partial class UnitSetup(
 
     private async Task OnDeleteButtonClick(PlayerSetup setup)
     {
+        if (players is null)
+        {
+            return;
+        }
+
         players.Remove(setup);
         dbContext.PlayerSetups.Remove(setup);
         await dbContext.SaveChangesAsync();
@@ -172,7 +197,7 @@ public partial class UnitSetup(
         await dbContext.SaveChangesAsync();
     }
 
-    // For Some Reason it need to have both parameters. Idk why. 
+    // For Some Reason it need to have both parameters. Idk why.
     private async Task OnClassChanged(PlayerSetup setup, Classes selectedClass)
     {
         setup.Class = selectedClass;

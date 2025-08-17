@@ -3,6 +3,12 @@
 @using Wildblood.Tactics.Models
 @rendermode InteractiveServer
 
+@if (players == null)
+{
+    <MudText>You don't have permission for this content!</MudText>
+    return;
+}
+
 <MudPaper Style="height: 100%; overflow: auto; display: flex; flex-direction: column;">
     <div style="flex:1 1 auto;">
         <MudDataGrid FixedHeader="true" CommittedItemChanges="@OnEdit" Height="calc(100vh - 3rem)" T="PlayerSetup" ReadOnly="false" Items="@players" EditMode="DataGridEditMode.Cell" Dense="false">
