@@ -42,7 +42,7 @@
             NavigationManager.NavigateTo($"/UnitSetup/{args.Item.Id}");
         }
 
-        private async Task OnCreateClick(int one)
+        private async Task OnCreateClick()
         {
             var newSetup = new RaidSetup
             {
