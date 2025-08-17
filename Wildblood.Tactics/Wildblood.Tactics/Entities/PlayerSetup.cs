@@ -9,7 +9,8 @@ public record PlayerSetup
     [Key]
     public required int Index { get; set; }
 
-    public required string UserId { get; set; }
+    [Key]
+    public required int RaidId { get; set; }
 
     public required string Name { get; set; }
 

@@ -11,6 +11,8 @@ namespace Wildblood.Tactics.Data
     {
         public DbSet<PlayerSetup> PlayerSetups { get; set; }
 
+        public DbSet<RaidSetup> RaidSetups { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -18,10 +20,11 @@ namespace Wildblood.Tactics.Data
             // Configure PlayerSetup entity
             modelBuilder.Entity<PlayerSetup>(entity =>
             {
-                entity.Property(e => e.Index).IsRequired().ValueGeneratedNever();
+                entity.Property(e => e.Index).IsRequired();
                 entity.Property(e => e.Name).HasMaxLength(256).IsRequired();
                 entity.Property(e => e.Class).HasConversion<int>();
                 entity.Property(e => e.Influence).IsRequired();
+                entity.HasKey(e => new { e.Index, e.RaidId });
 
                 // Configure Units as JSON - Fixed column type
                 entity.Property(e => e.Units)
@@ -36,6 +39,17 @@ namespace Wildblood.Tactics.Data
                             c => c.ToList()));
 
                 // Link to ApplicationUser
+                entity.Property(e => e.RaidId).IsRequired();
+                entity.HasOne<RaidSetup>()
+                    .WithMany()
+                    .HasForeignKey(e => e.RaidId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<RaidSetup>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(256);
                 entity.Property(e => e.UserId).IsRequired();
                 entity.HasOne<ApplicationUser>()
                     .WithMany()

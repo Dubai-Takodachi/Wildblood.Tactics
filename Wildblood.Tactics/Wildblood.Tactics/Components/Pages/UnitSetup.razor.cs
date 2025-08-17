@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor;
@@ -9,13 +10,19 @@ using Wildblood.Tactics.Components.Layout;
 using Wildblood.Tactics.Data;
 using Wildblood.Tactics.Entities;
 using Wildblood.Tactics.Mappings;
+using Wildblood.Tactics.Models;
 
 public partial class UnitSetup(
     AuthenticationStateProvider authenticationStateProvider,
     ApplicationDbContext dbContext,
     IDialogService dialogService)
 {
-    private List<PlayerSetup> players = null!;
+    [Parameter]
+    public int RaidId { get; set; } = 0;
+
+    private List<PlayerSetup> players = new List<PlayerSetup>();
+
+    private RaidSetup currentRaidSetup = null!;
 
     private string currentUserId = null!;
 
@@ -26,9 +33,12 @@ public partial class UnitSetup(
 
         if (!string.IsNullOrEmpty(currentUserId))
         {
+            currentRaidSetup = await dbContext.RaidSetups
+                .Where(raid => raid.Id == RaidId)
+                .FirstAsync();
             players = await dbContext.PlayerSetups
-                .Where(p => p.UserId == currentUserId)
-                .OrderByDescending(players => players.Index)
+                .Where(player => player.RaidId == currentRaidSetup.Id)
+                .OrderBy(player => player.Index)
                 .ToListAsync();
         }
     }
@@ -79,7 +89,7 @@ public partial class UnitSetup(
         var newPlayer = new PlayerSetup
         {
             Index = FindFirstAvailableIndex(players),
-            UserId = currentUserId,
+            RaidId = currentRaidSetup.Id,
             Name = "New Player",
             Class = Models.Classes.Maul,
             Influence = 700,
@@ -153,6 +163,20 @@ public partial class UnitSetup(
     {
         players.Remove(setup);
         dbContext.PlayerSetups.Remove(setup);
+        await dbContext.SaveChangesAsync();
+    }
+
+    private async Task OnEdit(PlayerSetup setup)
+    {
+        dbContext.PlayerSetups.Update(setup);
+        await dbContext.SaveChangesAsync();
+    }
+
+    // For Some Reason it need to have both parameters. Idk why. 
+    private async Task OnClassChanged(PlayerSetup setup, Classes selectedClass)
+    {
+        setup.Class = selectedClass;
+        dbContext.PlayerSetups.Update(setup);
         await dbContext.SaveChangesAsync();
     }
 }

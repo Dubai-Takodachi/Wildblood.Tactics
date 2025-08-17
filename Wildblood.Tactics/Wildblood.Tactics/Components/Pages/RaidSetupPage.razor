@@ -1,0 +1,12 @@
+﻿@page "/RaidSetups"
+@using Wildblood.Tactics.Entities
+@rendermode InteractiveServer
+
+<MudPaper>
+    <MudDataGrid T="@RaidSetup" Items="@raidSetups" CommittedItemChanges="@OnEdit" RowClick="@OnRowClick" EditMode="DataGridEditMode.Cell" ReadOnly="false">
+        <Columns>
+            <PropertyColumn Property="x => x.Name" Title="Raid Name" Editable="true" />
+        </Columns>
+    </MudDataGrid>
+    <MudButton ButtonType="ButtonType.Button" OnClick="() => OnCreateClick(1)" Color="Color.Success">Create a new Raid Setup!</MudButton>
+</MudPaper>

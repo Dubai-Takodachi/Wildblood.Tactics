@@ -1,13 +1,13 @@
-﻿@page "/UnitSetup"
+﻿@page "/UnitSetup/{RaidId:int}"
 @using Wildblood.Tactics.Entities
 @using Wildblood.Tactics.Models
 @rendermode InteractiveServer
 
 <MudPaper Style="height: 100%; overflow: auto; display: flex; flex-direction: column;">
-    <div style="flex:1 1 auto; overflow:auto;">
-        <MudDataGrid T="PlayerSetup" ReadOnly="false" Items="@players" EditMode="DataGridEditMode.Cell" Dense="false">
-            <Columns>
-                <PropertyColumn Property="p => p.Index + 1" Title="Nr." Sortable="true" InitialDirection="SortDirection.Descending">
+    <div style="flex:1 1 auto;">
+        <MudDataGrid FixedHeader="true" CommittedItemChanges="@OnEdit" Height="calc(100vh - 3rem)" T="PlayerSetup" ReadOnly="false" Items="@players" EditMode="DataGridEditMode.Cell" Dense="false">
+            <Columns >
+                <PropertyColumn Property="p => p.Index + 1" Title="Nr." Sortable="true" InitialDirection="SortDirection.Ascending">
                     <EditTemplate Context="player">
                         <MudNumericField T="int" Value="player.Item.Index + 1" ValueChanged="newValue => OnNrChanged(player.Item, newValue)" Immediate="true" />
                     </EditTemplate>
@@ -15,7 +15,7 @@
                 <PropertyColumn Property="x => x.Name" Title="Name" Editable="true" />
                 <PropertyColumn Property="x => x.Class" Title="Class" Editable="true" >
                     <EditTemplate>
-                        <MudSelect T="Classes" @bind-Value="context.Item.Class">
+                        <MudSelect T="Classes" Value="@context.Item.Class" ValueChanged="@(newValue => OnClassChanged(context.Item, newValue))">
                             <MudSelectItem Value="Models.Classes.Longbow">Longbow</MudSelectItem>
                             <MudSelectItem Value="Models.Classes.Shortbow">Short Bow</MudSelectItem>
                             <MudSelectItem Value="Models.Classes.Dualblades">Dual Blades</MudSelectItem>
@@ -35,7 +35,7 @@
                 </PropertyColumn>
                 <TemplateColumn Title="Influence">
                     <EditTemplate>
-                        <MudStack>
+                        <MudStack Spacing="0">
                             <MudNumericField Label="Total Influence" @bind-Value="@context.Item.Influence" Variant="Variant.Filled" Min="700" Max="800" />
                             <MudText>Influence Left: @(context.Item.Influence - @context.Item.Units.Sum(u => u.Influence))</MudText>
                         </MudStack>
@@ -47,8 +47,9 @@
                             <MudButton FullWidth="true" Variant="Variant.Filled" @onclick="() => OnButtonChangeClick(0, context.Item)">
                                 @if (context.Item.Units.Count >= 1)
                                 {
-                                    <MudText>@context.Item.Units[0].Name</MudText>
-                                    <img src="ConquerorsBladeData/Units/@context.Item.Units[0].Path" style="width:40px; height:40px; position:absolute; right:8px; top:50%; transform:translateY(-50%);" />
+                                    <MudTooltip Text="@context.Item.Units[0].Name.ToString()">
+                                        <MudImage Src="@("ConquerorsBladeData/Units/" + context.Item.Units[0].Path)" style="width:40px; height:40px;" />
+                                    </MudTooltip>
                                 }
                                 else
                                 {
@@ -64,8 +65,9 @@
                             <MudButton FullWidth="true" Variant="Variant.Filled" @onclick="() => OnButtonChangeClick(1, context.Item)">
                                 @if (context.Item.Units.Count >= 2)
                                 {
-                                    <MudText>@context.Item.Units[1].Name</MudText>
-                                    <img src="ConquerorsBladeData/Units/@context.Item.Units[1].Path" style="width:40px; height:40px; position:absolute; right:8px; top:50%; transform:translateY(-50%);" />
+                                    <MudTooltip Text="@context.Item.Units[1].Name.ToString()">
+                                        <MudImage Src="@("ConquerorsBladeData/Units/" + context.Item.Units[1].Path)" style="width:40px; height:40px;" />
+                                    </MudTooltip>
                                 }
                                 else
                                 {
@@ -81,8 +83,9 @@
                             <MudButton FullWidth="true" Variant="Variant.Filled" @onclick="() => OnButtonChangeClick(2, context.Item)">
                                 @if (context.Item.Units.Count >= 3)
                                 {
-                                    <MudText>@context.Item.Units[2].Name</MudText>
-                                    <img src="ConquerorsBladeData/Units/@context.Item.Units[2].Path" style="width:40px; height:40px; position:absolute; right:8px; top:50%; transform:translateY(-50%);" />
+                                    <MudTooltip Text="@context.Item.Units[2].Name.ToString()">
+                                        <MudImage Src="@("ConquerorsBladeData/Units/" + context.Item.Units[2].Path)" style="width:40px; height:40px;" />
+                                    </MudTooltip>
                                 }
                                 else
                                 {
@@ -98,8 +101,9 @@
                             <MudButton FullWidth="true" Variant="Variant.Filled" @onclick="() => OnButtonChangeClick(3, context.Item)">
                                 @if (context.Item.Units.Count >= 4)
                                 {
-                                    <MudText>@context.Item.Units[3].Name</MudText>
-                                    <img src="ConquerorsBladeData/Units/@context.Item.Units[3].Path" style="width:40px; height:40px; position:absolute; right:8px; top:50%; transform:translateY(-50%);" />
+                                    <MudTooltip Text="@context.Item.Units[3].Name.ToString()">
+                                        <MudImage Src="@("ConquerorsBladeData/Units/" + context.Item.Units[3].Path)" style="width:40px; height:40px;" />
+                                    </MudTooltip>
                                 }
                                 else
                                 {

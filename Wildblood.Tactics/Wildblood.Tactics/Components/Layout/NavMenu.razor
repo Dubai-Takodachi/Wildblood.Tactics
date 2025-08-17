@@ -21,11 +21,14 @@
 
         <AuthorizeView>
             <Authorized>
-                <MudNavLink href="/Account/Manage">
-                    @context.User.Identity?.Name
-                </MudNavLink>
                 <MudNavLink href="/SavedTactics" Icon="@Icons.Material.Filled.Map">
                         Saved Tactics
+                </MudNavLink>
+                <MudNavLink href="/RaidSetups" Icon="@Icons.Material.Filled.Group">
+                        Unit Setup    
+                </MudNavLink>
+                <MudNavLink href="/Account/Manage">
+                    @context.User.Identity?.Name
                 </MudNavLink>
                 <MudNavLink >
                     <form action="Account/Logout" method="post">
@@ -35,9 +38,6 @@
                             <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
                         </MudButton>
                     </form>
-                </MudNavLink>
-                <MudNavLink href="/UnitSetup" Icon="@Icons.Material.Filled.Group"> 
-                    Unit Setup    
                 </MudNavLink>
             </Authorized>
             <NotAuthorized>
