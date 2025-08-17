@@ -1,0 +1,4 @@
+http://wildblood-tactics.de {
+	auto_https off
+	reverse_proxy wildbloodtactics:8080
+}

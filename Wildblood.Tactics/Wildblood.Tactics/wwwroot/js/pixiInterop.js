@@ -9,10 +9,8 @@ var PixiInterop;
     let VIRTUAL_HEIGHT = 3000;
     let app;
     let dotNetObjRef;
-    let unitsMemory;
     let mainContainer = new PIXI.Container();
     let entityContainer = new PIXI.Container();
-    let pingContainer = new PIXI.Container();
     let bgSprite = null;
     let isDragging = false;
     let lastDragPos = null;
@@ -22,17 +20,16 @@ var PixiInterop;
     let interactionHandler = null;
     let interactionContext;
     let temporaryEntity = null;
-    async function createApp(dotNetRef, units) {
+    async function createApp(dotNetRef, iconNames) {
         if (app) {
             app.destroy(true, { children: true });
         }
         dotNetObjRef = dotNetRef;
-        unitsMemory = units;
         const parent = document.getElementById("tacticsCanvasContainer");
         if (!parent)
             return;
         app = new PIXI.Application();
-        Draw.init(unitsMemory, app);
+        Draw.init(iconNames, app);
         await app.init({
             background: '#FFFFFF',
             resizeTo: parent,
@@ -42,29 +39,17 @@ var PixiInterop;
         parent.appendChild(app.canvas);
         mainContainer = new PIXI.Container();
         mainContainer.addChild(entityContainer);
-        mainContainer.addChild(pingContainer);
         app.stage.addChild(mainContainer);
         bgSprite = null;
         interactionContext = {
             addEntityCallback: addEntityOnServer,
             removeEntityCallback: removeEntityOnServer,
             setPreviewEntityCallback: setPreviewEntity,
-            sendPingCallback: pingToServer,
             app: app,
             container: mainContainer,
         };
-        app.canvas.setAttribute('draggable', 'false');
-        app.canvas.addEventListener('dragstart', (e) => {
-            e.preventDefault();
-        });
-        app.canvas.addEventListener('selectstart', (e) => {
-            e.preventDefault();
-        });
-        app.canvas.addEventListener("contextmenu", (event) => {
-            event.preventDefault();
-        });
         app.canvas.addEventListener("mousedown", (event) => {
-            if (event.button === 1 || event.button === 2) {
+            if (event.button === 1) {
                 isDragging = true;
                 lastDragPos = { x: event.clientX, y: event.clientY };
                 event.preventDefault();
@@ -81,7 +66,7 @@ var PixiInterop;
             }
         });
         app.canvas.addEventListener("mouseup", (event) => {
-            if (event.button === 1 || event.button === 2) {
+            if (event.button === 1) {
                 isDragging = false;
                 lastDragPos = null;
             }
@@ -109,23 +94,12 @@ var PixiInterop;
             clampWorldScale();
         });
         updateViewSize();
-        if (parent) {
-            const initialWidth = parent.offsetWidth;
-            const resizeObserver = new ResizeObserver((e) => {
-                if (e.length < 0)
-                    return;
-                if (Math.abs(Math.round(e[0].contentRect.width) - initialWidth) > 5) {
-                    location.reload();
-                }
-            });
-            resizeObserver.observe(parent);
-        }
     }
     PixiInterop.createApp = createApp;
     function updateViewSize() {
         const ratio = app.renderer.width / app.renderer.height;
-        VIRTUAL_WIDTH = 4000;
-        VIRTUAL_HEIGHT = 4000 * (1 / ratio);
+        VIRTUAL_WIDTH = 1000;
+        VIRTUAL_HEIGHT = 1000 * (1 / ratio);
         const screenWidth = app.renderer.width;
         const screenHeight = app.renderer.height;
         const widthScale = screenWidth / VIRTUAL_WIDTH;
@@ -239,9 +213,7 @@ var PixiInterop;
             return new Interactions.EraseTool(interactionContext, drawnSpriteByEntityId);
         },
         [Tools.ToolType.Ping]: function () {
-            if (!currentTool.pingOptions)
-                return null;
-            return new Interactions.PingTool(interactionContext, currentTool.pingOptions);
+            return new Interactions.PingTool(interactionContext);
         }
     };
     async function addEntityOnServer(entity) {
@@ -254,14 +226,12 @@ var PixiInterop;
         await updateSpecificServerEntities([], [entityId]);
     }
     async function updateSpecificServerEntities(entities, removedEntityIds) {
-        await dotNetObjRef.invokeMethodAsync('UpdateServerEntities', entities, removedEntityIds);
+        dotNetObjRef.invokeMethodAsync('UpdateServerEntities', entities, removedEntityIds);
     }
     async function setPreviewEntity(entity) {
-        if (temporaryEntity && drawnSpriteByEntityId[temporaryEntity.id]) {
+        if (temporaryEntity && drawnSpriteByEntityId[temporaryEntity.id] /*&& !currentEntities[temporaryEntity.id]*/) {
             entityContainer.removeChild(drawnSpriteByEntityId[temporaryEntity.id]);
             drawnSpriteByEntityId[temporaryEntity.id].destroy();
-            delete drawnSpriteByEntityId[temporaryEntity.id];
-            delete currentEntities[temporaryEntity.id];
         }
         temporaryEntity = entity;
         if (entity) {
@@ -269,36 +239,31 @@ var PixiInterop;
         }
     }
     async function drawEntityToScreen(entity) {
-        if (entity.toolType === Tools.ToolType.Ping)
-            return;
-        const container = await Draw.drawEntity(entity);
-        if (!container)
-            return;
-        if (drawnSpriteByEntityId[entity.id]) {
-            entityContainer.removeChild(drawnSpriteByEntityId[entity.id]);
-            drawnSpriteByEntityId[entity.id].destroy();
+        const graphic = await Draw.drawEntity(entity);
+        if (graphic) {
+            if (entity.toolType === Tools.ToolType.Ping) {
+                graphic.x = entity.position.x;
+                graphic.y = entity.position.y;
+                entityContainer.addChild(graphic);
+                return;
+            }
+            if (drawnSpriteByEntityId[entity.id]) {
+                entityContainer.removeChild(drawnSpriteByEntityId[entity.id]);
+                drawnSpriteByEntityId[entity.id].destroy();
+            }
+            const padding = 2;
+            const bounds = graphic.getBounds();
+            const paddedBounds = new PIXI.Rectangle(bounds.x - padding, bounds.y - padding, bounds.width + padding * 2, bounds.height + padding * 2);
+            const sprite = new PIXI.Sprite(app.renderer.generateTexture({
+                target: graphic,
+                frame: paddedBounds,
+            }));
+            sprite.x = entity.position.x + graphic.bounds.minX;
+            sprite.y = entity.position.y + graphic.bounds.minY;
+            currentEntities[entity.id] = entity;
+            drawnSpriteByEntityId[entity.id] = sprite;
+            entityContainer.addChild(sprite);
         }
-        const padding = 2;
-        const bounds = container.getBounds();
-        const paddedBounds = new PIXI.Rectangle(bounds.x - padding, bounds.y - padding, bounds.width + padding * 2, bounds.height + padding * 2);
-        const sprite = createSafeSprite(container, paddedBounds);
-        sprite.x = entity.position.x + container.getBounds().minX;
-        sprite.y = entity.position.y + container.getBounds().minY;
-        currentEntities[entity.id] = entity;
-        drawnSpriteByEntityId[entity.id] = sprite;
-        entityContainer.addChild(sprite);
-    }
-    function createSafeSprite(container, bounds) {
-        const webGlRenderer = app.renderer;
-        const maxSize = Math.sqrt(webGlRenderer.gl.getParameter(webGlRenderer.gl.MAX_TEXTURE_SIZE)) * 25;
-        const scaleFactor = Math.min(1, maxSize / Math.max(bounds.width, bounds.height));
-        const texture = app.renderer.generateTexture({
-            target: container,
-            resolution: scaleFactor,
-            frame: bounds,
-        });
-        const sprite = new PIXI.Sprite(texture);
-        return sprite;
     }
     async function setBackground(imageUrl) {
         if (bgSprite && app) {
@@ -315,20 +280,6 @@ var PixiInterop;
         mainContainer.addChildAt(bgSprite, 0);
     }
     PixiInterop.setBackground = setBackground;
-    async function pingToServer(ping) {
-        dotNetObjRef.invokeMethodAsync('PingToServer', ping);
-    }
-    async function drawPing(ping) {
-        if (ping.toolType !== Tools.ToolType.Ping)
-            return;
-        const container = await Draw.drawEntity(ping);
-        if (!container)
-            return;
-        container.x = ping.position.x;
-        container.y = ping.position.y;
-        pingContainer.addChild(container);
-    }
-    PixiInterop.drawPing = drawPing;
     async function redrawEntities(entities) {
         await removeOutdatedEntities(entities);
         await updateExistingEntities(entities);
@@ -353,17 +304,11 @@ var PixiInterop;
     }
     async function updateExistingEntities(newCurrentEntities) {
         for (const entity of newCurrentEntities) {
-            const existing = currentEntities[entity.id];
-            if (!existing || !areEntitiesEqual(existing, entity)) {
+            if (!currentEntities[entity.id]
+                || (JSON.stringify(currentEntities[entity.id]) === JSON.stringify(entity)) === false) {
                 await drawEntityToScreen(entity);
             }
         }
-    }
-    function areEntitiesEqual(a, b) {
-        return (a.id === b.id &&
-            a.position.x === b.position.x &&
-            a.position.y === b.position.y &&
-            a.path?.length === b.path?.length);
     }
 })(PixiInterop || (PixiInterop = {}));
 export default PixiInterop;
