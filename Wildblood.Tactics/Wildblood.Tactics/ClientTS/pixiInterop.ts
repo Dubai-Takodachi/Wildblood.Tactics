@@ -292,6 +292,7 @@ namespace PixiInterop {
     };
 
     async function addEntityOnServer(entity: Tools.Entity): Promise<void> {
+        await setPreviewEntity(null);
         const graphic = await Draw.drawEntity(entity);
         if (graphic) {
             await updateSpecificServerEntities([entity], []);

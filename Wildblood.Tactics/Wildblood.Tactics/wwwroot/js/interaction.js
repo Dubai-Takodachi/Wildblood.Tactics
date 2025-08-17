@@ -42,11 +42,10 @@ export class DrawLineTool {
         }
         const pos = getPosition(event, this.context);
         const line = this.createLine(pos.x, pos.y, this.entitiyId);
+        this.entitiyId = null;
+        this.start = null;
         if (line)
             await this.context.addEntityCallback(line);
-        this.start = null;
-        this.entitiyId = null;
-        this.context.setPreviewEntityCallback(null);
     }
     createLine(x, y, entityId) {
         if (!this.start)
@@ -224,9 +223,9 @@ export class PlaceIconTool {
             return;
         const pos = getPosition(event, this.context);
         const icon = this.createIcon(pos.x - (this.iconOptions.iconSize / 2), pos.y - (this.iconOptions.iconSize / 2), this.entitiyId);
+        this.entitiyId = crypto.randomUUID();
         if (icon)
             await this.context.addEntityCallback(icon);
-        this.entitiyId = crypto.randomUUID();
     }
     async onPointerMove(event) {
         const pos = getPosition(event, this.context);

@@ -245,6 +245,7 @@ var PixiInterop;
         }
     };
     async function addEntityOnServer(entity) {
+        await setPreviewEntity(null);
         const graphic = await Draw.drawEntity(entity);
         if (graphic) {
             await updateSpecificServerEntities([entity], []);

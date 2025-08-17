@@ -65,11 +65,10 @@ export class DrawLineTool implements IToolHandler {
 
         const pos = getPosition(event, this.context);
         const line = this.createLine(pos.x, pos.y, this.entitiyId);
+        this.entitiyId = null;
+        this.start = null;
         if (line)
             await this.context.addEntityCallback(line);
-        this.start = null;
-        this.entitiyId = null;
-        this.context.setPreviewEntityCallback(null);
     }
 
     private createLine(x: number, y: number, entityId: string): Tools.Entity | null {
@@ -280,9 +279,9 @@ export class PlaceIconTool implements IToolHandler {
             pos.x - (this.iconOptions.iconSize / 2),
             pos.y - (this.iconOptions.iconSize / 2),
             this.entitiyId);
+        this.entitiyId = crypto.randomUUID();
         if (icon)
             await this.context.addEntityCallback(icon);
-        this.entitiyId = crypto.randomUUID();
     }
 
     async onPointerMove(event: PointerEvent) {
@@ -463,23 +462,27 @@ export class MoveTool implements IToolHandler {
     async onPointerLeave(event: PointerEvent) {
         if (!this.entityId) return;
 
-        this.currentEntities[this.entityId].position = {
-            x: this.entityDragStartPosition!.x + 1,
-            y: this.entityDragStartPosition!.y
-        };
-
-        await this.context.addEntityCallback({ ...this.currentEntities[this.entityId] });
-
-        this.currentEntities[this.entityId].position = {
-            x: this.entityDragStartPosition!.x,
-            y: this.entityDragStartPosition!.y
-        };
-
-        await this.context.addEntityCallback({ ...this.currentEntities[this.entityId] });
+        const id = this.entityId;
+        const startPos = this.entityDragStartPosition;
 
         this.entityId = null;
         this.entityClickedPosition = null;
         this.entityDragStartPosition = null;
+
+        this.currentEntities[id].position = {
+            x: startPos!.x + 1,
+            y: startPos!.y
+        };
+
+        await this.context.addEntityCallback({ ...this.currentEntities[id] });
+
+        this.currentEntities[id].position = {
+            x: startPos!.x,
+            y: startPos!.y
+        };
+
+        await this.context.addEntityCallback({ ...this.currentEntities[id] });
+
     }
 }
 
