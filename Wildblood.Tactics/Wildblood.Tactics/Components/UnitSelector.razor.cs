@@ -10,6 +10,9 @@ public partial class UnitSelector
     [Parameter]
     public required EventCallback<Unit> SelectedUnitChanged { get; init; }
 
+    [Parameter]
+    public UnitName? PreselectedUnit { get; init; }
+
     [Inject]
     private IJSRuntime JS { get; set; } = default!;
 
@@ -22,6 +25,16 @@ public partial class UnitSelector
     private SecondaryUnitType? selectedUnitSecondaryType;
     private string unitSortBy = "Name";
     private HashSet<UnitName> favoriteUnits = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadFavorites();
+
+        if (PreselectedUnit.HasValue)
+        {
+            selectedUnit = UnitDataSet.UnitByUnitName[PreselectedUnit.Value];
+        }
+    }
 
     private async Task SelectUnit(Unit unit)
     {
@@ -95,10 +108,5 @@ public partial class UnitSelector
         };
 
         return orderedQuery.ToList();
-    }
-
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadFavorites();
     }
 }

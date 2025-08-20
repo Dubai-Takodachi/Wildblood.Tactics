@@ -1,18 +1,26 @@
 ﻿namespace Wildblood.Tactics.Services;
 
+using Blazored.LocalStorage;
 using Wildblood.Tactics.Mappings;
 using Wildblood.Tactics.Models.Tools;
 
 public class TacticToolService : ITacticToolService
 {
+    private readonly ILocalStorageService localStorage;
+
+    private bool isInitialized;
+
     public event Func<Task>? OnToolChanged;
 
     public ToolOptions AllOptions { get; private set; }
 
     public ToolOptions CurrentOptions { get; private set; }
 
-    public TacticToolService()
+    public TacticToolService(ILocalStorageService localStorage)
     {
+        this.localStorage = localStorage;
+        isInitialized = false;
+
         AllOptions = CreateDefaultOptions();
         CurrentOptions = CreateCurrentToolOptions();
     }
@@ -30,6 +38,8 @@ public class TacticToolService : ITacticToolService
             ShapeOptions = newOptions?.ShapeOptions ?? AllOptions.ShapeOptions,
             TextOptions = newOptions?.TextOptions ?? AllOptions.TextOptions,
         };
+
+        await SaveToolOptions(AllOptions);
 
         CurrentOptions = CreateCurrentToolOptions();
 
@@ -99,5 +109,24 @@ public class TacticToolService : ITacticToolService
             },
             TextOptions = defaultTextOptions,
         };
+    }
+
+    public async Task InitAsync()
+    {
+        AllOptions = await LoadToolOptions() ?? AllOptions;
+        isInitialized = true;
+    }
+
+    private async Task<ToolOptions?> LoadToolOptions()
+    {
+        return await localStorage.GetItemAsync<ToolOptions>("toolOptions");
+    }
+
+    private async Task SaveToolOptions(ToolOptions options)
+    {
+        if (isInitialized)
+        {
+            await localStorage.SetItemAsync("toolOptions", options);
+        }
     }
 }

@@ -375,19 +375,21 @@ export class MoveTool {
     async onPointerLeave(event) {
         if (!this.entityId)
             return;
-        this.currentEntities[this.entityId].position = {
-            x: this.entityDragStartPosition.x + 1,
-            y: this.entityDragStartPosition.y
-        };
-        await this.context.addEntityCallback({ ...this.currentEntities[this.entityId] });
-        this.currentEntities[this.entityId].position = {
-            x: this.entityDragStartPosition.x,
-            y: this.entityDragStartPosition.y
-        };
-        await this.context.addEntityCallback({ ...this.currentEntities[this.entityId] });
+        const id = this.entityId;
+        const startPos = this.entityDragStartPosition;
         this.entityId = null;
         this.entityClickedPosition = null;
         this.entityDragStartPosition = null;
+        this.currentEntities[id].position = {
+            x: startPos.x + 1,
+            y: startPos.y
+        };
+        await this.context.addEntityCallback({ ...this.currentEntities[id] });
+        this.currentEntities[id].position = {
+            x: startPos.x,
+            y: startPos.y
+        };
+        await this.context.addEntityCallback({ ...this.currentEntities[id] });
     }
 }
 export class EraseTool {

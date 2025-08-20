@@ -11,4 +11,6 @@ public interface ITacticToolService
     public ToolOptions CurrentOptions { get; }
 
     public Task PatchTool(ToolOptions newOptions);
+
+    public Task InitAsync();
 }

@@ -10,7 +10,7 @@
         </MudTabPanel>
         <MudTabPanel Icon="@swordsIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.AddIcon)" ToolTip="Place Icons">
             <div>
-                <UnitSelector SelectedUnitChanged="OnUnitSelected" />
+                <UnitSelector SelectedUnitChanged="OnUnitSelected" PreselectedUnit="TacticToolService.AllOptions.IconOptions!.UnitName"/>
                 <MudSlider Class="my-3" T="int" Min="80" Max="400" Value="TacticToolService.AllOptions.IconOptions!.IconSize" ValueLabel="true" ValueChanged="OnIconSizeChanged" Color="Color.Primary">Icon Size:</MudSlider>
                 <MudText Class="my-3">Icon Label:</MudText>
                 <MudTextField T="string" Value="TacticToolService.AllOptions.IconOptions!.LabelOptions.Text" TextChanged="OnIconTextOptionsTextChanged" />
@@ -26,19 +26,19 @@
                 <MudSlider Class="my-3" T="int" Min="10" Max="100" Value="TacticToolService.AllOptions.LineDrawOptions!.Thickness" ValueLabel="true" ValueChanged="OnLineThicknessChanged" Color="Color.Primary">Line Thickness</MudSlider>
                 <MudSlider Class="my-3" T="int" Min="30" Max="200" Value="TacticToolService.AllOptions.LineDrawOptions!.EndSize" ValueLabel="true" ValueChanged="OnLineEndThicknessChanged" Color="Color.Primary">Line End Thickness</MudSlider>
                 <MudText>Select Line Style:</MudText>
-                <MudToggleGroup T="LineStyle" Color="Color.Success" Value="cosmeticLineStyle" ValueChanged="OnLineStyleChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
+                <MudToggleGroup T="LineStyle" Color="Color.Success" Value="TacticToolService.AllOptions.LineDrawOptions!.LineStyle" ValueChanged="OnLineStyleChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
                     <MudToggleItem Value="@LineStyle.Normal">
                         <MudIcon Icon="@solidLine" />
                     </MudToggleItem>
                     <MudToggleItem Value="@LineStyle.Dashed">
-                        <MudIcon Icon="@dashedLine" />
+                        <MudIcon Icon="@dottetLine" />
                     </MudToggleItem>
                     <MudToggleItem Value="@LineStyle.Dotted">
-                        <MudIcon Icon="@dottetLine" />
+                        <MudIcon Icon="@dashedLine" />
                     </MudToggleItem>
                 </MudToggleGroup>
                 <MudText>Select Line End:</MudText>
-                <MudToggleGroup T="LineEnd" Color="Color.Success" Value="cosmeticLineEnd" ValueChanged="OnLineEndChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
+                <MudToggleGroup T="LineEnd" Color="Color.Success" Value="TacticToolService.AllOptions.LineDrawOptions!.LineEnd" ValueChanged="OnLineEndChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
                     <MudToggleItem Value="@LineEnd.Normal">
                         <MudIcon Icon="@solidLine"/>
                     </MudToggleItem>
@@ -57,19 +57,19 @@
                 <MudSlider Class="my-3" T="int" Min="10" Max="100" Value="TacticToolService.AllOptions.CurveDrawOptions!.Thickness" ValueLabel="true" ValueChanged="OnCurveThicknessChanged" Color="Color.Primary">Curve Thickness</MudSlider>
                 <MudSlider Class="my-3" T="int" Min="30" Max="200" Value="TacticToolService.AllOptions.CurveDrawOptions!.EndSize" ValueLabel="true" ValueChanged="OnCurveEndThicknessChanged" Color="Color.Primary">Curve End Thickness</MudSlider>
                 <MudText>Select Line Style:</MudText>
-                <MudToggleGroup T="LineStyle" Color="Color.Success" Value="cosmeticCurveStyle" ValueChanged="OnCurveStyleChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
+                <MudToggleGroup T="LineStyle" Color="Color.Success" Value="TacticToolService.AllOptions.CurveDrawOptions!.LineStyle" ValueChanged="OnCurveStyleChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
                     <MudToggleItem Value="@LineStyle.Normal">
                         <MudIcon Icon="@solidLine" />
                     </MudToggleItem>
                     <MudToggleItem Value="@LineStyle.Dashed">
-                        <MudIcon Icon="@dashedLine" />
+                        <MudIcon Icon="@dottetLine" />
                     </MudToggleItem>
                     <MudToggleItem Value="@LineStyle.Dotted">
-                        <MudIcon Icon="@dottetLine" />
+                        <MudIcon Icon="@dashedLine" />
                     </MudToggleItem>
                 </MudToggleGroup>
                 <MudText Class="my-3">Select Line End:</MudText>
-                <MudToggleGroup T="LineEnd" Color="Color.Success" Value="cosmeticCurveEnd" ValueChanged="OnCurveEndChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
+                <MudToggleGroup T="LineEnd" Color="Color.Success" Value="TacticToolService.AllOptions.CurveDrawOptions!.LineEnd" ValueChanged="OnCurveEndChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
                     <MudToggleItem Value="@LineEnd.Normal">
                         <MudIcon Icon="@solidLine" />
                     </MudToggleItem>
@@ -88,19 +88,19 @@
                 <MudSlider Class="my-3" T="int" Min="10" Max="100" Value="TacticToolService.AllOptions.FreeDrawOptions!.Thickness" ValueLabel="true" ValueChanged="OnFreeDrawThicknessChanged" Color="Color.Primary">Free Draw Thickness</MudSlider>
                 <MudSlider Class="my-3" T="int" Min="30" Max="200" Value="TacticToolService.AllOptions.FreeDrawOptions!.EndSize" ValueLabel="true" ValueChanged="OnFreeDrawEndThicknessChanged" Color="Color.Primary">Free Draw End Thickness</MudSlider>
                 <MudText>Select Line Style:</MudText>
-                <MudToggleGroup T="LineStyle" Color="Color.Success" Value="cosmeticFreeStyle" ValueChanged="OnFreeStyleChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
+                <MudToggleGroup T="LineStyle" Color="Color.Success" Value="TacticToolService.AllOptions.FreeDrawOptions!.LineStyle" ValueChanged="OnFreeStyleChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
                     <MudToggleItem Value="@LineStyle.Normal">
                         <MudIcon Icon="@solidLine" />
                     </MudToggleItem>
                     <MudToggleItem Value="@LineStyle.Dashed">
-                        <MudIcon Icon="@dashedLine" />
+                        <MudIcon Icon="@dottetLine" />
                     </MudToggleItem>
                     <MudToggleItem Value="@LineStyle.Dotted">
-                        <MudIcon Icon="@dottetLine" />
+                        <MudIcon Icon="@dashedLine" />
                     </MudToggleItem>
                 </MudToggleGroup>
                 <MudText>Select Line End:</MudText>
-                <MudToggleGroup T="LineEnd" Color="Color.Success" Value="cosmeticFreeEnd" ValueChanged="OnFreeEndChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
+                <MudToggleGroup T="LineEnd" Color="Color.Success" Value="TacticToolService.AllOptions.FreeDrawOptions!.LineEnd" ValueChanged="OnFreeEndChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
                     <MudToggleItem Value="@LineEnd.Normal">
                         <MudIcon Icon="@solidLine" />
                     </MudToggleItem>
@@ -115,7 +115,7 @@
         </MudTabPanel>
         <MudTabPanel Icon="@Icons.Material.Outlined.Rectangle" @onclick="() => ChangeTool(Models.Tools.ToolType.AddShape)" ToolTip="Add Shape">
             <MudPaper>
-                <MudToggleGroup T="ShapeType" Color="Color.Success" Value="cosmeticShapeType" ValueChanged="OnShapeTypeChanged" Class="my-3">
+                <MudToggleGroup T="ShapeType" Color="Color.Success" Value="TacticToolService.AllOptions.ShapeOptions!.ShapeType" ValueChanged="OnShapeTypeChanged" Class="my-3">
                     <MudToggleItem Value="@ShapeType.Circle">
                         <MudIcon Icon="@Icons.Material.Outlined.Circle" />
                     </MudToggleItem>
@@ -133,15 +133,15 @@
                 <MudColorPicker Label="Fill Color" Text="@AllOptions.ShapeOptions!.FillColor" TextChanged="OnShapeFillColorChanged" Class="my-6" />
                 <MudSlider T="int" Color="Color.Primary" Min="0" Max="40" Value="TacticToolService.AllOptions.ShapeOptions!.OutlineThickness" ValueLabel="true" ValueChanged="OnShapeOutlineThicknessChanged">Shape Outline Thickness</MudSlider>
                 <MudText>Select Line Style:</MudText>
-                <MudToggleGroup T="LineStyle" Color="Color.Success" Value="cosmeticLineStyle" ValueChanged="OnShapeLineStyleChanged" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
+                <MudToggleGroup T="LineStyle" Color="Color.Success" Value="TacticToolService.AllOptions.ShapeOptions!.OutlineStyle" ValueChanged="OnShapeLineStyleChanged" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
                     <MudToggleItem Value="@LineStyle.Normal">
                         <MudIcon Icon="@solidLine" />
                     </MudToggleItem>
                     <MudToggleItem Value="@LineStyle.Dashed">
-                        <MudIcon Icon="@dashedLine" />
+                        <MudIcon Icon="@dottetLine" />
                     </MudToggleItem>
                     <MudToggleItem Value="@LineStyle.Dotted">
-                        <MudIcon Icon="@dottetLine" />
+                        <MudIcon Icon="@dashedLine" />
                     </MudToggleItem>
                 </MudToggleGroup>
             </MudPaper>

@@ -1,5 +1,5 @@
 ﻿<div id="MapSelectionDiv">
-    <MudSelect T="string" Label="Maps" ValueChanged="MapChanged" Value="@selectedMap">
+    <MudSelect T="string" Label="Maps" Searchable="true" ValueChanged="MapChanged" Value="@selectedMap">
         @foreach (var map in SortedMaps)
         {
             <MudSelectItem Value="@map">

@@ -3,7 +3,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using Wildblood.Tactics.Entities;
-using Wildblood.Tactics.Mappings;
 using Wildblood.Tactics.Models.Tools;
 using Wildblood.Tactics.Services;
 
@@ -29,14 +28,6 @@ public partial class TacticTool
     private static string straightArrow = "<svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" xmlns=\"http://www.w3.org/2000/svg\">\r\n  <!-- Diagonale Linie -->\r\n  <line x1=\"2\" y1=\"22\" x2=\"22\" y2=\"2\" stroke=\"white\" stroke-width=\"2\" stroke-linecap=\"round\" />\r\n\r\n  <!-- Querlinie (90° zur Diagonale, also gedreht) -->\r\n  <line x1=\"-3\" y1=\"0\" x2=\"3\" y2=\"0\" stroke=\"white\" stroke-width=\"2\" stroke-linecap=\"round\"\r\n        transform=\"translate(22 2) rotate(45)\" />\r\n</svg>\r\n";
     private static string eraserIcon = "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\" viewBox=\"0 -960 960 960\" width=\"24px\" fill=\"#e3e3e3\"><path d=\"M690-240h190v80H610l80-80Zm-500 80-85-85q-23-23-23.5-57t22.5-58l440-456q23-24 56.5-24t56.5 23l199 199q23 23 23 57t-23 57L520-160H190Zm296-80 314-322-198-198-442 456 64 64h262Zm-6-240Z\"/></svg>";
 
-    private LineStyle cosmeticLineStyle;
-    private LineEnd cosmeticLineEnd;
-    private LineStyle cosmeticCurveStyle;
-    private LineEnd cosmeticCurveEnd;
-    private LineStyle cosmeticFreeStyle;
-    private LineEnd cosmeticFreeEnd;
-    private ShapeType cosmeticShapeType;
-
     private ToolOptions AllOptions => TacticToolService.AllOptions;
 
     protected override void OnInitialized()
@@ -53,6 +44,8 @@ public partial class TacticTool
     {
         if (firstRender)
         {
+            await TacticToolService.InitAsync();
+
             pixiModule = await JS.InvokeAsync<IJSObjectReference>(
                 "import",
                 "/js/pixiInterop.js");
@@ -111,43 +104,36 @@ public partial class TacticTool
     private async Task OnLineEndChange(LineEnd lineEnd)
     {
         await UpdateTool(lineOptions: AllOptions.LineDrawOptions! with { LineEnd = lineEnd });
-        cosmeticLineEnd = lineEnd;
     }
 
     private async Task OnCurveEndChange(LineEnd lineEnd)
     {
         await UpdateTool(curveOptions: AllOptions.CurveDrawOptions! with { LineEnd = lineEnd });
-        cosmeticCurveEnd = lineEnd;
     }
 
     private async Task OnFreeEndChange(LineEnd lineEnd)
     {
         await UpdateTool(freeDrawOptions: AllOptions.FreeDrawOptions! with { LineEnd = lineEnd });
-        cosmeticFreeEnd = lineEnd;
     }
 
     private async Task OnLineStyleChange(LineStyle lineStyle)
     {
         await UpdateTool(lineOptions: AllOptions.LineDrawOptions! with { LineStyle = lineStyle });
-        cosmeticLineStyle = lineStyle;
     }
 
     private async Task OnCurveStyleChange(LineStyle lineStyle)
     {
         await UpdateTool(curveOptions: AllOptions.CurveDrawOptions! with { LineStyle = lineStyle });
-        cosmeticCurveStyle = lineStyle;
     }
 
     private async Task OnFreeStyleChange(LineStyle lineStyle)
     {
         await UpdateTool(freeDrawOptions: AllOptions.FreeDrawOptions! with { LineStyle = lineStyle });
-        cosmeticFreeStyle = lineStyle;
     }
 
     private async Task OnShapeLineStyleChanged(LineStyle lineStyle)
     {
         await UpdateTool(shapeOptions: AllOptions.ShapeOptions! with { OutlineStyle = lineStyle });
-        cosmeticLineStyle = lineStyle;
     }
 
     private async Task OnIconSizeChanged(int size)
@@ -213,7 +199,6 @@ public partial class TacticTool
     private async Task OnShapeTypeChanged(ShapeType type)
     {
         await UpdateTool(shapeOptions: AllOptions.ShapeOptions! with { ShapeType = type });
-        cosmeticShapeType = type;
     }
 
     private async Task OnTextOptionsTextChanged(string text)
