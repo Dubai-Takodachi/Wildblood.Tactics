@@ -63,21 +63,21 @@ if [ -f "$DOCKER_COMPOSE_PATH" ]; then
     cp "$DOCKER_COMPOSE_PATH" "$DOCKER_COMPOSE_PATH.backup"
     
     # Update MONGO_CONNECTION_STRING
-    sed -i "s|MONGO_CONNECTION_STRING=mongodb://admin:password@mongodb:27017|MONGO_CONNECTION_STRING=mongodb://$MONGO_USERNAME:$MONGO_PASSWORD@mongodb:27017|g" "$DOCKER_COMPOSE_PATH"
+    sed -i "s|MONGO_CONNECTION_STRING=mongodb://testuser:TestMongo123!@mongodb:27017|MONGO_CONNECTION_STRING=mongodb://$MONGO_USERNAME:$MONGO_PASSWORD@mongodb:27017|g" "$DOCKER_COMPOSE_PATH"
     
     # Remove https://+:8081 from ASPNETCORE_URLS  
     sed -i 's|ASPNETCORE_URLS=http://+:8080;https://+:8081|ASPNETCORE_URLS=http://+:8080|g' "$DOCKER_COMPOSE_PATH"
     
     # Update SA_PASSWORD - need to escape special characters
     ESCAPED_SQL_PASSWORD=$(printf '%s\n' "$SQL_PASSWORD" | sed 's/[[\.*^$()+?{|]/\\&/g')
-    sed -i "s|SA_PASSWORD: \"DeinStarkesPasswort123!\"|SA_PASSWORD: \"$ESCAPED_SQL_PASSWORD\"|g" "$DOCKER_COMPOSE_PATH"
+    sed -i "s|SA_PASSWORD: \"TestSQL456!\"|SA_PASSWORD: \"$ESCAPED_SQL_PASSWORD\"|g" "$DOCKER_COMPOSE_PATH"
     
     # Update MONGO_INITDB_ROOT_USERNAME
-    sed -i "s|MONGO_INITDB_ROOT_USERNAME: admin|MONGO_INITDB_ROOT_USERNAME: $MONGO_USERNAME|g" "$DOCKER_COMPOSE_PATH"
+    sed -i "s|MONGO_INITDB_ROOT_USERNAME: testuser|MONGO_INITDB_ROOT_USERNAME: $MONGO_USERNAME|g" "$DOCKER_COMPOSE_PATH"
     
     # Update MONGO_INITDB_ROOT_PASSWORD - need to escape special characters
     ESCAPED_MONGO_PASSWORD=$(printf '%s\n' "$MONGO_PASSWORD" | sed 's/[[\.*^$()+?{|]/\\&/g')
-    sed -i "s|MONGO_INITDB_ROOT_PASSWORD: password|MONGO_INITDB_ROOT_PASSWORD: $ESCAPED_MONGO_PASSWORD|g" "$DOCKER_COMPOSE_PATH"
+    sed -i "s|MONGO_INITDB_ROOT_PASSWORD: TestMongo123!|MONGO_INITDB_ROOT_PASSWORD: $ESCAPED_MONGO_PASSWORD|g" "$DOCKER_COMPOSE_PATH"
     
     echo "   ✅ docker-compose.yml updated"
 else
@@ -95,11 +95,11 @@ if [ -f "$APPSETTINGS_PATH" ]; then
     
     # Update DefaultConnection - change server and password, need to escape special characters
     ESCAPED_SQL_PASSWORD=$(printf '%s\n' "$SQL_PASSWORD" | sed 's/[[\.*^$()+?{|]/\\&/g')
-    sed -i "s|Server=mssql,1433;Database=master;User Id=sa;Password=DeinStarkesPasswort123!;Encrypt=False;|Server=mssql_container,1433;Database=master;User Id=sa;Password=$ESCAPED_SQL_PASSWORD;Encrypt=False;|g" "$APPSETTINGS_PATH"
+    sed -i "s|Server=mssql,1433;Database=master;User Id=sa;Password=TestSQL456!;Encrypt=False;|Server=mssql_container,1433;Database=master;User Id=sa;Password=$ESCAPED_SQL_PASSWORD;Encrypt=False;|g" "$APPSETTINGS_PATH"
     
     # Update MongoDBConnection - need to escape special characters  
     ESCAPED_MONGO_PASSWORD=$(printf '%s\n' "$MONGO_PASSWORD" | sed 's/[[\.*^$()+?{|]/\\&/g')
-    sed -i "s|mongodb://admin:password@mongodb:27017|mongodb://$MONGO_USERNAME:$ESCAPED_MONGO_PASSWORD@mongodb:27017|g" "$APPSETTINGS_PATH"
+    sed -i "s|mongodb://testuser:TestMongo123!@mongodb:27017|mongodb://$MONGO_USERNAME:$ESCAPED_MONGO_PASSWORD@mongodb:27017|g" "$APPSETTINGS_PATH"
     
     echo "   ✅ appsettings.json updated"
 else

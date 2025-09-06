@@ -57,7 +57,7 @@ def update_docker_compose(file_path, mongo_username, mongo_password, sql_passwor
     
     # Update MONGO_CONNECTION_STRING
     content = re.sub(
-        r'MONGO_CONNECTION_STRING=mongodb://admin:password@mongodb:27017',
+        r'MONGO_CONNECTION_STRING=mongodb://testuser:TestMongo123!@mongodb:27017',
         f'MONGO_CONNECTION_STRING=mongodb://{mongo_username}:{mongo_password}@mongodb:27017',
         content
     )
@@ -71,21 +71,21 @@ def update_docker_compose(file_path, mongo_username, mongo_password, sql_passwor
     
     # Update SA_PASSWORD
     content = re.sub(
-        r'SA_PASSWORD: "DeinStarkesPasswort123!"',
+        r'SA_PASSWORD: "TestSQL456!"',
         f'SA_PASSWORD: "{sql_password}"',
         content
     )
     
     # Update MONGO_INITDB_ROOT_USERNAME
     content = re.sub(
-        r'MONGO_INITDB_ROOT_USERNAME: admin',
+        r'MONGO_INITDB_ROOT_USERNAME: testuser',
         f'MONGO_INITDB_ROOT_USERNAME: {mongo_username}',
         content
     )
     
     # Update MONGO_INITDB_ROOT_PASSWORD
     content = re.sub(
-        r'MONGO_INITDB_ROOT_PASSWORD: password',
+        r'MONGO_INITDB_ROOT_PASSWORD: TestMongo123!',
         f'MONGO_INITDB_ROOT_PASSWORD: {mongo_password}',
         content
     )
