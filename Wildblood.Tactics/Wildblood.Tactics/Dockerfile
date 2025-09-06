@@ -28,6 +28,7 @@ RUN dotnet build "./Wildblood.Tactics.csproj" -c $BUILD_CONFIGURATION -o /app/bu
 # --- Publish-Stage ---
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
+RUN npm install
 RUN dotnet publish "./Wildblood.Tactics.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 # --- Finales Image (nur Runtime + veröffentlichte App) ---
