@@ -7,8 +7,8 @@ services:
     networks:
       - wildblood-network
     environment:
-      - MONGO_CONNECTION_STRING=mongodb://admin:password@mongodb:27017
-      - ASPNETCORE_URLS=http://+:8080;https://+:8081  
+      - MONGO_CONNECTION_STRING=mongodb://wildblood:NRgvwa$e0Y6&#^B@I35Y@mongodb:27017
+      - ASPNETCORE_URLS=http://+:8080  
     depends_on:
       - mongodb
 
@@ -18,7 +18,7 @@ services:
     ports:
       - "1433:1433"
     environment:
-      SA_PASSWORD: "DeinStarkesPasswort123!"
+      SA_PASSWORD: "N%Drjkx0^m9!WnmPqORU"
       ACCEPT_EULA: "Y"
     volumes:
       - mssql_data:/var/opt/mssql
@@ -33,8 +33,8 @@ services:
     ports:
       - "27017:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_ROOT_USERNAME: wildblood
+      MONGO_INITDB_ROOT_PASSWORD: NRgvwa$e0Y6&#^B@I35Y
     volumes:
       - mongodb_data:/data/db
     networks:
