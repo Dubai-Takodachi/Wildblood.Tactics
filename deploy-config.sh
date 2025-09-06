@@ -11,7 +11,8 @@ MONGO_USERNAME=${2:-"wildblood"}
 # Function to generate secure password
 generate_password() {
     local length=${1:-16}
-    LC_ALL=C tr -dc 'a-zA-Z0-9!@#$%^&*' < /dev/urandom | head -c "$length"
+    # Use alphanumeric + safe special characters that don't interfere with shell/env parsing
+    LC_ALL=C tr -dc 'a-zA-Z0-9!@$%*+=?-_' < /dev/urandom | head -c "$length"
 }
 
 echo "🚀 Wildblood.Tactics Deployment Configuration Automation"

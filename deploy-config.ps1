@@ -27,7 +27,8 @@ param(
 function Generate-SecurePassword {
     param([int]$Length = 16)
     
-    $charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*"
+    # Use alphanumeric + safe special characters that don't interfere with shell/env parsing
+    $charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@$%*+=?-_"
     $password = ""
     for ($i = 0; $i -lt $Length; $i++) {
         $password += $charset[(Get-Random -Maximum $charset.Length)]

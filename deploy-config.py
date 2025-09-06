@@ -15,8 +15,9 @@ from pathlib import Path
 from datetime import datetime
 
 def generate_password(length=16):
-    """Generate a secure password."""
-    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+    """Generate a secure password without special characters that cause issues in environment variables."""
+    # Use alphanumeric + safe special characters that don't interfere with shell/env parsing
+    alphabet = string.ascii_letters + string.digits + "!@$%*+=?-_"
     return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 def update_docker_compose(file_path, mongo_username, mongo_password, sql_password):
