@@ -95,19 +95,19 @@ if (Test-Path $dockerComposePath) {
     $dockerContent = Get-Content $dockerComposePath -Raw
     
     # Update MONGO_CONNECTION_STRING
-    $dockerContent = $dockerContent -replace 'MONGO_CONNECTION_STRING=mongodb://admin:password@mongodb:27017', "MONGO_CONNECTION_STRING=mongodb://$($MongoUsername):$($mongoPassword)@mongodb:27017"
+    $dockerContent = $dockerContent -replace 'MONGO_CONNECTION_STRING=mongodb://testuser:TestMongo123!@mongodb:27017', "MONGO_CONNECTION_STRING=mongodb://$($MongoUsername):$($mongoPassword)@mongodb:27017"
     
     # Remove https://+:8081 from ASPNETCORE_URLS
     $dockerContent = $dockerContent -replace 'ASPNETCORE_URLS=http://\+:8080;https://\+:8081', 'ASPNETCORE_URLS=http://+:8080'
     
     # Update SA_PASSWORD
-    $dockerContent = $dockerContent -replace 'SA_PASSWORD: "DeinStarkesPasswort123!"', "SA_PASSWORD: `"$sqlPassword`""
+    $dockerContent = $dockerContent -replace 'SA_PASSWORD: "TestSQL456!"', "SA_PASSWORD: `"$sqlPassword`""
     
     # Update MONGO_INITDB_ROOT_USERNAME
-    $dockerContent = $dockerContent -replace 'MONGO_INITDB_ROOT_USERNAME: admin', "MONGO_INITDB_ROOT_USERNAME: $MongoUsername"
+    $dockerContent = $dockerContent -replace 'MONGO_INITDB_ROOT_USERNAME: testuser', "MONGO_INITDB_ROOT_USERNAME: $MongoUsername"
     
     # Update MONGO_INITDB_ROOT_PASSWORD
-    $dockerContent = $dockerContent -replace 'MONGO_INITDB_ROOT_PASSWORD: password', "MONGO_INITDB_ROOT_PASSWORD: $mongoPassword"
+    $dockerContent = $dockerContent -replace 'MONGO_INITDB_ROOT_PASSWORD: TestMongo123!', "MONGO_INITDB_ROOT_PASSWORD: $mongoPassword"
     
     Set-Content $dockerComposePath -Value $dockerContent
     Write-Host "   ✅ docker-compose.yml updated" -ForegroundColor Green
