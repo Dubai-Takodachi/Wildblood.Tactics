@@ -1,4 +1,4 @@
-﻿namespace Wildblood.Tactics.Services;
+namespace Wildblood.Tactics.Services;
 
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -12,7 +12,7 @@ public class HubConnectionService : IHubConnectionService, IAsyncDisposable
     public HubConnectionService(NavigationManager navigationManager)
     {
         hubConnection = new HubConnectionBuilder()
-            .WithUrl(navigationManager.ToAbsoluteUri("/tacticsHub"), options =>
+            .WithUrl("https://test-domain.com/tacticshub", options =>
             {
                 options.HttpMessageHandlerFactory = handler =>
                 {
@@ -66,3 +66,4 @@ public class HubConnectionService : IHubConnectionService, IAsyncDisposable
         }
     }
 }
+

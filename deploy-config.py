@@ -2,7 +2,7 @@
 """
 Wildblood.Tactics Deployment Configuration Automation
 
-This script generates secure passwords and updates all configuration files
+This script reads configuration from a .env file and updates all configuration files
 for production deployment of the Wildblood.Tactics application.
 """
 
@@ -11,8 +11,38 @@ import re
 import secrets
 import string
 import sys
+import os
 from pathlib import Path
 from datetime import datetime
+
+def load_env_file(env_path=".env"):
+    """Load environment variables from .env file."""
+    env_vars = {}
+    if not os.path.exists(env_path):
+        print(f"❌ Environment file '{env_path}' not found!")
+        print("💡 Copy .env.example to .env and configure your credentials")
+        sys.exit(1)
+    
+    with open(env_path, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                key, value = line.split('=', 1)
+                env_vars[key.strip()] = value.strip()
+    
+    return env_vars
+
+def validate_env_vars(env_vars):
+    """Validate that all required environment variables are present."""
+    required_vars = ['DOMAIN', 'MONGO_USERNAME', 'MONGO_PASSWORD', 'SQL_PASSWORD']
+    missing_vars = [var for var in required_vars if not env_vars.get(var)]
+    
+    if missing_vars:
+        print(f"❌ Missing required environment variables: {', '.join(missing_vars)}")
+        print("💡 Check your .env file and ensure all required variables are set")
+        sys.exit(1)
+    
+    return True
 
 def generate_password(length=16):
     """Generate a secure password without special characters that cause issues in environment variables."""
@@ -96,9 +126,15 @@ def update_hub_service(file_path, domain):
         f.write(content)
 
 def main():
-    # Parse command line arguments
-    domain = sys.argv[1] if len(sys.argv) > 1 else "https://Wildblood-Tactics.de"
-    mongo_username = sys.argv[2] if len(sys.argv) > 2 else "wildblood"
+    # Load environment variables from .env file
+    env_vars = load_env_file()
+    validate_env_vars(env_vars)
+    
+    # Get configuration from environment variables
+    domain = env_vars['DOMAIN']
+    mongo_username = env_vars['MONGO_USERNAME']
+    mongo_password = env_vars['MONGO_PASSWORD']
+    sql_password = env_vars['SQL_PASSWORD']
     
     # Ensure domain has https:// prefix
     if not domain.startswith('http'):
@@ -106,12 +142,7 @@ def main():
     
     print("🚀 Wildblood.Tactics Deployment Configuration Automation")
     print("=====================================================")
-    
-    # Generate secure passwords
-    mongo_password = generate_password(20)
-    sql_password = generate_password(20)
-    
-    print("✅ Generated secure passwords")
+    print("📁 Reading configuration from .env file")
     print(f"📝 MongoDB Username: {mongo_username}")
     print(f"📝 Domain: {domain}")
     
@@ -157,34 +188,35 @@ def main():
     print("📋 Configuration Summary")
     print("========================")
     print(f"MongoDB Username: {mongo_username}")
-    print(f"MongoDB Password: {mongo_password}")
-    print(f"SQL Password: {sql_password}")
+    print(f"MongoDB Password: [HIDDEN]")
+    print(f"SQL Password: [HIDDEN]")
     print(f"Domain: {domain}")
     print(f"Hub URL: {domain}/tacticshub")
     
-    # Save configuration to file for reference
+    # Save configuration to file for reference (without passwords)
     config_summary = {
         "MongoDB": {
             "Username": mongo_username,
-            "Password": mongo_password
+            "Password": "[HIDDEN - Check .env file]"
         },
         "SQL": {
-            "Password": sql_password
+            "Password": "[HIDDEN - Check .env file]"
         },
         "Domain": domain,
         "HubURL": f"{domain}/tacticshub",
-        "GeneratedAt": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        "GeneratedAt": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "ConfigurationSource": ".env file"
     }
     
     with open("./deployment-config.json", "w") as f:
         json.dump(config_summary, f, indent=2)
     
     print("🎉 Deployment configuration completed successfully!")
-    print("📄 Configuration saved to: deployment-config.json")
-    print("⚠️  Please save the passwords securely and delete deployment-config.json after noting them!")
+    print("📄 Configuration summary saved to: deployment-config.json")
+    print("💡 Configuration read from: .env file")
     print("")
-    print(f"Usage: {sys.argv[0]} [domain] [mongo_username]")
-    print(f"Example: {sys.argv[0]} my-domain.com myuser")
+    print("Usage: python3 deploy-config.py")
+    print("Note: This script now reads configuration from .env file instead of command line arguments")
 
 if __name__ == "__main__":
     main()
