@@ -366,3 +366,8 @@ FodyWeavers.xsd
 # Deployment configuration - contains sensitive passwords
 deployment-config.json
 *.backup
+
+# Environment files - contain sensitive credentials
+.env
+.env.local
+.env.production
