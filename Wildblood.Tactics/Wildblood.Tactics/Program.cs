@@ -98,6 +98,19 @@ public class Program
 
         var app = builder.Build();
 
+        var forwardedHeaderOptions = new ForwardedHeadersOptions
+        {
+            ForwardedHeaders = ForwardedHeaders.XForwardedFor |
+                    ForwardedHeaders.XForwardedProto |
+                    ForwardedHeaders.XForwardedHost,
+            RequireHeaderSymmetry = false,
+            ForwardLimit = null
+        };
+        forwardedHeaderOptions.KnownNetworks.Clear();
+        forwardedHeaderOptions.KnownProxies.Clear();
+
+        app.UseForwardedHeaders(forwardedHeaderOptions);
+
         using (var scope = app.Services.CreateScope())
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();

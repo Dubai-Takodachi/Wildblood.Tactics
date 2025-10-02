@@ -362,3 +362,12 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 .idea
+
+# Deployment configuration - contains sensitive passwords
+deployment-config.json
+*.backup
+
+# Environment files - contain sensitive credentials
+.env
+.env.local
+.env.production
