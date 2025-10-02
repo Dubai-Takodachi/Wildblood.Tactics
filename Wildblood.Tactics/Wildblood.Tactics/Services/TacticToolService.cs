@@ -22,7 +22,26 @@ public class TacticToolService : ITacticToolService
         isInitialized = false;
 
         AllOptions = CreateDefaultOptions();
-        CurrentOptions = CreateCurrentToolOptions();
+        CurrentOptions = ToCurrentSelectedOptions(AllOptions);
+    }
+
+    public async Task InitAsync()
+    {
+        AllOptions = await LoadToolOptions() ?? CreateDefaultOptions();
+        isInitialized = true;
+    }
+
+    private async Task<ToolOptions?> LoadToolOptions()
+    {
+        return await localStorage.GetItemAsync<ToolOptions>("toolOptions");
+    }
+
+    private async Task SaveToolOptions(ToolOptions options)
+    {
+        if (isInitialized)
+        {
+            await localStorage.SetItemAsync("toolOptions", options);
+        }
     }
 
     public async Task PatchTool(ToolOptions newOptions)
@@ -41,7 +60,7 @@ public class TacticToolService : ITacticToolService
 
         await SaveToolOptions(AllOptions);
 
-        CurrentOptions = CreateCurrentToolOptions();
+        CurrentOptions = ToCurrentSelectedOptions(AllOptions);
 
         if (OnToolChanged != null)
         {
@@ -49,22 +68,17 @@ public class TacticToolService : ITacticToolService
         }
     }
 
-    private ToolOptions CreateCurrentToolOptions()
+    private static ToolOptions ToCurrentSelectedOptions(ToolOptions all) => all.Tool switch
     {
-        var currentBase = new ToolOptions { Tool = AllOptions.Tool };
-
-        return AllOptions.Tool switch
-        {
-            ToolType.AddIcon => currentBase with { IconOptions = AllOptions.IconOptions },
-            ToolType.DrawLine => currentBase with { LineDrawOptions = AllOptions.LineDrawOptions },
-            ToolType.DrawCurve => currentBase with { CurveDrawOptions = AllOptions.CurveDrawOptions },
-            ToolType.DrawFree => currentBase with { FreeDrawOptions = AllOptions.FreeDrawOptions },
-            ToolType.AddText => currentBase with { TextOptions = AllOptions.TextOptions },
-            ToolType.AddShape => currentBase with { ShapeOptions = AllOptions.ShapeOptions },
-            ToolType.Ping => currentBase with { PingOptions = AllOptions.PingOptions },
-            _ => currentBase,
-        };
-    }
+        ToolType.AddIcon => new() { Tool = all.Tool, IconOptions = all.IconOptions },
+        ToolType.DrawLine => new() { Tool = all.Tool, LineDrawOptions = all.LineDrawOptions },
+        ToolType.DrawCurve => new() { Tool = all.Tool, CurveDrawOptions = all.CurveDrawOptions },
+        ToolType.DrawFree => new() { Tool = all.Tool, FreeDrawOptions = all.FreeDrawOptions },
+        ToolType.AddText => new() { Tool = all.Tool, TextOptions = all.TextOptions },
+        ToolType.AddShape => new() { Tool = all.Tool, ShapeOptions = all.ShapeOptions },
+        ToolType.Ping => new() { Tool = all.Tool, PingOptions = all.PingOptions },
+        _ => new() { Tool = all.Tool },
+    };
 
     private static ToolOptions CreateDefaultOptions()
     {
@@ -109,24 +123,5 @@ public class TacticToolService : ITacticToolService
             },
             TextOptions = defaultTextOptions,
         };
-    }
-
-    public async Task InitAsync()
-    {
-        AllOptions = await LoadToolOptions() ?? AllOptions;
-        isInitialized = true;
-    }
-
-    private async Task<ToolOptions?> LoadToolOptions()
-    {
-        return await localStorage.GetItemAsync<ToolOptions>("toolOptions");
-    }
-
-    private async Task SaveToolOptions(ToolOptions options)
-    {
-        if (isInitialized)
-        {
-            await localStorage.SetItemAsync("toolOptions", options);
-        }
     }
 }

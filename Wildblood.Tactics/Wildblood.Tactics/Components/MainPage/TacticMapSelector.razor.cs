@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using MudBlazor;
 using Wildblood.Tactics.Services;
+using static System.Text.Json.JsonSerializer;
 
 public partial class TacticMapSelector
 {
@@ -30,8 +31,6 @@ public partial class TacticMapSelector
         await base.OnInitializedAsync();
         maps = TacticMapSelectorService.Maps.ToList();
         TacticMapSelectorService.OnMapChanged += RefreshSelectedMap;
-        favoriteMaps.Clear();
-        favoriteMaps.Add(maps[3]);
         await RefreshSelectedMap();
     }
 
@@ -56,20 +55,17 @@ public partial class TacticMapSelector
 
         var json = await storageModule.InvokeAsync<string>("getItem", "favoriteMaps");
 
-        if (!string.IsNullOrEmpty(json))
+        if (string.IsNullOrEmpty(json))
         {
-            try
-            {
-                var favorites = System.Text.Json.JsonSerializer.Deserialize<List<string>>(json);
+            return;
+        }
 
-                if (favorites != null)
-                {
-                    favoriteMaps = [.. favorites];
-                }
-            }
-            catch
-            {
-            }
+        try
+        {
+            favoriteMaps = Deserialize<HashSet<string>>(json) ?? favoriteMaps;
+        }
+        catch
+        {
         }
     }
 
@@ -80,7 +76,7 @@ public partial class TacticMapSelector
             return;
         }
 
-        var json = System.Text.Json.JsonSerializer.Serialize(favoriteMaps.ToList());
+        var json = Serialize(favoriteMaps.ToList());
         await storageModule.InvokeVoidAsync("setItem", "favoriteMaps", json);
     }
 

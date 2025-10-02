@@ -6,7 +6,7 @@ public class TacticMapSelectorService : ITacticMapSelectorService
 
     public string CurrentMap => tacticExplorerService.CurrentSlide.MapPath ?? string.Empty;
 
-    public List<string> Maps { get; private set; }
+    public IReadOnlyCollection<string> Maps { get; private set; }
 
     private static string baseMapPath = "wwwroot/ConquerorsBladeData/Maps";
 
@@ -19,7 +19,7 @@ public class TacticMapSelectorService : ITacticMapSelectorService
         Maps = Directory.EnumerateFiles(baseMapPath, "*", SearchOption.AllDirectories)
             .Select(f => Path.GetFileName(f)
             .Split('.')[0])
-            .ToList();
+            .ToArray();
 
         this.tacticExplorerService.OnTacticChanged += RefreshMapSelection;
     }

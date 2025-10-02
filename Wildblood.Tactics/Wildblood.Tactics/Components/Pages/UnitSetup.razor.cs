@@ -31,21 +31,25 @@ public partial class UnitSetup(
         var authState = await authenticationStateProvider.GetAuthenticationStateAsync();
         currentUserId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
 
-        if (!string.IsNullOrEmpty(currentUserId))
+        if (string.IsNullOrEmpty(currentUserId))
         {
-            currentRaidSetup = await dbContext.RaidSetups
-                .Where(raid => raid.Id == RaidId)
-                .Where(raid => raid.UserId == currentUserId)
-                .FirstOrDefaultAsync();
-
-            if (currentRaidSetup != null)
-            {
-                players = await dbContext.PlayerSetups
-                    .Where(player => player.RaidId == currentRaidSetup.Id)
-                    .OrderBy(player => player.Index)
-                    .ToListAsync();
-            }
+            return;
         }
+
+        currentRaidSetup = await dbContext.RaidSetups
+            .Where(raid => raid.Id == RaidId)
+            .Where(raid => raid.UserId == currentUserId)
+            .FirstOrDefaultAsync();
+
+        if (currentRaidSetup == null)
+        {
+            return;
+        }
+
+        players = await dbContext.PlayerSetups
+            .Where(player => player.RaidId == currentRaidSetup.Id)
+            .OrderBy(player => player.Index)
+            .ToListAsync();
     }
 
     private async Task OnNrChanged(PlayerSetup player, int newValue)

@@ -73,15 +73,8 @@ public partial class UnitSelector
         }
     }
 
-    private List<Unit> GetFilteredAndSortedUnits()
+    private IEnumerable<Unit> GetFilteredAndSortedUnits()
     {
-        Func<IOrderedEnumerable<Unit>, IOrderedEnumerable<Unit>> applyThenBy = unitSortBy switch
-        {
-            "Influence" => (IOrderedEnumerable<Unit> query) => query.ThenBy(u => u.Influence),
-            "InfluenceDesc" => (IOrderedEnumerable<Unit> query) => query.ThenByDescending(u => u.Influence),
-            _ => (IOrderedEnumerable<Unit> query) => query.ThenBy(u => u.Name.ToString()),
-        };
-
         var query = units.AsEnumerable()
             .Where(u =>
                 string.IsNullOrWhiteSpace(unitSearchText)
@@ -91,8 +84,11 @@ public partial class UnitSelector
             .Where(u => !selectedUnitSecondaryType.HasValue || u.SecondaryType == selectedUnitSecondaryType)
             .OrderByDescending(u => favoriteUnits.Contains(u.Name));
 
-        query = applyThenBy(query);
-
-        return [.. query];
+        return unitSortBy switch
+        {
+            "Influence" => query.ThenBy(u => u.Influence),
+            "InfluenceDesc" => query.ThenByDescending(u => u.Influence),
+            _ => query.ThenBy(u => u.Name.ToString()),
+        };
     }
 }

@@ -1,5 +1,6 @@
 ﻿@using Wildblood.Tactics.Mappings
 @using Wildblood.Tactics.Models.Tools
+@using System.Resources;
 
 <MudPaper style="grid-area:2/2/span 3/2" Class="mx-2">
     <MudTabs MinimumTabWidth="20px" Position="Position.Left">
@@ -8,7 +9,7 @@
                 <MudColorPicker Label="Ping Color" Text="@AllOptions.PingOptions!.Color" TextChanged="OnPingColorChanged" DisableAlpha="true" Class="my-6" />
             </div>
         </MudTabPanel>
-        <MudTabPanel Icon="@swordsIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.AddIcon)" ToolTip="Place Icons">
+        <MudTabPanel Icon="@SvgResource.SwordsIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.AddIcon)" ToolTip="Place Icons">
             <div>
                 <UnitSelector SelectedUnitChanged="OnUnitSelected" PreselectedUnit="TacticToolService.AllOptions.IconOptions!.UnitName"/>
                 <MudSlider Class="my-3" T="int" Min="80" Max="400" Value="TacticToolService.AllOptions.IconOptions!.IconSize" ValueLabel="true" ValueChanged="OnIconSizeChanged" Color="Color.Primary">Icon Size:</MudSlider>
@@ -20,7 +21,7 @@
                 <MudColorPicker Label="Background Color" Text="@AllOptions.IconOptions!.LabelOptions.BackgroundColor" Value="TacticToolService.AllOptions.IconOptions!.LabelOptions.BackgroundColor" TextChanged="OnIconTextOptionsBackgroundColorChanged" />
             </div>
         </MudTabPanel>
-        <MudTabPanel Icon="@vectorLineIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.DrawLine)" ToolTip="Draw Line">
+        <MudTabPanel Icon="@SvgResource.VectorLineIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.DrawLine)" ToolTip="Draw Line">
             <MudPaper>
                 <MudColorPicker Label="Line Color" Text="@AllOptions.LineDrawOptions!.Color" TextChanged="OnLineColorChanged" Class="my-6" />
                 <MudSlider Class="my-3" T="int" Min="10" Max="100" Value="TacticToolService.AllOptions.LineDrawOptions!.Thickness" ValueLabel="true" ValueChanged="OnLineThicknessChanged" Color="Color.Primary">Line Thickness</MudSlider>
@@ -28,30 +29,30 @@
                 <MudText>Select Line Style:</MudText>
                 <MudToggleGroup T="LineStyle" Color="Color.Success" Value="TacticToolService.AllOptions.LineDrawOptions!.LineStyle" ValueChanged="OnLineStyleChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
                     <MudToggleItem Value="@LineStyle.Normal">
-                        <MudIcon Icon="@solidLine" />
+                        <MudIcon Icon="@SvgResource.SolidLine" />
                     </MudToggleItem>
                     <MudToggleItem Value="@LineStyle.Dashed">
-                        <MudIcon Icon="@dottetLine" />
+                        <MudIcon Icon="@SvgResource.DottetLine" />
                     </MudToggleItem>
                     <MudToggleItem Value="@LineStyle.Dotted">
-                        <MudIcon Icon="@dashedLine" />
+                        <MudIcon Icon="@SvgResource.DashedLine" />
                     </MudToggleItem>
                 </MudToggleGroup>
                 <MudText>Select Line End:</MudText>
                 <MudToggleGroup T="LineEnd" Color="Color.Success" Value="TacticToolService.AllOptions.LineDrawOptions!.LineEnd" ValueChanged="OnLineEndChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
                     <MudToggleItem Value="@LineEnd.Normal">
-                        <MudIcon Icon="@solidLine"/>
+                        <MudIcon Icon="@SvgResource.SolidLine" />
                     </MudToggleItem>
                     <MudToggleItem Value="@LineEnd.Arrow">
-                        <MudIcon Icon="@arrowHead"/>
+                        <MudIcon Icon="@SvgResource.ArrowHead" />
                     </MudToggleItem>
                     <MudToggleItem Value="@LineEnd.Flat">
-                        <MudIcon Icon="@straightArrow" />
+                        <MudIcon Icon="@SvgResource.StraightArrow" />
                     </MudToggleItem>
                 </MudToggleGroup>
             </MudPaper>
         </MudTabPanel>
-        <MudTabPanel Icon="@curveIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.DrawCurve)" ToolTip="Draw Curve">
+        <MudTabPanel Icon="@SvgResource.CurveIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.DrawCurve)" ToolTip="Draw Curve">
             <MudPaper>
                 <MudColorPicker Label="Line Color" Text="@AllOptions.CurveDrawOptions!.Color" TextChanged="OnCurveColorChanged" Class="my-6" />
                 <MudSlider Class="my-3" T="int" Min="10" Max="100" Value="TacticToolService.AllOptions.CurveDrawOptions!.Thickness" ValueLabel="true" ValueChanged="OnCurveThicknessChanged" Color="Color.Primary">Curve Thickness</MudSlider>
@@ -59,25 +60,25 @@
                 <MudText>Select Line Style:</MudText>
                 <MudToggleGroup T="LineStyle" Color="Color.Success" Value="TacticToolService.AllOptions.CurveDrawOptions!.LineStyle" ValueChanged="OnCurveStyleChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
                     <MudToggleItem Value="@LineStyle.Normal">
-                        <MudIcon Icon="@solidLine" />
+                        <MudIcon Icon="@SvgResource.SolidLine" />
                     </MudToggleItem>
                     <MudToggleItem Value="@LineStyle.Dashed">
-                        <MudIcon Icon="@dottetLine" />
+                        <MudIcon Icon="@SvgResource.DottetLine" />
                     </MudToggleItem>
                     <MudToggleItem Value="@LineStyle.Dotted">
-                        <MudIcon Icon="@dashedLine" />
+                        <MudIcon Icon="@SvgResource.DashedLine" />
                     </MudToggleItem>
                 </MudToggleGroup>
                 <MudText Class="my-3">Select Line End:</MudText>
                 <MudToggleGroup T="LineEnd" Color="Color.Success" Value="TacticToolService.AllOptions.CurveDrawOptions!.LineEnd" ValueChanged="OnCurveEndChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
                     <MudToggleItem Value="@LineEnd.Normal">
-                        <MudIcon Icon="@solidLine" />
+                        <MudIcon Icon="@SvgResource.SolidLine" />
                     </MudToggleItem>
                     <MudToggleItem Value="@LineEnd.Arrow">
-                        <MudIcon Icon="@arrowHead" />
+                        <MudIcon Icon="@SvgResource.ArrowHead" />
                     </MudToggleItem>
                     <MudToggleItem Value="@LineEnd.Flat">
-                        <MudIcon Icon="@straightArrow" />
+                        <MudIcon Icon="@SvgResource.StraightArrow" />
                     </MudToggleItem>
                 </MudToggleGroup>
             </MudPaper>
@@ -90,25 +91,25 @@
                 <MudText>Select Line Style:</MudText>
                 <MudToggleGroup T="LineStyle" Color="Color.Success" Value="TacticToolService.AllOptions.FreeDrawOptions!.LineStyle" ValueChanged="OnFreeStyleChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
                     <MudToggleItem Value="@LineStyle.Normal">
-                        <MudIcon Icon="@solidLine" />
+                        <MudIcon Icon="@SvgResource.SolidLine" />
                     </MudToggleItem>
                     <MudToggleItem Value="@LineStyle.Dashed">
-                        <MudIcon Icon="@dottetLine" />
+                        <MudIcon Icon="@SvgResource.DottetLine" />
                     </MudToggleItem>
                     <MudToggleItem Value="@LineStyle.Dotted">
-                        <MudIcon Icon="@dashedLine" />
+                        <MudIcon Icon="@SvgResource.DashedLine" />
                     </MudToggleItem>
                 </MudToggleGroup>
                 <MudText>Select Line End:</MudText>
                 <MudToggleGroup T="LineEnd" Color="Color.Success" Value="TacticToolService.AllOptions.FreeDrawOptions!.LineEnd" ValueChanged="OnFreeEndChange" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
                     <MudToggleItem Value="@LineEnd.Normal">
-                        <MudIcon Icon="@solidLine" />
+                        <MudIcon Icon="@SvgResource.SolidLine" />
                     </MudToggleItem>
                     <MudToggleItem Value="@LineEnd.Arrow">
-                        <MudIcon Icon="@arrowHead" />
+                        <MudIcon Icon="@SvgResource.ArrowHead" />
                     </MudToggleItem>
                     <MudToggleItem Value="@LineEnd.Flat">
-                        <MudIcon Icon="@straightArrow" />
+                        <MudIcon Icon="@SvgResource.StraightArrow" />
                     </MudToggleItem>
                 </MudToggleGroup>
             </MudPaper>
@@ -135,13 +136,13 @@
                 <MudText>Select Line Style:</MudText>
                 <MudToggleGroup T="LineStyle" Color="Color.Success" Value="TacticToolService.AllOptions.ShapeOptions!.OutlineStyle" ValueChanged="OnShapeLineStyleChanged" Size="Size.Small" Outlined="false" SelectionMode="SelectionMode.SingleSelection">
                     <MudToggleItem Value="@LineStyle.Normal">
-                        <MudIcon Icon="@solidLine" />
+                        <MudIcon Icon="@SvgResource.SolidLine" />
                     </MudToggleItem>
                     <MudToggleItem Value="@LineStyle.Dashed">
-                        <MudIcon Icon="@dottetLine" />
+                        <MudIcon Icon="@SvgResource.DottetLine" />
                     </MudToggleItem>
                     <MudToggleItem Value="@LineStyle.Dotted">
-                        <MudIcon Icon="@dashedLine" />
+                        <MudIcon Icon="@SvgResource.DashedLine" />
                     </MudToggleItem>
                 </MudToggleGroup>
             </MudPaper>
@@ -159,7 +160,7 @@
         <MudTabPanel Icon="@Icons.Material.Filled.BackHand" @onclick="() => ChangeTool(Models.Tools.ToolType.Move)" ToolTip="Enable Dragging">
             <MudText>Selection is prioritizing small Items</MudText>
         </MudTabPanel>
-        <MudTabPanel Icon="@eraserIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.Erase)" ToolTip="Erase">
+        <MudTabPanel Icon="@SvgResource.EraserIcon" @onclick="() => ChangeTool(Models.Tools.ToolType.Erase)" ToolTip="Erase">
             <MudText>Selection is prioritizing small Items</MudText>
         </MudTabPanel>
     </MudTabs>
