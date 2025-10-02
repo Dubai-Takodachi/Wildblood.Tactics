@@ -75,38 +75,24 @@ public partial class UnitSelector
 
     private List<Unit> GetFilteredAndSortedUnits()
     {
-        var query = units.AsEnumerable();
-
-        if (!string.IsNullOrWhiteSpace(unitSearchText))
+        Func<IOrderedEnumerable<Unit>, IOrderedEnumerable<Unit>> applyThenBy = unitSortBy switch
         {
-            query = query.Where(u => u
-                .Name.ToString().Contains(unitSearchText, StringComparison.OrdinalIgnoreCase));
-        }
-
-        if (selectedUnitEra.HasValue)
-        {
-            query = query.Where(u => u.Era == selectedUnitEra);
-        }
-
-        if (selectedUnitPrimaryType.HasValue)
-        {
-            query = query.Where(u => u.PrimaryType == selectedUnitPrimaryType);
-        }
-
-        if (selectedUnitSecondaryType.HasValue)
-        {
-            query = query.Where(u => u.SecondaryType == selectedUnitSecondaryType);
-        }
-
-        var orderedQuery = query.OrderByDescending(u => favoriteUnits.Contains(u.Name));
-
-        orderedQuery = unitSortBy switch
-        {
-            "Influence" => orderedQuery.ThenBy(u => u.Influence),
-            "InfluenceDesc" => orderedQuery.ThenByDescending(u => u.Influence),
-            _ => orderedQuery.ThenBy(u => u.Name.ToString()),
+            "Influence" => (IOrderedEnumerable<Unit> query) => query.ThenBy(u => u.Influence),
+            "InfluenceDesc" => (IOrderedEnumerable<Unit> query) => query.ThenByDescending(u => u.Influence),
+            _ => (IOrderedEnumerable<Unit> query) => query.ThenBy(u => u.Name.ToString()),
         };
 
-        return orderedQuery.ToList();
+        var query = units.AsEnumerable()
+            .Where(u =>
+                string.IsNullOrWhiteSpace(unitSearchText)
+                    || u.Name.ToString().Contains(unitSearchText, StringComparison.OrdinalIgnoreCase))
+            .Where(u => !selectedUnitEra.HasValue || u.Era == selectedUnitEra)
+            .Where(u => !selectedUnitPrimaryType.HasValue || u.PrimaryType == selectedUnitPrimaryType)
+            .Where(u => !selectedUnitSecondaryType.HasValue || u.SecondaryType == selectedUnitSecondaryType)
+            .OrderByDescending(u => favoriteUnits.Contains(u.Name));
+
+        query = applyThenBy(query);
+
+        return [.. query];
     }
 }
