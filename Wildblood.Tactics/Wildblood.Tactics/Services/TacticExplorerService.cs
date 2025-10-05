@@ -35,121 +35,123 @@ public class TacticExplorerService : ITacticExplorerService
         this.userService = userService;
         this.tactics = mongoDatabase.GetCollection<Tactic>("Tactics");
 
-        connections.Add(
-            hubConnectionService.Register(hub => hub.On<string, string, string, object>(
-                "UpdateTactic", async (tacticId, folderId, slideId, json) =>
+        connections.AddRange(
+            UpdateTactic(hubConnectionService),
+            UpdateEntities(hubConnectionService),
+            ReceivePing(hubConnectionService));
+    }
+
+    private IDisposable ReceivePing(IHubConnectionService hubConnectionService) =>
+        hubConnectionService.Register(hub => hub.On<string, string, string, object>(
+        "Ping", async (tacticId, folderId, slideId, json) =>
+        {
+            Console.WriteLine("received Ping: " + tacticId + " " + folderId + " " + slideId);
+
+            if (tacticId != CurrentTactic.Id ||
+                folderId != CurrentFolder.Id ||
+                slideId != CurrentSlide.Id)
+            {
+                return;
+            }
+
+            var entity = JsonSerializer.Deserialize<Entity>(json.ToString()!, jsonOptions);
+
+            if (entity is null)
+            {
+                Console.WriteLine($"couldn't deserialize {nameof(Entity)}!");
+                return;
+            }
+
+            if (OnPing != null)
+            {
+                await OnPing.Invoke(entity);
+            }
+        }));
+
+    private IDisposable UpdateEntities(IHubConnectionService hubConnectionService) =>
+        hubConnectionService.Register(hub => hub.On<string, string, string, object>(
+        "UpdateEntities", async (tacticId, folderId, slideId, json) =>
+        {
+            Console.WriteLine(
+                "received entity update: " + tacticId + " " + folderId + " " + slideId);
+
+            if (tacticId != CurrentTactic.Id ||
+                folderId != CurrentFolder.Id ||
+                slideId != CurrentSlide.Id)
+            {
+                return;
+            }
+
+            var message = JsonSerializer.Deserialize<UpdateEntitiesMessage>(
+                json.ToString()!, jsonOptions);
+
+            if (message is null)
+            {
+                Console.WriteLine($"couldn't deserialize {nameof(UpdateEntitiesMessage)}!");
+                return;
+            }
+
+            CurrentSlide.Entities = CurrentSlide.Entities
+                .Where(x => !(message.EntityIdsToDelete ?? []).Contains(x.Id))
+                .Where(e => !(message.EntitiesToOverwrite ?? []).Any(x => x.Id == e.Id))
+                .Concat(message.EntitiesToOverwrite ?? [])
+                .ToList();
+
+            if (OnTacticChanged != null)
+            {
+                await OnTacticChanged.Invoke();
+            }
+
+        }));
+
+    private IDisposable UpdateTactic(IHubConnectionService hubConnectionService) =>
+        hubConnectionService.Register(hub => hub.On<string, string, string, object>(
+    "UpdateTactic", async (tacticId, folderId, slideId, json) =>
+        {
+            if (tacticId != CurrentTactic.Id)
+            {
+                return;
+            }
+
+            Console.WriteLine($"Received update for tactic {tacticId}");
+
+            var message = JsonSerializer.Deserialize<UpdateTacticMessage>(
+                json.ToString()!, jsonOptions);
+
+            if (message is null)
+            {
+                Console.WriteLine($"couldn't deserialize {nameof(UpdateTacticMessage)}!");
+                return;
+            }
+
+            UpdateCurrentTactic(message);
+
+            if (slideId == CurrentSlide.Id && folderId == CurrentFolder.Id)
+            {
+                CurrentFolder = CurrentTactic.Folders.Single(folder => folder.Id == folderId);
+                CurrentSlide = CurrentFolder.Slides.Single(slide => slide.Id == slideId);
+            }
+
+            if (OnTacticChanged != null)
+            {
+                await OnTacticChanged.Invoke();
+            }
+        }));
+
+    private void UpdateCurrentTactic(UpdateTacticMessage message)
+    {
+        CurrentTactic = message.TacticWithoutEntities with
+        {
+            Folders = [.. message.TacticWithoutEntities.Folders.Select(newFolder => newFolder with
+            {
+                Slides = [.. newFolder.Slides.Select(newSlide => newSlide with
                 {
-                    if (tacticId == CurrentTactic.Id)
-                    {
-                        Console.WriteLine($"Received update for tactic {tacticId}");
-
-                        var message = JsonSerializer.Deserialize<UpdateTacticMessage>(
-                            json.ToString()!, jsonOptions);
-
-                        if (message is null)
-                        {
-                            Console.WriteLine($"couldn't deserialize {nameof(UpdateTacticMessage)}!");
-                            return;
-                        }
-
-                        CurrentTactic = message.TacticWithoutEntities with
-                        {
-                            Folders = message.TacticWithoutEntities.Folders.Select(newFolder =>
-                            {
-                                var currentFolder = CurrentTactic.Folders
-                                    .SingleOrDefault(f => f.Id == newFolder.Id);
-
-                                return newFolder with
-                                {
-                                    Slides = newFolder.Slides.Select(newSlide =>
-                                    {
-                                        var currentSlide = currentFolder?.Slides
-                                            .SingleOrDefault(s => s.Id == newSlide.Id);
-
-                                        return newSlide with
-                                        {
-                                            Entities = CurrentSlide.Entities ?? new List<Entity>(),
-                                        };
-                                    }).ToList(),
-                                };
-                            }).ToList(),
-                        };
-
-                        if (slideId == CurrentSlide.Id && folderId == CurrentFolder.Id)
-                        {
-                            CurrentFolder = CurrentTactic.Folders.Single(folder => folder.Id == folderId);
-                            CurrentSlide = CurrentFolder.Slides.Single(slide => slide.Id == slideId);
-                        }
-
-                        if (OnTacticChanged != null)
-                        {
-                            await OnTacticChanged.Invoke();
-                        }
-                    }
-                })));
-
-        connections.Add(
-            hubConnectionService.Register(hub => hub.On<string, string, string, object>(
-                "UpdateEntities", async (tacticId, folderId, slideId, json) =>
-                {
-                    Console.WriteLine(
-                        "received entity update: " + tacticId + " " + folderId + " " + slideId);
-
-                    if (tacticId != CurrentTactic.Id ||
-                        folderId != CurrentFolder.Id ||
-                        slideId != CurrentSlide.Id)
-                    {
-                        return;
-                    }
-
-                    var message = JsonSerializer.Deserialize<UpdateEntitiesMessage>(
-                        json.ToString()!, jsonOptions);
-
-                    if (message is null)
-                    {
-                        Console.WriteLine($"couldn't deserialize {nameof(UpdateEntitiesMessage)}!");
-                        return;
-                    }
-
-                    CurrentSlide.Entities = CurrentSlide.Entities
-                        .Where(x => !(message.EntityIdsToDelete ?? []).Contains(x.Id))
-                        .Where(e => !(message.EntitiesToOverwrite ?? []).Any(x => x.Id == e.Id))
-                        .Concat(message.EntitiesToOverwrite ?? [])
-                        .ToList();
-
-                    if (OnTacticChanged != null)
-                    {
-                        await OnTacticChanged.Invoke();
-                    }
-
-                })));
-
-        connections.Add(
-            hubConnectionService.Register(hub => hub.On<string, string, string, object>(
-                "Ping", async (tacticId, folderId, slideId, json) =>
-                {
-                    Console.WriteLine("received Ping: " + tacticId + " " + folderId + " " + slideId);
-
-                    if (tacticId != CurrentTactic.Id ||
-                        folderId != CurrentFolder.Id ||
-                        slideId != CurrentSlide.Id)
-                    {
-                        return;
-                    }
-
-                    var entity = JsonSerializer.Deserialize<Entity>(json.ToString()!, jsonOptions);
-
-                    if (entity is null)
-                    {
-                        Console.WriteLine($"couldn't deserialize {nameof(Entity)}!");
-                        return;
-                    }
-
-                    if (OnPing != null)
-                    {
-                        await OnPing.Invoke(entity);
-                    }
-                })));
+                    Entities = CurrentTactic.Folders
+                        .SingleOrDefault(f => f.Id == newFolder.Id)?.Slides
+                        .SingleOrDefault(s => s.Id == newSlide.Id)?.Entities ?? [],
+                })],
+            })],
+        };
     }
 
     public async Task SendTacticUpdate()
@@ -371,7 +373,7 @@ public class TacticExplorerService : ITacticExplorerService
         public int? SlideIndex { get; init; }
     }
 
-    private TacticNavigation GetNavigation(
+    private static TacticNavigation GetNavigation(
         Tactic tactic, string? folderId = null, string? slideId = null)
     {
         int? folderIndex = folderId != null

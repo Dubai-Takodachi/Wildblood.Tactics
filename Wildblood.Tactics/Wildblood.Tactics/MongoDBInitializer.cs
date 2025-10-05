@@ -1,34 +1,24 @@
-﻿namespace Wildblood.Tactics
+﻿namespace Wildblood.Tactics;
+
+using Microsoft.Extensions.Options;
+using MongoDB.Bson;
+using MongoDB.Driver;
+
+public class MongoDbInitializer(IMongoClient mongoClient, IOptions<MongoDbSettings> settings)
 {
-    using Microsoft.Extensions.Options;
-    using MongoDB.Bson;
-    using MongoDB.Driver;
-
-    public class MongoDbInitializer
+    public void Initialize()
     {
-        private readonly IMongoClient _mongoClient;
-        private readonly MongoDbSettings _settings;
+        var database = mongoClient.GetDatabase(settings.Value.DatabaseName);
+        var collectionName = "Tactics";
 
-        public MongoDbInitializer(IMongoClient mongoClient, IOptions<MongoDbSettings> settings)
+        var filter = new BsonDocument("name", collectionName);
+        var collection = database.ListCollections(new ListCollectionsOptions { Filter = filter });
+
+        if (collection.Any())
         {
-            _mongoClient = mongoClient;
-            _settings = settings.Value;
+            return;
         }
 
-        public void Initialize()
-        {
-            var database = _mongoClient.GetDatabase(_settings.DatabaseName);
-            var collectionName = "Tactics";
-
-            var filter = new BsonDocument("name", collectionName);
-            var collection = database.ListCollections(new ListCollectionsOptions { Filter = filter });
-
-            if (collection.Any())
-            {
-                return;
-            }
-
-            database.CreateCollection(collectionName);
-        }
+        database.CreateCollection(collectionName);
     }
 }

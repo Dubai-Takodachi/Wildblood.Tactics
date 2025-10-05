@@ -1,8 +1,8 @@
 ﻿namespace Wildblood.Tactics
 {
-    public class MongoDbSettings
+    public record MongoDbSettings
     {
-        public string ConnectionString { get; set; }
-        public string DatabaseName { get; set; }
+        public required string ConnectionString { get; set; }
+        public required string DatabaseName { get; set; }
     }
 }
