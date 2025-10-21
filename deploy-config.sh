@@ -28,6 +28,10 @@ validate_env_vars() {
     [ -z "$MONGO_USERNAME" ] && missing_vars+=("MONGO_USERNAME")
     [ -z "$MONGO_PASSWORD" ] && missing_vars+=("MONGO_PASSWORD")
     [ -z "$SQL_PASSWORD" ] && missing_vars+=("SQL_PASSWORD")
+    [ -z "$EMAIL_SMTP_SERVER" ] && missing_vars+=("EMAIL_SMTP_SERVER")
+    [ -z "$EMAIL_SMTP_PORT" ] && missing_vars+=("EMAIL_SMTP_PORT")
+    [ -z "$EMAIL_SMTP_USER" ] && missing_vars+=("EMAIL_SMTP_USER")
+    [ -z "$EMAIL_SMTP_PASSWORD" ] && missing_vars+=("EMAIL_SMTP_PASSWORD")
     
     if [ ${#missing_vars[@]} -ne 0 ]; then
         echo "❌ Missing required environment variables: ${missing_vars[*]}"
@@ -101,6 +105,18 @@ if [ -f "$APPSETTINGS_PATH" ]; then
     ESCAPED_MONGO_PASSWORD=$(printf '%s\n' "$MONGO_PASSWORD" | sed 's/[[\.*^$()+?{|]/\\&/g')
     sed -i "s|mongodb://testuser:TestMongo123!@mongodb:27017|mongodb://$MONGO_USERNAME:$ESCAPED_MONGO_PASSWORD@mongodb:27017|g" "$APPSETTINGS_PATH"
     
+    # Update EmailSettings - need to escape special characters
+    ESCAPED_EMAIL_PASSWORD=$(printf '%s\n' "$EMAIL_SMTP_PASSWORD" | sed 's/[[\.*^$()+?{|]/\\&/g')
+    ESCAPED_EMAIL_USER=$(printf '%s\n' "$EMAIL_SMTP_USER" | sed 's/[[\.*^$()+?{|]/\\&/g')
+    ESCAPED_EMAIL_SERVER=$(printf '%s\n' "$EMAIL_SMTP_SERVER" | sed 's/[[\.*^$()+?{|]/\\&/g')
+    ESCAPED_FROM_NAME=$(printf '%s\n' "${EMAIL_FROM_NAME:-Wildblood Tactics}" | sed 's/[[\.*^$()+?{|]/\\&/g')
+    
+    sed -i "s|\"SmtpServer\": \"[^\"]*\"|\"SmtpServer\": \"$ESCAPED_EMAIL_SERVER\"|g" "$APPSETTINGS_PATH"
+    sed -i "s|\"SmtpPort\": [0-9]*|\"SmtpPort\": $EMAIL_SMTP_PORT|g" "$APPSETTINGS_PATH"
+    sed -i "s|\"SmtpUser\": \"[^\"]*\"|\"SmtpUser\": \"$ESCAPED_EMAIL_USER\"|g" "$APPSETTINGS_PATH"
+    sed -i "s|\"SmtpPassword\": \"[^\"]*\"|\"SmtpPassword\": \"$ESCAPED_EMAIL_PASSWORD\"|g" "$APPSETTINGS_PATH"
+    sed -i "s|\"FromName\": \"[^\"]*\"|\"FromName\": \"$ESCAPED_FROM_NAME\"|g" "$APPSETTINGS_PATH"
+    
     echo "   ✅ appsettings.json updated"
 else
     echo "   ❌ appsettings.json not found!"
@@ -130,6 +146,11 @@ echo "========================"
 echo "MongoDB Username: $MONGO_USERNAME"
 echo "MongoDB Password: [HIDDEN]"
 echo "SQL Password: [HIDDEN]"
+echo "Email SMTP Server: $EMAIL_SMTP_SERVER"
+echo "Email SMTP Port: $EMAIL_SMTP_PORT"
+echo "Email SMTP User: $EMAIL_SMTP_USER"
+echo "Email SMTP Password: [HIDDEN]"
+echo "Email From Name: ${EMAIL_FROM_NAME:-Wildblood Tactics}"
 echo "Domain: $DOMAIN"
 echo "Hub URL: https://$DOMAIN/tacticshub"
 
@@ -142,6 +163,13 @@ cat > ./deployment-config.json << EOF
   },
   "SQL": {
     "Password": "[HIDDEN - Check .env file]"
+  },
+  "Email": {
+    "SmtpServer": "$EMAIL_SMTP_SERVER",
+    "SmtpPort": $EMAIL_SMTP_PORT,
+    "SmtpUser": "$EMAIL_SMTP_USER",
+    "SmtpPassword": "[HIDDEN - Check .env file]",
+    "FromName": "${EMAIL_FROM_NAME:-Wildblood Tactics}"
   },
   "Domain": "$DOMAIN",
   "HubURL": "https://$DOMAIN/tacticshub",

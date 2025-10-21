@@ -34,7 +34,8 @@ def load_env_file(env_path=".env"):
 
 def validate_env_vars(env_vars):
     """Validate that all required environment variables are present."""
-    required_vars = ['DOMAIN', 'MONGO_USERNAME', 'MONGO_PASSWORD', 'SQL_PASSWORD']
+    required_vars = ['DOMAIN', 'MONGO_USERNAME', 'MONGO_PASSWORD', 'SQL_PASSWORD',
+                     'EMAIL_SMTP_SERVER', 'EMAIL_SMTP_PORT', 'EMAIL_SMTP_USER', 'EMAIL_SMTP_PASSWORD']
     missing_vars = [var for var in required_vars if not env_vars.get(var)]
     
     if missing_vars:
@@ -93,7 +94,7 @@ def update_docker_compose(file_path, mongo_username, mongo_password, sql_passwor
     with open(file_path, 'w') as f:
         f.write(content)
 
-def update_appsettings(file_path, mongo_username, mongo_password, sql_password):
+def update_appsettings(file_path, mongo_username, mongo_password, sql_password, email_settings):
     """Update appsettings.json with new configuration."""
     with open(file_path, 'r') as f:
         data = json.load(f)
@@ -106,6 +107,15 @@ def update_appsettings(file_path, mongo_username, mongo_password, sql_password):
     
     # Update MongoDbSettings.ConnectionString
     data['MongoDbSettings']['ConnectionString'] = f'mongodb://{mongo_username}:{mongo_password}@mongodb:27017'
+    
+    # Update EmailSettings
+    if 'EmailSettings' not in data:
+        data['EmailSettings'] = {}
+    data['EmailSettings']['SmtpServer'] = email_settings['server']
+    data['EmailSettings']['SmtpPort'] = int(email_settings['port'])
+    data['EmailSettings']['SmtpUser'] = email_settings['user']
+    data['EmailSettings']['SmtpPassword'] = email_settings['password']
+    data['EmailSettings']['FromName'] = email_settings.get('from_name', 'Wildblood Tactics')
     
     with open(file_path, 'w') as f:
         json.dump(data, f, indent=2)
@@ -135,6 +145,13 @@ def main():
     mongo_username = env_vars['MONGO_USERNAME']
     mongo_password = env_vars['MONGO_PASSWORD']
     sql_password = env_vars['SQL_PASSWORD']
+    email_settings = {
+        'server': env_vars['EMAIL_SMTP_SERVER'],
+        'port': env_vars['EMAIL_SMTP_PORT'],
+        'user': env_vars['EMAIL_SMTP_USER'],
+        'password': env_vars['EMAIL_SMTP_PASSWORD'],
+        'from_name': env_vars.get('EMAIL_FROM_NAME', 'Wildblood Tactics')
+    }
     
     # Ensure domain has https:// prefix
     if not domain.startswith('http'):
@@ -144,6 +161,7 @@ def main():
     print("=====================================================")
     print("📁 Reading configuration from .env file")
     print(f"📝 MongoDB Username: {mongo_username}")
+    print(f"📝 Email SMTP Server: {email_settings['server']}")
     print(f"📝 Domain: {domain}")
     
     # File paths
@@ -167,7 +185,7 @@ def main():
     if appsettings_path.exists():
         # Create backup
         appsettings_path.with_suffix('.json.backup').write_text(appsettings_path.read_text())
-        update_appsettings(appsettings_path, mongo_username, mongo_password, sql_password)
+        update_appsettings(appsettings_path, mongo_username, mongo_password, sql_password, email_settings)
         print("   ✅ appsettings.json updated")
     else:
         print("   ❌ appsettings.json not found!")
@@ -190,6 +208,11 @@ def main():
     print(f"MongoDB Username: {mongo_username}")
     print(f"MongoDB Password: [HIDDEN]")
     print(f"SQL Password: [HIDDEN]")
+    print(f"Email SMTP Server: {email_settings['server']}")
+    print(f"Email SMTP Port: {email_settings['port']}")
+    print(f"Email SMTP User: {email_settings['user']}")
+    print(f"Email SMTP Password: [HIDDEN]")
+    print(f"Email From Name: {email_settings['from_name']}")
     print(f"Domain: {domain}")
     print(f"Hub URL: {domain}/tacticshub")
     
@@ -201,6 +224,13 @@ def main():
         },
         "SQL": {
             "Password": "[HIDDEN - Check .env file]"
+        },
+        "Email": {
+            "SmtpServer": email_settings['server'],
+            "SmtpPort": email_settings['port'],
+            "SmtpUser": email_settings['user'],
+            "SmtpPassword": "[HIDDEN - Check .env file]",
+            "FromName": email_settings['from_name']
         },
         "Domain": domain,
         "HubURL": f"{domain}/tacticshub",
