@@ -20,6 +20,10 @@ public record Tactic
     [JsonPropertyName("userId")]
     public required string UserId { get; set; }
 
+    [BsonElement("accessMode")]
+    [JsonPropertyName("accessMode")]
+    public TacticAccessMode AccessMode { get; set; } = TacticAccessMode.Private;
+
     [BsonElement("folder")]
     [JsonPropertyName("folder")]
     public required List<Folder> Folders { get; set; }

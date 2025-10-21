@@ -4,8 +4,11 @@
 
 @using Wildblood.Tactics.Components.MainPage
 @using Wildblood.Tactics.Services
+@using Wildblood.Tactics.Models
+@using MongoDB.Bson
 
 @inject ITacticExplorerService explorer;
+@inject NavigationManager NavigationManager
 
 @rendermode InteractiveServer
 
@@ -26,6 +29,9 @@
     [Parameter]
     public string? ID { get; set; }
 
+    [SupplyParameterFromQuery(Name = "mode")]
+    public int? Mode { get; set; }
+
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
@@ -35,7 +41,49 @@
     {
         if (ID != null)
         {
-            await explorer.ChangeTactic(ID);
+            // Check if this is a local tactic (mode = 2)
+            if (Mode == 2)
+            {
+                // For local tactics, we need to create a new instance if not already loaded
+                var currentTactic = explorer.CurrentTactic;
+                if (currentTactic == null || currentTactic.Id != ID)
+                {
+                    // Create a new local tactic
+                    var localTactic = new Tactic
+                    {
+                        Id = ID,
+                        Name = "Local Tactic",
+                        UserId = "anonymous",
+                        AccessMode = TacticAccessMode.Local,
+                        Folders = new List<Folder> {
+                            new Folder {
+                                Id = ObjectId.GenerateNewId().ToString(),
+                                Name = "Folder 1",
+                                Slides = new List<Slide> {
+                                    new Slide {
+                                        Id = ObjectId.GenerateNewId().ToString(),
+                                        Name = "Slide 1",
+                                        Entities = new List<Entities.Entity>(),
+                                    }
+                                }
+                            }
+                        },
+                        Members = new List<MemberRole>
+                        {
+                            new MemberRole
+                            {
+                                Name = "Anonymous",
+                                Roles = Role.Admin,
+                            }
+                        },
+                    };
+                    await explorer.SetLocalTactic(localTactic);
+                }
+            }
+            else
+            {
+                await explorer.ChangeTactic(ID);
+            }
         }
     }
 }

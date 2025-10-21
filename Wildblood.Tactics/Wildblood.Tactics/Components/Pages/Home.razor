@@ -6,47 +6,92 @@
 @using MongoDB.Bson;
 @using Wildblood.Tactics.Entities
 @using Wildblood.Tactics.Models
-@attribute [Authorize]
 @inject IMongoDatabase  Database;
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @rendermode InteractiveServer
 <PageTitle>Home</PageTitle>
 
 <article Style="padding-left: 2rem; padding-right: 1.5rem;">
-    <AuthorizeView>
-        <Authorized>
-            <div>
-                <h1>Welcome To Wildblood.Tactics!</h1>
-                <input type="button" class="btn btn-primary" value="Create New Tactic" @onclick="CreateNewTactic" />
-            </div>
-        </Authorized>
-    </AuthorizeView>
+    <div>
+        <h1>Welcome To Wildblood.Tactics!</h1>
+        
+        <AuthorizeView>
+            <Authorized>
+                <div style="margin-top: 2rem;">
+                    <h3>Create New Tactic (With Account)</h3>
+                    <p>Create a private tactic that only you can edit. Your tactic will be saved to your account.</p>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" @onclick="@(() => CreateNewTactic(TacticAccessMode.Private))">
+                        Create Private Tactic
+                    </MudButton>
+                </div>
+            </Authorized>
+            <NotAuthorized>
+                <div style="margin-top: 2rem;">
+                    <p>You can create tactics without an account! Choose your preferred mode:</p>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
+
+        <div style="margin-top: 2rem;">
+            <h3>Create New Tactic (Without Account - Public)</h3>
+            <p>Create a public tactic that anyone can view and edit. The tactic will be saved but accessible to everyone.</p>
+            <MudButton Variant="Variant.Filled" Color="Color.Secondary" @onclick="@(() => CreateNewTactic(TacticAccessMode.Public))">
+                Create Public Tactic
+            </MudButton>
+        </div>
+
+        <div style="margin-top: 2rem;">
+            <h3>Create New Tactic (Without Account - Local Only)</h3>
+            <p>Create a local tactic that is not saved to the server. You can export and import your tactic data.</p>
+            <MudButton Variant="Variant.Filled" Color="Color.Info" @onclick="@(() => CreateNewTactic(TacticAccessMode.Local))">
+                Create Local Tactic
+            </MudButton>
+        </div>
+    </div>
 </article>
 
 @code {
 
-    private async Task CreateNewTactic()
+    private async Task CreateNewTactic(TacticAccessMode accessMode)
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
+        string userId;
+        string userName;
+
         if (user.Identity?.IsAuthenticated == true)
         {
-            var userId = user.FindFirst(c => c.Type == "sub")?.Value ??
-                user.FindFirst(c => c.Type == "nameidentifier")?.Value ?? user.Identity.Name;
-            var tactic = CreateTacticDocument(userId, user.Identity.Name);
+            userId = user.FindFirst(c => c.Type == "sub")?.Value ??
+                user.FindFirst(c => c.Type == "nameidentifier")?.Value ?? user.Identity.Name ?? "Anonymous";
+            userName = user.Identity.Name ?? "Anonymous";
+        }
+        else
+        {
+            // For anonymous users
+            userId = "anonymous";
+            userName = "Anonymous";
+        }
+
+        var tactic = CreateTacticDocument(userId, userName, accessMode);
+
+        // Only save to database if not Local mode
+        if (accessMode != TacticAccessMode.Local)
+        {
             var collection = Database.GetCollection<Tactic>("Tactics");
             collection.InsertOne(tactic);
-            NavigationManager.NavigateTo("/tactics/" + tactic.Id);
         }
+
+        NavigationManager.NavigateTo("/tactics/" + tactic.Id + "?mode=" + ((int)accessMode).ToString());
     }
 
-    private Tactic CreateTacticDocument(string user, string userName) {
+    private Tactic CreateTacticDocument(string user, string userName, TacticAccessMode accessMode) {
         return new Tactic
         {
             Id = ObjectId.GenerateNewId().ToString(),
             Name = "New Tactic",
             UserId = user,
+            AccessMode = accessMode,
             Folders = new List<Folder> {
                 new Folder {
                     Id = ObjectId.GenerateNewId().ToString(),
@@ -65,7 +110,7 @@
                 new MemberRole
                 {
                     Name = userName,
-                    Roles = Role.Owner,
+                    Roles = accessMode == TacticAccessMode.Private ? Role.Owner : Role.Admin,
                 }
             },
         };

@@ -9,28 +9,45 @@
 @rendermode InteractiveServer
 
 <article Style="padding-left: 2rem; padding-right: 1.5rem;">
+    <h2>@PageTitle</h2>
     <MudDataGrid Items="Tactics" RowClick="OnRowClicked" T="Tactic">
         <Columns>
             <PropertyColumn Property="item => item.Name" Title="Name" />
             <PropertyColumn Property="item => item.UserId" Title="Creator" />
+            <PropertyColumn Property="item => item.AccessMode" Title="Access Mode" />
         </Columns>
     </MudDataGrid>
 </article>
 
 
 @code {
-    // TODO: MAKE IT MORE BEAUTIFUL
     private List<Tactic> Tactics { get; set; } = new List<Tactic>();
     private Tactic selectedTactic;
+    private string PageTitle = "Saved Tactics";
 
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User.FindFirst(c => c.Type == "sub")?.Value
-            ?? authState.User.FindFirst(c => c.Type == "nameidentifier")?.Value
-            ?? authState.User.Identity!.Name;
-        Tactics = await Database.GetCollection<Tactic>("Tactics")
-            .Find(t => t.UserId == user).ToListAsync();
+        var isAuthenticated = authState.User.Identity?.IsAuthenticated ?? false;
+
+        if (isAuthenticated)
+        {
+            var user = authState.User.FindFirst(c => c.Type == "sub")?.Value
+                ?? authState.User.FindFirst(c => c.Type == "nameidentifier")?.Value
+                ?? authState.User.Identity!.Name;
+            
+            // Show only user's private tactics
+            Tactics = await Database.GetCollection<Tactic>("Tactics")
+                .Find(t => t.UserId == user && t.AccessMode == TacticAccessMode.Private).ToListAsync();
+            PageTitle = "My Private Tactics";
+        }
+        else
+        {
+            // Show all public tactics for anonymous users
+            Tactics = await Database.GetCollection<Tactic>("Tactics")
+                .Find(t => t.AccessMode == TacticAccessMode.Public).ToListAsync();
+            PageTitle = "Public Tactics";
+        }
     }
 
     private void OnRowClicked(DataGridRowClickEventArgs<Tactic> args)

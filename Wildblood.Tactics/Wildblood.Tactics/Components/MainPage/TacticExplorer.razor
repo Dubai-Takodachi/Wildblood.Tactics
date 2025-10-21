@@ -7,6 +7,8 @@
                     <div style="justify-self: end;">
                         <MudIconButton Icon="@Icons.Material.Filled.Edit" @onclick="@(async (args) => await OnClickTacticRename())" />
                         <MudIconButton Icon="@Icons.Material.Filled.AddBox" @onclick="@(async (args) => await OnAddFolder())" />
+                        <MudIconButton Icon="@Icons.Material.Filled.FileDownload" Title="Export Tactic" @onclick="@(async (args) => await OnExportTactic())" />
+                        <MudIconButton Icon="@Icons.Material.Filled.FileUpload" Title="Import Tactic" @onclick="@(async (args) => await OnImportTactic())" />
                     </div>
                 </div>
             </BodyContent>

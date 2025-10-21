@@ -208,10 +208,86 @@ public class TacticExplorerService : ITacticExplorerService
     public Tactic? GetTactic(string? id) =>
         tactics.Find(t => t.Id == id).FirstOrDefault();
 
+    public string ExportTactic()
+    {
+        return JsonSerializer.Serialize(CurrentTactic, new JsonSerializerOptions 
+        { 
+            WriteIndented = true 
+        });
+    }
+
+    public async Task ImportTactic(string jsonData)
+    {
+        try
+        {
+            var importedTactic = JsonSerializer.Deserialize<Tactic>(jsonData, jsonOptions);
+            if (importedTactic != null)
+            {
+                // Generate new IDs to avoid conflicts
+                importedTactic.Id = ObjectId.GenerateNewId().ToString();
+                foreach (var folder in importedTactic.Folders)
+                {
+                    folder.Id = ObjectId.GenerateNewId().ToString();
+                    foreach (var slide in folder.Slides)
+                    {
+                        slide.Id = ObjectId.GenerateNewId().ToString();
+                        foreach (var entity in slide.Entities)
+                        {
+                            entity.Id = ObjectId.GenerateNewId().ToString();
+                        }
+                    }
+                }
+
+                CurrentTactic = importedTactic;
+                CurrentFolder = CurrentTactic.Folders[0];
+                CurrentSlide = CurrentFolder.Slides[0];
+
+                // Save to database if not a local tactic
+                if (CurrentTactic.AccessMode != TacticAccessMode.Local)
+                {
+                    await tactics.InsertOneAsync(CurrentTactic);
+                }
+
+                if (OnTacticChanged != null)
+                {
+                    await OnTacticChanged.Invoke();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error importing tactic: {ex.Message}");
+        }
+    }
+
+    public async Task SetLocalTactic(Tactic tactic)
+    {
+        CurrentTactic = tactic;
+        CurrentFolder = CurrentTactic.Folders[0];
+        CurrentSlide = CurrentFolder.Slides[0];
+
+        if (OnTacticChanged != null)
+        {
+            await OnTacticChanged.Invoke();
+        }
+    }
+
     public async Task UpdateMap(string mapPath)
     {
         if (!await userService.CheckHasEditAcces(CurrentTactic))
         {
+            return;
+        }
+
+        CurrentSlide.MapPath = mapPath;
+
+        // Don't save to database if it's a local tactic
+        if (CurrentTactic.AccessMode == TacticAccessMode.Local)
+        {
+            if (OnTacticChanged != null)
+            {
+                await OnTacticChanged.Invoke();
+            }
             return;
         }
 
@@ -229,6 +305,14 @@ public class TacticExplorerService : ITacticExplorerService
     public async Task UpdateServerEntities(List<Entity> entities)
     {
         if (!await userService.CheckHasEditAcces(CurrentTactic))
+        {
+            return;
+        }
+
+        CurrentSlide.Entities = entities;
+
+        // Don't save to database if it's a local tactic
+        if (CurrentTactic.AccessMode == TacticAccessMode.Local)
         {
             return;
         }
@@ -251,6 +335,18 @@ public class TacticExplorerService : ITacticExplorerService
             return;
         }
 
+        var folder = GetFolder(tactic, folderId);
+        if (folder != null)
+        {
+            folder.Name = newName;
+        }
+
+        // Don't save to database if it's a local tactic
+        if (CurrentTactic.AccessMode == TacticAccessMode.Local)
+        {
+            return;
+        }
+
         var nav = GetNavigation(tactic, folderId);
         var update = Builders<Tactic>.Update
             .Set(t => t.Folders[nav.FolderIndex!.Value].Name, newName);
@@ -267,6 +363,18 @@ public class TacticExplorerService : ITacticExplorerService
     public async Task UpdateSlideName(Tactic tactic, string folderId, string slideId, string newName)
     {
         if (!await userService.CheckHasEditAcces(CurrentTactic))
+        {
+            return;
+        }
+
+        var slide = GetSlide(tactic, folderId, slideId);
+        if (slide != null)
+        {
+            slide.Name = newName;
+        }
+
+        // Don't save to database if it's a local tactic
+        if (CurrentTactic.AccessMode == TacticAccessMode.Local)
         {
             return;
         }
@@ -292,6 +400,12 @@ public class TacticExplorerService : ITacticExplorerService
             Entities = [],
         };
 
+        // Don't save to database if it's a local tactic
+        if (CurrentTactic.AccessMode == TacticAccessMode.Local)
+        {
+            return newSlide;
+        }
+
         var nav = GetNavigation(tactic, folderId);
         var filter = CreateFilter(tactic)
             & Builders<Tactic>.Filter.ElemMatch(t => t.Folders, f => f.Id == folderId);
@@ -303,6 +417,14 @@ public class TacticExplorerService : ITacticExplorerService
     public async Task UpdateTacticName(Tactic tactic, string newName)
     {
         if (!await userService.CheckHasEditAcces(CurrentTactic))
+        {
+            return;
+        }
+
+        tactic.Name = newName;
+
+        // Don't save to database if it's a local tactic
+        if (CurrentTactic.AccessMode == TacticAccessMode.Local)
         {
             return;
         }
@@ -325,6 +447,12 @@ public class TacticExplorerService : ITacticExplorerService
             Name = "New Folder",
             Slides = [],
         };
+
+        // Don't save to database if it's a local tactic
+        if (CurrentTactic.AccessMode == TacticAccessMode.Local)
+        {
+            return newFolder;
+        }
 
         var nav = GetNavigation(tactic);
         var update = Builders<Tactic>.Update.Push(t => t.Folders, newFolder);
@@ -354,6 +482,14 @@ public class TacticExplorerService : ITacticExplorerService
 
     public async Task UpdateMemberList(Tactic tactic, List<MemberRole> members)
     {
+        tactic.Members = members;
+
+        // Don't save to database if it's a local tactic
+        if (CurrentTactic.AccessMode == TacticAccessMode.Local)
+        {
+            return;
+        }
+
         var nav = GetNavigation(tactic);
         var update = Builders<Tactic>.Update.Set(t => t.Members, members);
         await tactics.UpdateOneAsync(CreateFilter(tactic), update);

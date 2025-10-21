@@ -47,4 +47,10 @@ public interface ITacticExplorerService
     public Task ChangeTactic(string tacticId);
 
     public Task UpdateMemberList(Tactic tactic, List<MemberRole> members);
+
+    public string ExportTactic();
+
+    public Task ImportTactic(string jsonData);
+
+    public Task SetLocalTactic(Tactic tactic);
 }
