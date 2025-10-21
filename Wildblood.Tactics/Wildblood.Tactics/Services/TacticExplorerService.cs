@@ -223,8 +223,27 @@ public class TacticExplorerService : ITacticExplorerService
             var importedTactic = JsonSerializer.Deserialize<Tactic>(jsonData, jsonOptions);
             if (importedTactic != null)
             {
+                // Check if user is authenticated
+                var isAuthenticated = await userService.IsAuthenticated();
+                var userName = await userService.GetCurrentUserName();
+
+                // Adjust access mode based on authentication state
+                var accessMode = importedTactic.AccessMode;
+                if (!isAuthenticated && accessMode == TacticAccessMode.Private)
+                {
+                    // Can't create private tactics without authentication
+                    // Default to public so it can be saved
+                    accessMode = TacticAccessMode.Public;
+                    Console.WriteLine("Imported private tactic converted to public (user not authenticated)");
+                }
+
                 // Generate new IDs to avoid conflicts
-                importedTactic = importedTactic with { Id = ObjectId.GenerateNewId().ToString() };
+                importedTactic = importedTactic with 
+                { 
+                    Id = ObjectId.GenerateNewId().ToString(),
+                    AccessMode = accessMode,
+                    UserId = isAuthenticated ? importedTactic.UserId : "anonymous"
+                };
                 
                 var newFolders = importedTactic.Folders.Select(folder =>
                 {
@@ -240,7 +259,21 @@ public class TacticExplorerService : ITacticExplorerService
                     return newFolder with { Slides = newSlides };
                 }).ToList();
 
-                importedTactic = importedTactic with { Folders = newFolders };
+                // Update members list to include current user
+                var newMembers = new List<MemberRole>
+                {
+                    new MemberRole
+                    {
+                        Name = userName,
+                        Roles = accessMode == TacticAccessMode.Private ? Role.Owner : Role.Admin,
+                    }
+                };
+
+                importedTactic = importedTactic with 
+                { 
+                    Folders = newFolders,
+                    Members = newMembers 
+                };
 
                 CurrentTactic = importedTactic;
                 CurrentFolder = CurrentTactic.Folders[0];
