@@ -224,19 +224,23 @@ public class TacticExplorerService : ITacticExplorerService
             if (importedTactic != null)
             {
                 // Generate new IDs to avoid conflicts
-                importedTactic.Id = ObjectId.GenerateNewId().ToString();
-                foreach (var folder in importedTactic.Folders)
+                importedTactic = importedTactic with { Id = ObjectId.GenerateNewId().ToString() };
+                
+                var newFolders = importedTactic.Folders.Select(folder =>
                 {
-                    folder.Id = ObjectId.GenerateNewId().ToString();
-                    foreach (var slide in folder.Slides)
+                    var newFolder = folder with { Id = ObjectId.GenerateNewId().ToString() };
+                    var newSlides = newFolder.Slides.Select(slide =>
                     {
-                        slide.Id = ObjectId.GenerateNewId().ToString();
-                        foreach (var entity in slide.Entities)
-                        {
-                            entity.Id = ObjectId.GenerateNewId().ToString();
-                        }
-                    }
-                }
+                        var newSlide = slide with { Id = ObjectId.GenerateNewId().ToString() };
+                        var newEntities = newSlide.Entities.Select(entity =>
+                            entity with { Id = ObjectId.GenerateNewId().ToString() }
+                        ).ToList();
+                        return newSlide with { Entities = newEntities };
+                    }).ToList();
+                    return newFolder with { Slides = newSlides };
+                }).ToList();
+
+                importedTactic = importedTactic with { Folders = newFolders };
 
                 CurrentTactic = importedTactic;
                 CurrentFolder = CurrentTactic.Folders[0];
