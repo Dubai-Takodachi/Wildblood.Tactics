@@ -92,6 +92,8 @@ public class Program
             .AddSignInManager()
             .AddDefaultTokenProviders();
 
+        builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+
         builder.Services.AddTransient<IEmailSender<ApplicationUser>, EmailSender>();
 
         var app = builder.Build();

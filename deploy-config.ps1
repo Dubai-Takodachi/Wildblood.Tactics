@@ -39,7 +39,8 @@ function Load-EnvFile {
 function Test-RequiredEnvVars {
     param([hashtable]$EnvVars)
     
-    $requiredVars = @('DOMAIN', 'MONGO_USERNAME', 'MONGO_PASSWORD', 'SQL_PASSWORD')
+    $requiredVars = @('DOMAIN', 'MONGO_USERNAME', 'MONGO_PASSWORD', 'SQL_PASSWORD',
+                      'EMAIL_SMTP_SERVER', 'EMAIL_SMTP_PORT', 'EMAIL_SMTP_USER', 'EMAIL_SMTP_PASSWORD')
     $missingVars = @()
     
     foreach ($var in $requiredVars) {
@@ -82,9 +83,15 @@ $Domain = $envVars['DOMAIN']
 $MongoUsername = $envVars['MONGO_USERNAME']
 $mongoPassword = $envVars['MONGO_PASSWORD']
 $sqlPassword = $envVars['SQL_PASSWORD']
+$emailSmtpServer = $envVars['EMAIL_SMTP_SERVER']
+$emailSmtpPort = $envVars['EMAIL_SMTP_PORT']
+$emailSmtpUser = $envVars['EMAIL_SMTP_USER']
+$emailSmtpPassword = $envVars['EMAIL_SMTP_PASSWORD']
+$emailFromName = if ($envVars.ContainsKey('EMAIL_FROM_NAME')) { $envVars['EMAIL_FROM_NAME'] } else { 'Wildblood Tactics' }
 
 Write-Host "📁 Reading configuration from .env file" -ForegroundColor Yellow
 Write-Host "📝 MongoDB Username: $MongoUsername" -ForegroundColor Cyan
+Write-Host "📝 Email SMTP Server: $emailSmtpServer" -ForegroundColor Cyan
 Write-Host "📝 Domain: $Domain" -ForegroundColor Cyan
 
 # 1. Update docker-compose.yml
@@ -132,6 +139,16 @@ if (Test-Path $appsettingsPath) {
     # Update MongoDbSettings.ConnectionString
     $appsettingsContent.MongoDbSettings.ConnectionString = "mongodb://$($MongoUsername):$($mongoPassword)@mongodb:27017"
     
+    # Update EmailSettings
+    if (-not $appsettingsContent.EmailSettings) {
+        $appsettingsContent | Add-Member -MemberType NoteProperty -Name EmailSettings -Value ([PSCustomObject]@{})
+    }
+    $appsettingsContent.EmailSettings.SmtpServer = $emailSmtpServer
+    $appsettingsContent.EmailSettings.SmtpPort = [int]$emailSmtpPort
+    $appsettingsContent.EmailSettings.SmtpUser = $emailSmtpUser
+    $appsettingsContent.EmailSettings.SmtpPassword = $emailSmtpPassword
+    $appsettingsContent.EmailSettings.FromName = $emailFromName
+    
     $appsettingsContent | ConvertTo-Json -Depth 10 | Set-Content $appsettingsPath
     Write-Host "   ✅ appsettings.json updated" -ForegroundColor Green
 } else {
@@ -162,6 +179,11 @@ Write-Host "========================" -ForegroundColor Green
 Write-Host "MongoDB Username: $MongoUsername" -ForegroundColor White
 Write-Host "MongoDB Password: [HIDDEN]" -ForegroundColor White
 Write-Host "SQL Password: [HIDDEN]" -ForegroundColor White
+Write-Host "Email SMTP Server: $emailSmtpServer" -ForegroundColor White
+Write-Host "Email SMTP Port: $emailSmtpPort" -ForegroundColor White
+Write-Host "Email SMTP User: $emailSmtpUser" -ForegroundColor White
+Write-Host "Email SMTP Password: [HIDDEN]" -ForegroundColor White
+Write-Host "Email From Name: $emailFromName" -ForegroundColor White
 Write-Host "Domain: $Domain" -ForegroundColor White
 Write-Host "Hub URL: https://$Domain/tacticshub" -ForegroundColor White
 
@@ -173,6 +195,13 @@ $configSummary = @{
     }
     "SQL" = @{
         "Password" = "[HIDDEN - Check .env file]"
+    }
+    "Email" = @{
+        "SmtpServer" = $emailSmtpServer
+        "SmtpPort" = $emailSmtpPort
+        "SmtpUser" = $emailSmtpUser
+        "SmtpPassword" = "[HIDDEN - Check .env file]"
+        "FromName" = $emailFromName
     }
     "Domain" = $Domain
     "HubURL" = "https://$Domain/tacticshub"

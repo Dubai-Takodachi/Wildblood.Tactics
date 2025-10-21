@@ -17,6 +17,7 @@ The automation scripts perform the following configuration changes for productio
 - ✅ Updates `DefaultConnection` server to `mssql_container` and sets password from .env file
 - ✅ Updates `MongoDBConnection` with username and password from .env file
 - ✅ Updates `MongoDbSettings.ConnectionString` with matching credentials from .env file
+- ✅ Updates `EmailSettings` with SMTP server, port, user, password, and from name from .env file
 
 ### HubConnectionService.cs changes:
 - ✅ Changes `HubConnectionBuilder.WithUrl` to production URL using domain from .env file
@@ -43,6 +44,13 @@ MONGO_PASSWORD=your_secure_mongo_password
 
 # SQL Server Configuration  
 SQL_PASSWORD=your_secure_sql_password
+
+# Email (SMTP) Configuration
+EMAIL_SMTP_SERVER=smtp.example.com
+EMAIL_SMTP_PORT=587
+EMAIL_SMTP_USER=noreply@example.com
+EMAIL_SMTP_PASSWORD=your_secure_email_password
+EMAIL_FROM_NAME=Your Application Name
 ```
 
 ## 🚀 Available Scripts
