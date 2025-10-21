@@ -28,6 +28,36 @@ public partial class TacticExplorer
         await InvokeAsync(StateHasChanged);
     }
 
+    private async Task OnExportTactic()
+    {
+        var json = TacticExplorerService.ExportTactic();
+        var fileName = $"{TacticExplorerService.CurrentTactic.Name.Replace(" ", "_")}.json";
+        
+        await JS.InvokeVoidAsync("eval", $@"
+            const blob = new Blob([{System.Text.Json.JsonSerializer.Serialize(json)}], {{ type: 'application/json' }});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '{fileName}';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        ");
+    }
+
+    private async Task OnImportTactic()
+    {
+        var parameters = new DialogParameters<ImportDialog>();
+        var dialog = await DialogService.ShowAsync<ImportDialog>("Import Tactic", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled && result.Data is string jsonData)
+        {
+            await TacticExplorerService.ImportTactic(jsonData);
+        }
+    }
+
     private async Task OnClickTacticRename()
     {
         var parameters = new DialogParameters<RenameDialog>
