@@ -1,0 +1,41 @@
+﻿@page "/tactics/{ID}"
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender:false))
+
+@namespace Wildblood.Tactics.Client.Components.Pages
+
+@using Wildblood.Tactics.Client.Components.MainPage
+@using Wildblood.Tactics.Client.Services
+
+@inject ITacticExplorerService explorer;
+
+
+<div class="parent">
+    <TacticCanvas/>
+    <MudCard Style="grid-area: 1/2/6/3; overflow-y: scroll; overflow-x: hidden">
+        <TacticMapSelector/>
+        <TacticTool/>
+        <div style="grid-area: 5/2/span 3/2;">
+            <TacticExplorer/>
+            <TacticMemberList/>
+        </div>
+    </MudCard>
+</div>
+
+@code {
+
+    [Parameter]
+    public string? ID { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (ID != null)
+        {
+            await explorer.ChangeTactic(ID);
+        }
+    }
+}

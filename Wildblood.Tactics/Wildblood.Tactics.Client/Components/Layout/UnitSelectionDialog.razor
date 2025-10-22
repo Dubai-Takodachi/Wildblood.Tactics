@@ -1,0 +1,41 @@
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender:false))
+@namespace Wildblood.Tactics.Client.Components.Layout
+
+﻿@using Wildblood.Tactics.Entities
+<MudDialog>
+    <TitleContent>
+        Select your unit!
+    </TitleContent>
+    <DialogContent>
+        <UnitSelector SelectedUnitChanged="SelectedUnitChanged"></UnitSelector>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="SelectNone" Color="Color.Secondary">Select None</MudButton>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton OnClick="Submit" Color="Color.Primary">OK</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+
+    [Parameter]
+    public Unit selectedUnit { get; set; }
+
+    async Task SelectedUnitChanged(Unit unit)
+    {
+        selectedUnit = unit;
+
+    }
+
+    private void SelectNone()
+    {
+        selectedUnit = null;
+        MudDialog.Close(DialogResult.Ok(selectedUnit));
+    }
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(selectedUnit));
+
+    private void Cancel() => MudDialog.Cancel();
+}

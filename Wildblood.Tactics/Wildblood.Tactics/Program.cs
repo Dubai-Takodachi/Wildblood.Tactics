@@ -41,6 +41,7 @@ public class Program
         builder.Services.AddSingleton<MongoDbInitializer>();
 
         // Add services to the container.
+        builder.Services.AddControllers();
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents()
             .AddInteractiveWebAssemblyComponents();
@@ -52,13 +53,7 @@ public class Program
         builder.Services.AddScoped<AuthenticationStateProvider, PersistingRevalidatingAuthenticationStateProvider>();
         builder.Services.AddMudServices();
 
-        builder.Services.AddScoped<IHubConnectionService, HubConnectionService>();
         builder.Services.AddScoped<IUserService, UserService>();
-        builder.Services.AddScoped<ITacticToolService, TacticToolService>();
-        builder.Services.AddScoped<ITacticExplorerService, TacticExplorerService>();
-        builder.Services.AddScoped<ITacticMemberListService, TacticMemberListService>();
-        builder.Services.AddScoped<ITacticMapSelectorService, TacticMapSelectorService>();
-        builder.Services.AddScoped<ITacticCanvasService, TacticCanvasService>();
         builder.Services.AddHttpLogging(options =>
         {
             options.LoggingFields = HttpLoggingFields.RequestPropertiesAndHeaders;
@@ -143,6 +138,7 @@ public class Program
 
         app.UseAuthentication();
         app.UseAuthorization();
+        app.MapControllers();
         app.MapHub<TacticsHub>("/tacticsHub");
         app.UseHttpsRedirection();
 
