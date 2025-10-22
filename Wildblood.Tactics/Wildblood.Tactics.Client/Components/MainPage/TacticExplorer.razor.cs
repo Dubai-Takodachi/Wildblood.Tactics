@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using MudBlazor;
 using Wildblood.Tactics.Models;
+using Wildblood.Tactics.Client.Components.Layout;
 using Wildblood.Tactics.Client.Services;
 
 public partial class TacticExplorer
