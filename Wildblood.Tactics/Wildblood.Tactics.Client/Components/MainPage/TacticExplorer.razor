@@ -1,4 +1,6 @@
-﻿<MudPaper>
+﻿@rendermode @(new InteractiveWebAssemblyRenderMode(prerender:false))
+
+<MudPaper>
     <MudTreeView T="Wildblood.Tactics.Models.Tactic" Hover="true" Dense="true" ExpandOnClick="true">
         <MudTreeViewItem Icon="@Icons.Material.Outlined.Map">
             <BodyContent>

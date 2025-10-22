@@ -1,4 +1,5 @@
 ﻿@page "/tactics/{ID}"
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender:false))
 
 @namespace Wildblood.Tactics.Client.Components.Pages
 
@@ -7,7 +8,6 @@
 
 @inject ITacticExplorerService explorer;
 
-@rendermode InteractiveWebAssembly
 
 <div class="parent">
     <TacticCanvas/>
