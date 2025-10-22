@@ -27,17 +27,6 @@ namespace Wildblood.Tactics.Client
                 BaseAddress = new Uri(builder.HostEnvironment.BaseAddress)
             });
             
-            // Register SignalR Hub Connection
-            builder.Services.AddSingleton(provider =>
-            {
-                var hubConnetion = new HubConnectionBuilder()
-                    .WithUrl(builder.HostEnvironment.BaseAddress + "tacticsHub")
-                    .WithAutomaticReconnect()
-                    .Build();
-
-                return hubConnetion;
-            });
-            
             // Register application services
             builder.Services.AddScoped<IHubConnectionService, HubConnectionService>();
             builder.Services.AddScoped<ITacticToolService, TacticToolService>();
