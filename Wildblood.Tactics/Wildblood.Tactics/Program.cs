@@ -41,6 +41,7 @@ public class Program
         builder.Services.AddSingleton<MongoDbInitializer>();
 
         // Add services to the container.
+        builder.Services.AddControllers();
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents()
             .AddInteractiveWebAssemblyComponents();
@@ -143,6 +144,7 @@ public class Program
 
         app.UseAuthentication();
         app.UseAuthorization();
+        app.MapControllers();
         app.MapHub<TacticsHub>("/tacticsHub");
         app.UseHttpsRedirection();
 
