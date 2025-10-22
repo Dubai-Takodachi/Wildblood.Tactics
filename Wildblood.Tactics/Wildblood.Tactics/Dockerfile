@@ -28,6 +28,9 @@ RUN dotnet publish "./Wildblood.Tactics.csproj" -c $BUILD_CONFIGURATION -o /app/
 FROM base AS final
 WORKDIR /app
 
+# Enable debugging for Blazor WebAssembly
+ENV ASPNETCORE_ENVIRONMENT=Development
+
 # If you need a certificate (Optional)
 # COPY certs/devcert.crt /usr/local/share/ca-certificates/devcert.crt
 # RUN update-ca-certificates
