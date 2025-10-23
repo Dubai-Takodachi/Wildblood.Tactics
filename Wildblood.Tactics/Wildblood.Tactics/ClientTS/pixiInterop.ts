@@ -1,6 +1,6 @@
 /// <reference types="pixi.js" />
 
-import * as PIXI from '../lib/pixi.mjs';
+import * as PIXI from 'pixi.js';
 import * as Tools from './tools-types.js';
 import * as Interactions from './interaction.js';
 import * as Draw from './draw-entity.js';

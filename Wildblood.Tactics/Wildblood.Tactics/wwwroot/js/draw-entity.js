@@ -1,4 +1,4 @@
-import * as PIXI from '../lib/pixi.mjs';
+import * as PIXI from 'pixi.js';
 import * as Tools from './tools-types.js';
 let units;
 let ImageCache = {};

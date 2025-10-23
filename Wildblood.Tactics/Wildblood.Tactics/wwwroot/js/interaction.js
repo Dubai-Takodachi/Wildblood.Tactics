@@ -1,5 +1,5 @@
 import * as Tools from './tools-types.js';
-import * as PIXI from '../lib/pixi.mjs';
+import * as PIXI from 'pixi.js';
 export class DrawLineTool {
     context;
     lineOptions;
