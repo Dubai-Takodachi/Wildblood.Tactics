@@ -13,12 +13,12 @@ public class TacticToolService : ITacticToolService, IDisposable
 
     public ToolOptions CurrentOptions { get; private set; }
 
-    private readonly ILogger<TacticToolService>? logger;
+    private readonly ILogger<TacticToolService> logger;
     private Timer? debounceTimer;
     private ToolType? lastToolType;
     private readonly SemaphoreSlim updateLock = new(1, 1);
 
-    public TacticToolService(ILogger<TacticToolService>? logger = null)
+    public TacticToolService(ILogger<TacticToolService> logger)
     {
         this.logger = logger;
         AllOptions = CreateDefaultOptions();
@@ -80,7 +80,7 @@ public class TacticToolService : ITacticToolService, IDisposable
                         catch (Exception ex)
                         {
                             // Log but don't throw in background callback to prevent unhandled exceptions
-                            logger?.LogError(ex, "Error invoking OnToolChanged event in debounced callback");
+                            logger.LogError(ex, "Error invoking OnToolChanged event in debounced callback");
                         }
                     });
                 }, null, 50, Timeout.Infinite);
