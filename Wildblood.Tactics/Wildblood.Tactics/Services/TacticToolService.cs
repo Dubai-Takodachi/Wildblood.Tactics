@@ -1,6 +1,7 @@
 ﻿namespace Wildblood.Tactics.Services;
 
 using System.Threading;
+using Microsoft.Extensions.Logging;
 using Wildblood.Tactics.Mappings;
 using Wildblood.Tactics.Models.Tools;
 
@@ -12,12 +13,14 @@ public class TacticToolService : ITacticToolService, IDisposable
 
     public ToolOptions CurrentOptions { get; private set; }
 
+    private readonly ILogger<TacticToolService>? logger;
     private Timer? debounceTimer;
     private ToolType? lastToolType;
     private readonly SemaphoreSlim updateLock = new(1, 1);
 
-    public TacticToolService()
+    public TacticToolService(ILogger<TacticToolService>? logger = null)
     {
+        this.logger = logger;
         AllOptions = CreateDefaultOptions();
         CurrentOptions = CreateCurrentToolOptions();
         lastToolType = AllOptions.Tool;
@@ -63,7 +66,7 @@ public class TacticToolService : ITacticToolService, IDisposable
             else
             {
                 // For option changes only, debounce with 50ms delay
-                debounceTimer = new Timer(_ =>
+                debounceTimer = new Timer(state =>
                 {
                     Task.Run(async () =>
                     {
@@ -74,9 +77,10 @@ public class TacticToolService : ITacticToolService, IDisposable
                                 await OnToolChanged.Invoke();
                             }
                         }
-                        catch
+                        catch (Exception ex)
                         {
-                            // Suppress exceptions in background callback
+                            // Log but don't throw in background callback to prevent unhandled exceptions
+                            logger?.LogError(ex, "Error invoking OnToolChanged event in debounced callback");
                         }
                     });
                 }, null, 50, Timeout.Infinite);
