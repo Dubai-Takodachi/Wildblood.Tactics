@@ -6,7 +6,7 @@ export interface IToolHandler {
     onPointerMove?(event: PointerEvent): Promise<void>;
     onPointerUp?(event: PointerEvent): Promise<void>;
     onPointerLeave?(event: PointerEvent): Promise<void>;
-    updateOptions?(options: any): void;
+    updateOptions?(options: Tools.LineOptions | Tools.IconOptions | Tools.TextOptions | Tools.ShapeOptions | Tools.PingOptions): void;
 }
 
 export interface InteractionContext {

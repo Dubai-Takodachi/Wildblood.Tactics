@@ -4,7 +4,7 @@ using System.Threading;
 using Wildblood.Tactics.Mappings;
 using Wildblood.Tactics.Models.Tools;
 
-public class TacticToolService : ITacticToolService
+public class TacticToolService : ITacticToolService, IDisposable
 {
     public event Func<Task>? OnToolChanged;
 
@@ -63,12 +63,22 @@ public class TacticToolService : ITacticToolService
             else
             {
                 // For option changes only, debounce with 50ms delay
-                debounceTimer = new Timer(async _ =>
+                debounceTimer = new Timer(_ =>
                 {
-                    if (OnToolChanged != null)
+                    Task.Run(async () =>
                     {
-                        await OnToolChanged.Invoke();
-                    }
+                        try
+                        {
+                            if (OnToolChanged != null)
+                            {
+                                await OnToolChanged.Invoke();
+                            }
+                        }
+                        catch
+                        {
+                            // Suppress exceptions in background callback
+                        }
+                    });
                 }, null, 50, Timeout.Infinite);
             }
         }
@@ -76,6 +86,12 @@ public class TacticToolService : ITacticToolService
         {
             updateLock.Release();
         }
+    }
+
+    public void Dispose()
+    {
+        debounceTimer?.Dispose();
+        updateLock?.Dispose();
     }
 
     private ToolOptions CreateCurrentToolOptions()
