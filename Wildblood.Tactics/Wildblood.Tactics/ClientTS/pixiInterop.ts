@@ -216,6 +216,54 @@ namespace PixiInterop {
     }
 
     export function setToolOptions(options: Tools.ToolOptions): void {
+        const previousTool = currentTool?.tool;
+        const newTool = options.tool;
+        currentTool = options;
+        
+        // If the tool type hasn't changed and we have an existing handler, just update its options
+        if (previousTool === newTool && interactionHandler && interactionHandler.updateOptions) {
+            // Update options based on the tool type
+            switch (newTool) {
+                case Tools.ToolType.DrawLine:
+                    if (options.lineDrawOptions) {
+                        interactionHandler.updateOptions(options.lineDrawOptions);
+                    }
+                    break;
+                case Tools.ToolType.DrawCurve:
+                    if (options.curveDrawOptions) {
+                        interactionHandler.updateOptions(options.curveDrawOptions);
+                    }
+                    break;
+                case Tools.ToolType.DrawFree:
+                    if (options.freeDrawOptions) {
+                        interactionHandler.updateOptions(options.freeDrawOptions);
+                    }
+                    break;
+                case Tools.ToolType.AddIcon:
+                    if (options.iconOptions) {
+                        interactionHandler.updateOptions(options.iconOptions);
+                    }
+                    break;
+                case Tools.ToolType.AddText:
+                    if (options.textOptions) {
+                        interactionHandler.updateOptions(options.textOptions);
+                    }
+                    break;
+                case Tools.ToolType.AddShape:
+                    if (options.shapeOptions) {
+                        interactionHandler.updateOptions(options.shapeOptions);
+                    }
+                    break;
+                case Tools.ToolType.Ping:
+                    if (options.pingOptions) {
+                        interactionHandler.updateOptions(options.pingOptions);
+                    }
+                    break;
+            }
+            return; // No need to recreate handler or re-register events
+        }
+
+        // Tool type changed - need to remove old listeners and create new handler
         if (interactionHandler?.onPointerDown) {
             app.canvas.removeEventListener("pointerdown", interactionHandler.onPointerDown);
         }
@@ -228,8 +276,6 @@ namespace PixiInterop {
         if (interactionHandler?.onPointerLeave) {
             app.canvas.removeEventListener("pointerleave", interactionHandler.onPointerLeave);
         }
-
-        currentTool = options;
 
         if (currentTool.tool || currentTool.tool === 0)
             interactionHandler = createInteractionHandler[currentTool.tool]?.();

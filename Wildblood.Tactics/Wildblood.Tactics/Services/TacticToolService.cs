@@ -1,5 +1,6 @@
 ﻿namespace Wildblood.Tactics.Services;
 
+using System.Threading;
 using Wildblood.Tactics.Mappings;
 using Wildblood.Tactics.Models.Tools;
 
@@ -11,31 +12,69 @@ public class TacticToolService : ITacticToolService
 
     public ToolOptions CurrentOptions { get; private set; }
 
+    private Timer? debounceTimer;
+    private ToolType? lastToolType;
+    private readonly SemaphoreSlim updateLock = new(1, 1);
+
     public TacticToolService()
     {
         AllOptions = CreateDefaultOptions();
         CurrentOptions = CreateCurrentToolOptions();
+        lastToolType = AllOptions.Tool;
     }
 
     public async Task PatchTool(ToolOptions newOptions)
     {
-        AllOptions = AllOptions with
+        await updateLock.WaitAsync();
+        try
         {
-            Tool = newOptions?.Tool ?? AllOptions.Tool,
-            PingOptions = newOptions?.PingOptions ?? AllOptions.PingOptions,
-            IconOptions = newOptions?.IconOptions ?? AllOptions.IconOptions,
-            LineDrawOptions = newOptions?.LineDrawOptions ?? AllOptions.LineDrawOptions,
-            CurveDrawOptions = newOptions?.CurveDrawOptions ?? AllOptions.CurveDrawOptions,
-            FreeDrawOptions = newOptions?.FreeDrawOptions ?? AllOptions.FreeDrawOptions,
-            ShapeOptions = newOptions?.ShapeOptions ?? AllOptions.ShapeOptions,
-            TextOptions = newOptions?.TextOptions ?? AllOptions.TextOptions,
-        };
+            var toolTypeChanged = newOptions?.Tool != null && newOptions.Tool != lastToolType;
+            
+            AllOptions = AllOptions with
+            {
+                Tool = newOptions?.Tool ?? AllOptions.Tool,
+                PingOptions = newOptions?.PingOptions ?? AllOptions.PingOptions,
+                IconOptions = newOptions?.IconOptions ?? AllOptions.IconOptions,
+                LineDrawOptions = newOptions?.LineDrawOptions ?? AllOptions.LineDrawOptions,
+                CurveDrawOptions = newOptions?.CurveDrawOptions ?? AllOptions.CurveDrawOptions,
+                FreeDrawOptions = newOptions?.FreeDrawOptions ?? AllOptions.FreeDrawOptions,
+                ShapeOptions = newOptions?.ShapeOptions ?? AllOptions.ShapeOptions,
+                TextOptions = newOptions?.TextOptions ?? AllOptions.TextOptions,
+            };
 
-        CurrentOptions = CreateCurrentToolOptions();
+            if (newOptions?.Tool != null)
+            {
+                lastToolType = newOptions.Tool;
+            }
 
-        if (OnToolChanged != null)
+            CurrentOptions = CreateCurrentToolOptions();
+
+            // Cancel existing timer
+            debounceTimer?.Dispose();
+
+            // If tool type changed, fire immediately
+            if (toolTypeChanged)
+            {
+                if (OnToolChanged != null)
+                {
+                    await OnToolChanged.Invoke();
+                }
+            }
+            else
+            {
+                // For option changes only, debounce with 50ms delay
+                debounceTimer = new Timer(async _ =>
+                {
+                    if (OnToolChanged != null)
+                    {
+                        await OnToolChanged.Invoke();
+                    }
+                }, null, 50, Timeout.Infinite);
+            }
+        }
+        finally
         {
-            await OnToolChanged.Invoke();
+            updateLock.Release();
         }
     }
 
