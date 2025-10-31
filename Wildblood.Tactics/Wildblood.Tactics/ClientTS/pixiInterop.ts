@@ -23,6 +23,7 @@ namespace PixiInterop {
 
     let currentEntities: Record<string, Tools.Entity> = {};
     let drawnSpriteByEntityId: Record<string, PIXI.Sprite> = {};
+    let locallyAddedEntityIds: Set<string> = new Set(); // Track entities added locally but not yet confirmed by server
 
     let currentTool: Tools.ToolOptions;
     let interactionHandler: Interactions.IToolHandler | null = null;
@@ -339,6 +340,9 @@ namespace PixiInterop {
 
     async function addEntityOnServer(entity: Tools.Entity): Promise<void> {
         try {
+            // Mark as locally added to prevent premature removal
+            locallyAddedEntityIds.add(entity.id);
+            
             // Draw the entity to the screen immediately for local responsiveness
             await drawEntityToScreen(entity);
         } catch (error) {
@@ -468,14 +472,23 @@ namespace PixiInterop {
     async function removeOutdatedEntities(newCurrentEntities: Tools.Entity[]): Promise<void> {
         await setPreviewEntity(null);
         const currentIds = Object.keys(currentEntities);
+        const newEntityIds = new Set(newCurrentEntities.map(e => e.id));
+        
         for (const id of currentIds) {
-            let isStillExisting = false;
-            for (const entity of newCurrentEntities) {
-                if (entity.id === id)
-                    isStillExisting = true;
+            // Don't remove entities that were just added locally
+            if (locallyAddedEntityIds.has(id)) {
+                // If the entity is in the new list from server, it's been confirmed
+                if (newEntityIds.has(id)) {
+                    locallyAddedEntityIds.delete(id);
+                    console.log('Entity confirmed by server:', id);
+                }
+                // Don't remove it even if not in server list yet
+                continue;
             }
-
-            if (isStillExisting === false) {
+            
+            // Only remove entities that are explicitly not in the new list
+            if (!newEntityIds.has(id)) {
+                console.log('Removing outdated entity:', id);
                 entityContainer.removeChild(drawnSpriteByEntityId[id]);
                 drawnSpriteByEntityId[id].destroy();
                 delete drawnSpriteByEntityId[id];
