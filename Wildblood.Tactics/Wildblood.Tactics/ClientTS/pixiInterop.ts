@@ -23,7 +23,19 @@ namespace PixiInterop {
 
     let currentEntities: Record<string, Tools.Entity> = {};
     let drawnSpriteByEntityId: Record<string, PIXI.Sprite> = {};
-    let locallyAddedEntityIds: Set<string> = new Set(); // Track entities added locally but not yet confirmed by server
+    
+    /**
+     * Tracks entities that were added locally but haven't been confirmed by the server yet.
+     * 
+     * Race Condition Prevention:
+     * When an entity is placed locally, it's immediately drawn and added to this set.
+     * SignalR echoes updates back to the same client, which triggers redrawEntities().
+     * Without this tracking, removeOutdatedEntities() would remove the just-placed entity
+     * because it's not yet in the server's entity list (race condition).
+     * 
+     * The entity ID is removed from this set once the server confirms it via SignalR.
+     */
+    let locallyAddedEntityIds: Set<string> = new Set();
 
     let currentTool: Tools.ToolOptions;
     let interactionHandler: Interactions.IToolHandler | null = null;
@@ -338,9 +350,22 @@ namespace PixiInterop {
         }
     };
 
+    /**
+     * Adds an entity to the canvas and sends it to the server.
+     * 
+     * Performance Optimization:
+     * - Draws entity locally first for immediate visual feedback (0ms lag)
+     * - Marks entity as "locally added" to prevent premature removal
+     * - Sends to server asynchronously for persistence and SignalR broadcast
+     * - Server-side batching reduces DB writes when placing icons rapidly
+     * 
+     * Error Handling:
+     * - Drawing and server communication are separately caught to prevent one failure from affecting the other
+     * - Errors are logged to console for debugging
+     */
     async function addEntityOnServer(entity: Tools.Entity): Promise<void> {
         try {
-            // Mark as locally added to prevent premature removal
+            // Mark as locally added to prevent premature removal by SignalR echo
             locallyAddedEntityIds.add(entity.id);
             
             // Draw the entity to the screen immediately for local responsiveness
@@ -350,7 +375,7 @@ namespace PixiInterop {
         }
         
         try {
-            // Send to server for persistence and SignalR broadcast
+            // Send to server for persistence and SignalR broadcast (batched server-side)
             await updateSpecificServerEntities([entity], []);
         } catch (error) {
             console.error('Error updating server entities:', error, entity);
@@ -365,9 +390,21 @@ namespace PixiInterop {
         await dotNetObjRef.invokeMethodAsync('UpdateServerEntities', entities, removedEntityIds);
     }
 
+    /**
+     * Manages preview entity display during mouse movement.
+     * 
+     * Important: Handles cleanup of previous preview without removing committed entities.
+     * 
+     * Bug Fix:
+     * When placing an icon while moving the mouse, the preview and placed icon share the same ID.
+     * After placement, the next mouse move creates a new preview with a different ID.
+     * Without the locallyAddedEntityIds check, this function would remove the just-placed icon
+     * thinking it was an old preview. Now we skip removal if the entity has been committed.
+     */
     async function setPreviewEntity(entity: Tools.Entity | null): Promise<void> {
         if (temporaryEntity && drawnSpriteByEntityId[temporaryEntity.id]) {
             // Don't remove entities that have been committed (locally added)
+            // This prevents removing a just-clicked icon when the mouse moves again
             if (!locallyAddedEntityIds.has(temporaryEntity.id)) {
                 entityContainer.removeChild(drawnSpriteByEntityId[temporaryEntity.id]);
                 drawnSpriteByEntityId[temporaryEntity.id].destroy();
@@ -389,7 +426,7 @@ namespace PixiInterop {
         const container = await Draw.drawEntity(entity);
 
         if (!container) {
-            console.warn('drawEntityToScreen: container is null for entity', entity);
+            console.warn('drawEntityToScreen: Failed to create container for entity', entity);
             return;
         }
 
@@ -414,8 +451,6 @@ namespace PixiInterop {
         currentEntities[entity.id] = entity;
         drawnSpriteByEntityId[entity.id] = sprite;
         entityContainer.addChild(sprite);
-        
-        console.log('Entity drawn to screen:', entity.id, 'Total entities:', Object.keys(currentEntities).length);
     }
 
     function createSafeSprite(container: PIXI.Container, bounds: PIXI.Rectangle): PIXI.Sprite {
@@ -467,31 +502,48 @@ namespace PixiInterop {
         pingContainer.addChild(container);
     }
 
+    /**
+     * Redraws entities when receiving updates from the server (usually via SignalR).
+     * Called by C# RedrawEntities() method.
+     */
     export async function redrawEntities(entities: Tools.Entity[]): Promise<void> {
         await removeOutdatedEntities(entities);
         await updateExistingEntities(entities);
     }
 
+    /**
+     * Removes entities that are no longer in the server's entity list.
+     * 
+     * Race Condition Handling:
+     * When an entity is placed locally, there's a delay before it's confirmed by the server.
+     * This function protects locally-added entities from being removed during this window.
+     * Once the server confirms the entity (it appears in the server list), we clear the flag.
+     * 
+     * This prevents the issue where:
+     * 1. User places icon → drawn locally
+     * 2. SignalR echoes back before batch completes
+     * 3. Server list doesn't include the new icon yet
+     * 4. This function would remove it thinking it's outdated
+     * 5. Icon disappears immediately after placement!
+     */
     async function removeOutdatedEntities(newCurrentEntities: Tools.Entity[]): Promise<void> {
         await setPreviewEntity(null);
         const currentIds = Object.keys(currentEntities);
         const newEntityIds = new Set(newCurrentEntities.map(e => e.id));
         
         for (const id of currentIds) {
-            // Don't remove entities that were just added locally
+            // Don't remove entities that were just added locally (not yet confirmed by server)
             if (locallyAddedEntityIds.has(id)) {
                 // If the entity is in the new list from server, it's been confirmed
                 if (newEntityIds.has(id)) {
                     locallyAddedEntityIds.delete(id);
-                    console.log('Entity confirmed by server:', id);
                 }
-                // Don't remove it even if not in server list yet
+                // Don't remove it even if not in server list yet (waiting for confirmation)
                 continue;
             }
             
             // Only remove entities that are explicitly not in the new list
             if (!newEntityIds.has(id)) {
-                console.log('Removing outdated entity:', id);
                 entityContainer.removeChild(drawnSpriteByEntityId[id]);
                 drawnSpriteByEntityId[id].destroy();
                 delete drawnSpriteByEntityId[id];
@@ -500,6 +552,9 @@ namespace PixiInterop {
         }
     }
 
+    /**
+     * Updates or draws entities that have changed or are new from the server.
+     */
     async function updateExistingEntities(newCurrentEntities: Tools.Entity[]): Promise<void> {
         for (const entity of newCurrentEntities) {
             const existing = currentEntities[entity.id];
@@ -510,6 +565,9 @@ namespace PixiInterop {
         }
     }
 
+    /**
+     * Checks if two entities are equal (for change detection).
+     */
     function areEntitiesEqual(a: Tools.Entity, b: Tools.Entity): boolean {
         return (
             a.id === b.id &&

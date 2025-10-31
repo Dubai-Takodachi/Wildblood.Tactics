@@ -5,6 +5,17 @@ using Microsoft.Extensions.Logging;
 using Wildblood.Tactics.Mappings;
 using Wildblood.Tactics.Models.Tools;
 
+/// <summary>
+/// Service responsible for managing drawing tool state and options.
+/// Implements debouncing to optimize performance when tool options change rapidly (e.g., color picker dragging).
+/// </summary>
+/// <remarks>
+/// Performance Optimization Strategy:
+/// - Tool type changes fire immediately for responsive UI
+/// - Option-only changes (color, size, etc.) are debounced with 50ms delay
+/// - Prevents redundant handler recreation and event listener churn
+/// - UpdateOptions pattern allows in-place updates without recreating handlers
+/// </remarks>
 public class TacticToolService : ITacticToolService, IDisposable
 {
     public event Func<Task>? OnToolChanged;
@@ -26,6 +37,20 @@ public class TacticToolService : ITacticToolService, IDisposable
         lastToolType = AllOptions.Tool;
     }
 
+    /// <summary>
+    /// Updates tool options with intelligent debouncing for performance.
+    /// </summary>
+    /// <param name="newOptions">The new tool options to apply</param>
+    /// <remarks>
+    /// Performance Strategy:
+    /// - Tool type changes: Fire OnToolChanged immediately (0ms) for responsive tool switching
+    /// - Option changes only: Debounce with 50ms delay to handle rapid slider/color picker updates
+    /// - Thread-safe using SemaphoreSlim
+    /// - Cancels previous debounce timer when new update arrives
+    /// 
+    /// This prevents recreating handlers and re-registering event listeners on every color change,
+    /// which was causing lag when dragging color pickers or sliders.
+    /// </remarks>
     public async Task PatchTool(ToolOptions newOptions)
     {
         await updateLock.WaitAsync();
@@ -52,10 +77,10 @@ public class TacticToolService : ITacticToolService, IDisposable
 
             CurrentOptions = CreateCurrentToolOptions();
 
-            // Cancel existing timer
+            // Cancel existing debounce timer
             debounceTimer?.Dispose();
 
-            // If tool type changed, fire immediately
+            // If tool type changed, fire immediately for responsive UI
             if (toolTypeChanged)
             {
                 if (OnToolChanged != null)
@@ -65,7 +90,7 @@ public class TacticToolService : ITacticToolService, IDisposable
             }
             else
             {
-                // For option changes only, debounce with 50ms delay
+                // For option changes only, debounce with 50ms delay to handle rapid updates
                 debounceTimer = new Timer(state =>
                 {
                     Task.Run(async () =>
