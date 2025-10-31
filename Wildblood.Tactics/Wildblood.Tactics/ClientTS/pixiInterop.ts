@@ -338,10 +338,10 @@ namespace PixiInterop {
     };
 
     async function addEntityOnServer(entity: Tools.Entity): Promise<void> {
-        const graphic = await Draw.drawEntity(entity);
-        if (graphic) {
-            await updateSpecificServerEntities([entity], []);
-        }
+        // Draw the entity to the screen immediately for local responsiveness
+        await drawEntityToScreen(entity);
+        // Send to server for persistence and SignalR broadcast
+        await updateSpecificServerEntities([entity], []);
     }
 
     async function removeEntityOnServer(entityId: string): Promise<void> {
