@@ -290,10 +290,20 @@ var PixiInterop;
         }
     };
     async function addEntityOnServer(entity) {
-        // Draw the entity to the screen immediately for local responsiveness
-        await drawEntityToScreen(entity);
-        // Send to server for persistence and SignalR broadcast
-        await updateSpecificServerEntities([entity], []);
+        try {
+            // Draw the entity to the screen immediately for local responsiveness
+            await drawEntityToScreen(entity);
+        }
+        catch (error) {
+            console.error('Error drawing entity to screen:', error, entity);
+        }
+        try {
+            // Send to server for persistence and SignalR broadcast
+            await updateSpecificServerEntities([entity], []);
+        }
+        catch (error) {
+            console.error('Error updating server entities:', error, entity);
+        }
     }
     async function removeEntityOnServer(entityId) {
         await updateSpecificServerEntities([], [entityId]);
@@ -317,8 +327,10 @@ var PixiInterop;
         if (entity.toolType === Tools.ToolType.Ping)
             return;
         const container = await Draw.drawEntity(entity);
-        if (!container)
+        if (!container) {
+            console.warn('drawEntityToScreen: container is null for entity', entity);
             return;
+        }
         if (drawnSpriteByEntityId[entity.id]) {
             entityContainer.removeChild(drawnSpriteByEntityId[entity.id]);
             drawnSpriteByEntityId[entity.id].destroy();
@@ -332,6 +344,7 @@ var PixiInterop;
         currentEntities[entity.id] = entity;
         drawnSpriteByEntityId[entity.id] = sprite;
         entityContainer.addChild(sprite);
+        console.log('Entity drawn to screen:', entity.id, 'Total entities:', Object.keys(currentEntities).length);
     }
     function createSafeSprite(container, bounds) {
         const webGlRenderer = app.renderer;

@@ -338,10 +338,19 @@ namespace PixiInterop {
     };
 
     async function addEntityOnServer(entity: Tools.Entity): Promise<void> {
-        // Draw the entity to the screen immediately for local responsiveness
-        await drawEntityToScreen(entity);
-        // Send to server for persistence and SignalR broadcast
-        await updateSpecificServerEntities([entity], []);
+        try {
+            // Draw the entity to the screen immediately for local responsiveness
+            await drawEntityToScreen(entity);
+        } catch (error) {
+            console.error('Error drawing entity to screen:', error, entity);
+        }
+        
+        try {
+            // Send to server for persistence and SignalR broadcast
+            await updateSpecificServerEntities([entity], []);
+        } catch (error) {
+            console.error('Error updating server entities:', error, entity);
+        }
     }
 
     async function removeEntityOnServer(entityId: string): Promise<void> {
@@ -372,7 +381,10 @@ namespace PixiInterop {
 
         const container = await Draw.drawEntity(entity);
 
-        if (!container) return;
+        if (!container) {
+            console.warn('drawEntityToScreen: container is null for entity', entity);
+            return;
+        }
 
         if (drawnSpriteByEntityId[entity.id]) {
             entityContainer.removeChild(drawnSpriteByEntityId[entity.id]);
@@ -395,6 +407,8 @@ namespace PixiInterop {
         currentEntities[entity.id] = entity;
         drawnSpriteByEntityId[entity.id] = sprite;
         entityContainer.addChild(sprite);
+        
+        console.log('Entity drawn to screen:', entity.id, 'Total entities:', Object.keys(currentEntities).length);
     }
 
     function createSafeSprite(container: PIXI.Container, bounds: PIXI.Rectangle): PIXI.Sprite {
