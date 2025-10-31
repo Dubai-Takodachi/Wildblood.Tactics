@@ -316,10 +316,13 @@ var PixiInterop;
     }
     async function setPreviewEntity(entity) {
         if (temporaryEntity && drawnSpriteByEntityId[temporaryEntity.id]) {
-            entityContainer.removeChild(drawnSpriteByEntityId[temporaryEntity.id]);
-            drawnSpriteByEntityId[temporaryEntity.id].destroy();
-            delete drawnSpriteByEntityId[temporaryEntity.id];
-            delete currentEntities[temporaryEntity.id];
+            // Don't remove entities that have been committed (locally added)
+            if (!locallyAddedEntityIds.has(temporaryEntity.id)) {
+                entityContainer.removeChild(drawnSpriteByEntityId[temporaryEntity.id]);
+                drawnSpriteByEntityId[temporaryEntity.id].destroy();
+                delete drawnSpriteByEntityId[temporaryEntity.id];
+                delete currentEntities[temporaryEntity.id];
+            }
         }
         temporaryEntity = entity;
         if (entity) {
