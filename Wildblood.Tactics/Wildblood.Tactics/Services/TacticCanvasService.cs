@@ -85,7 +85,10 @@ public class TacticCanvasService : ITacticCanvasService, IDisposable
         await batchLock.WaitAsync();
         try
         {
-            // Update local state immediately for responsive UI
+            // Update local state immediately
+            // Note: We don't call RefreshTactic() here because the JS side already
+            // drew the entities locally in addEntityOnServer(). Calling RefreshTactic()
+            // would trigger a full redraw of all entities which is expensive and causes lag.
             var combined = CurrentSlide.Entities
                 .Where(e => !entities.Any(x => x.Id == e.Id))
                 .Concat(entities)
@@ -93,7 +96,6 @@ public class TacticCanvasService : ITacticCanvasService, IDisposable
                 .ToList();
 
             CurrentSlide.Entities = combined;
-            await RefreshTactic();
 
             // Add to batch for server update
             foreach (var entity in entities)
