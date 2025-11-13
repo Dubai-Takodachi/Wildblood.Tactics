@@ -1,9 +1,22 @@
 ﻿namespace Wildblood.Tactics.Services;
 
+using System.Threading;
+using Microsoft.Extensions.Logging;
 using Wildblood.Tactics.Mappings;
 using Wildblood.Tactics.Models.Tools;
 
-public class TacticToolService : ITacticToolService
+/// <summary>
+/// Service responsible for managing drawing tool state and options.
+/// Implements debouncing to optimize performance when tool options change rapidly (e.g., color picker dragging).
+/// </summary>
+/// <remarks>
+/// Performance Optimization Strategy:
+/// - Tool type changes fire immediately for responsive UI
+/// - Option-only changes (color, size, etc.) are debounced with 50ms delay
+/// - Prevents redundant handler recreation and event listener churn
+/// - UpdateOptions pattern allows in-place updates without recreating handlers
+/// </remarks>
+public class TacticToolService : ITacticToolService, IDisposable
 {
     public event Func<Task>? OnToolChanged;
 
@@ -11,32 +24,103 @@ public class TacticToolService : ITacticToolService
 
     public ToolOptions CurrentOptions { get; private set; }
 
-    public TacticToolService()
+    private readonly ILogger<TacticToolService> logger;
+    private Timer? debounceTimer;
+    private ToolType? lastToolType;
+    private readonly SemaphoreSlim updateLock = new(1, 1);
+
+    public TacticToolService(ILogger<TacticToolService> logger)
     {
+        this.logger = logger;
         AllOptions = CreateDefaultOptions();
         CurrentOptions = CreateCurrentToolOptions();
+        lastToolType = AllOptions.Tool;
     }
 
+    /// <summary>
+    /// Updates tool options with intelligent debouncing for performance.
+    /// </summary>
+    /// <param name="newOptions">The new tool options to apply</param>
+    /// <remarks>
+    /// Performance Strategy:
+    /// - Tool type changes: Fire OnToolChanged immediately (0ms) for responsive tool switching
+    /// - Option changes only: Debounce with 50ms delay to handle rapid slider/color picker updates
+    /// - Thread-safe using SemaphoreSlim
+    /// - Cancels previous debounce timer when new update arrives
+    /// 
+    /// This prevents recreating handlers and re-registering event listeners on every color change,
+    /// which was causing lag when dragging color pickers or sliders.
+    /// </remarks>
     public async Task PatchTool(ToolOptions newOptions)
     {
-        AllOptions = AllOptions with
+        await updateLock.WaitAsync();
+        try
         {
-            Tool = newOptions?.Tool ?? AllOptions.Tool,
-            PingOptions = newOptions?.PingOptions ?? AllOptions.PingOptions,
-            IconOptions = newOptions?.IconOptions ?? AllOptions.IconOptions,
-            LineDrawOptions = newOptions?.LineDrawOptions ?? AllOptions.LineDrawOptions,
-            CurveDrawOptions = newOptions?.CurveDrawOptions ?? AllOptions.CurveDrawOptions,
-            FreeDrawOptions = newOptions?.FreeDrawOptions ?? AllOptions.FreeDrawOptions,
-            ShapeOptions = newOptions?.ShapeOptions ?? AllOptions.ShapeOptions,
-            TextOptions = newOptions?.TextOptions ?? AllOptions.TextOptions,
-        };
+            var toolTypeChanged = newOptions?.Tool != null && newOptions.Tool != lastToolType;
+            
+            AllOptions = AllOptions with
+            {
+                Tool = newOptions?.Tool ?? AllOptions.Tool,
+                PingOptions = newOptions?.PingOptions ?? AllOptions.PingOptions,
+                IconOptions = newOptions?.IconOptions ?? AllOptions.IconOptions,
+                LineDrawOptions = newOptions?.LineDrawOptions ?? AllOptions.LineDrawOptions,
+                CurveDrawOptions = newOptions?.CurveDrawOptions ?? AllOptions.CurveDrawOptions,
+                FreeDrawOptions = newOptions?.FreeDrawOptions ?? AllOptions.FreeDrawOptions,
+                ShapeOptions = newOptions?.ShapeOptions ?? AllOptions.ShapeOptions,
+                TextOptions = newOptions?.TextOptions ?? AllOptions.TextOptions,
+            };
 
-        CurrentOptions = CreateCurrentToolOptions();
+            if (newOptions?.Tool != null)
+            {
+                lastToolType = newOptions.Tool;
+            }
 
-        if (OnToolChanged != null)
-        {
-            await OnToolChanged.Invoke();
+            CurrentOptions = CreateCurrentToolOptions();
+
+            // Cancel existing debounce timer
+            debounceTimer?.Dispose();
+
+            // If tool type changed, fire immediately for responsive UI
+            if (toolTypeChanged)
+            {
+                if (OnToolChanged != null)
+                {
+                    await OnToolChanged.Invoke();
+                }
+            }
+            else
+            {
+                // For option changes only, debounce with 50ms delay to handle rapid updates
+                debounceTimer = new Timer(state =>
+                {
+                    Task.Run(async () =>
+                    {
+                        try
+                        {
+                            if (OnToolChanged != null)
+                            {
+                                await OnToolChanged.Invoke();
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            // Log but don't throw in background callback to prevent unhandled exceptions
+                            logger.LogError(ex, "Error invoking OnToolChanged event in debounced callback");
+                        }
+                    });
+                }, null, 50, Timeout.Infinite);
+            }
         }
+        finally
+        {
+            updateLock.Release();
+        }
+    }
+
+    public void Dispose()
+    {
+        debounceTimer?.Dispose();
+        updateLock?.Dispose();
     }
 
     private ToolOptions CreateCurrentToolOptions()

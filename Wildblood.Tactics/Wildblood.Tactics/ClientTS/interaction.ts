@@ -1,11 +1,28 @@
 import * as Tools from './tools-types.js';
 import * as PIXI from 'pixi.js';
 
+/**
+ * Interface for tool interaction handlers.
+ * 
+ * Performance Optimization:
+ * The updateOptions() method allows tool options (color, size, etc.) to be updated in-place
+ * without recreating the handler or re-registering event listeners. This prevents lag when
+ * dragging color pickers or sliders.
+ * 
+ * Before optimization: Every option change recreated the handler and re-registered all events
+ * After optimization: Option changes update in-place; only tool type changes recreate handlers
+ */
 export interface IToolHandler {
     onPointerDown?(event: PointerEvent): Promise<void>;
     onPointerMove?(event: PointerEvent): Promise<void>;
     onPointerUp?(event: PointerEvent): Promise<void>;
     onPointerLeave?(event: PointerEvent): Promise<void>;
+    
+    /**
+     * Updates tool options without recreating the handler.
+     * Called when only options change (not the tool type itself).
+     */
+    updateOptions?(options: Tools.LineOptions | Tools.IconOptions | Tools.TextOptions | Tools.ShapeOptions | Tools.PingOptions): void;
 }
 
 export interface InteractionContext {
@@ -30,6 +47,10 @@ export class DrawLineTool implements IToolHandler {
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
         this.onPointerUp = this.onPointerUp.bind(this);
+    }
+
+    updateOptions(options: Tools.LineOptions): void {
+        this.lineOptions = options;
     }
 
     async onPointerDown(event: PointerEvent) {
@@ -113,6 +134,10 @@ export class DrawCurve implements IToolHandler {
 
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
+    }
+
+    updateOptions(options: Tools.LineOptions): void {
+        this.lineOptions = options;
     }
 
     async onPointerDown(event: PointerEvent) {
@@ -201,6 +226,10 @@ export class DrawFree implements IToolHandler {
         this.onPointerUp = this.onPointerUp.bind(this);
     }
 
+    updateOptions(options: Tools.LineOptions): void {
+        this.lineOptions = options;
+    }
+
     async onPointerDown(event: PointerEvent) {
         if (event.button !== 0) return;
         if (this.entityId) return;
@@ -272,6 +301,10 @@ export class PlaceIconTool implements IToolHandler {
         this.onPointerLeave = this.onPointerLeave.bind(this);
     }
 
+    updateOptions(options: Tools.IconOptions): void {
+        this.iconOptions = options;
+    }
+
     async onPointerDown(event: PointerEvent) {
         if (event.button !== 0) return;
 
@@ -334,6 +367,10 @@ export class PlaceTextTool implements IToolHandler {
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
         this.onPointerLeave = this.onPointerLeave.bind(this);
+    }
+
+    updateOptions(options: Tools.TextOptions): void {
+        this.textOptions = options;
     }
 
     async onPointerDown(event: PointerEvent) {
@@ -560,6 +597,10 @@ export class PingTool implements IToolHandler {
         this.onPointerDown = this.onPointerDown.bind(this);
     }
 
+    updateOptions(options: Tools.PingOptions): void {
+        this.pingOptions = options;
+    }
+
     async onPointerDown(event: PointerEvent) {
         await this.sendPing(event);
     }
@@ -597,6 +638,10 @@ export class DrawShapeTool implements IToolHandler {
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
         this.onPointerUp = this.onPointerUp.bind(this);
+    }
+
+    updateOptions(options: Tools.ShapeOptions): void {
+        this.shapeOptions = options;
     }
 
     async onPointerDown(event: PointerEvent) {

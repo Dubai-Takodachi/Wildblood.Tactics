@@ -12,6 +12,9 @@ export class DrawLineTool {
         this.onPointerMove = this.onPointerMove.bind(this);
         this.onPointerUp = this.onPointerUp.bind(this);
     }
+    updateOptions(options) {
+        this.lineOptions = options;
+    }
     async onPointerDown(event) {
         if (event.button !== 0)
             return;
@@ -82,6 +85,9 @@ export class DrawCurve {
         this.lineOptions = lineOptions;
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
+    }
+    updateOptions(options) {
+        this.lineOptions = options;
     }
     async onPointerDown(event) {
         if (event.button !== 0)
@@ -154,6 +160,9 @@ export class DrawFree {
         this.onPointerMove = this.onPointerMove.bind(this);
         this.onPointerUp = this.onPointerUp.bind(this);
     }
+    updateOptions(options) {
+        this.lineOptions = options;
+    }
     async onPointerDown(event) {
         if (event.button !== 0)
             return;
@@ -219,6 +228,9 @@ export class PlaceIconTool {
         this.onPointerMove = this.onPointerMove.bind(this);
         this.onPointerLeave = this.onPointerLeave.bind(this);
     }
+    updateOptions(options) {
+        this.iconOptions = options;
+    }
     async onPointerDown(event) {
         if (event.button !== 0)
             return;
@@ -267,6 +279,9 @@ export class PlaceTextTool {
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
         this.onPointerLeave = this.onPointerLeave.bind(this);
+    }
+    updateOptions(options) {
+        this.textOptions = options;
     }
     async onPointerDown(event) {
         if (event.button !== 0)
@@ -455,6 +470,9 @@ export class PingTool {
         this.onPointerMove = this.onPointerMove.bind(this);
         this.onPointerDown = this.onPointerDown.bind(this);
     }
+    updateOptions(options) {
+        this.pingOptions = options;
+    }
     async onPointerDown(event) {
         await this.sendPing(event);
     }
@@ -487,6 +505,9 @@ export class DrawShapeTool {
         this.onPointerDown = this.onPointerDown.bind(this);
         this.onPointerMove = this.onPointerMove.bind(this);
         this.onPointerUp = this.onPointerUp.bind(this);
+    }
+    updateOptions(options) {
+        this.shapeOptions = options;
     }
     async onPointerDown(event) {
         if (event.button !== 0)
