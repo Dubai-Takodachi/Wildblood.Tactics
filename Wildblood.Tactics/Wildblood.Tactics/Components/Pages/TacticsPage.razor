@@ -1,5 +1,4 @@
 ﻿@page "/tactics/{ID}"
-@page "/tactics/temp"
 
 @namespace Wildblood.Tactics.Components.Pages
 
@@ -8,6 +7,7 @@
 
 @inject ITacticExplorerService explorer;
 @inject ITemporaryTacticService tempTacticService;
+@inject NavigationManager NavigationManager
 
 @rendermode InteractiveServer
 
@@ -35,7 +35,9 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        if (ID == "temp" || ID == null)
+        // Check if this is the temporary tactics route
+        var uri = new Uri(NavigationManager.Uri);
+        if (uri.AbsolutePath == "/tactics/temp")
         {
             // Load temporary tactic
             var tempTactic = tempTacticService.CurrentTemporaryTactic;
