@@ -25,14 +25,18 @@ public class TacticExplorerService : ITacticExplorerService
     private readonly IUserService userService;
     private readonly IMongoCollection<Tactic> tactics;
     private readonly List<IDisposable> connections = [];
+    private readonly ITemporaryTacticService temporaryTacticService;
+    private bool isTemporaryTactic = false;
 
     public TacticExplorerService(
         IMongoDatabase mongoDatabase,
         IHubConnectionService hubConnectionService,
-        IUserService userService)
+        IUserService userService,
+        ITemporaryTacticService temporaryTacticService)
     {
         this.hubConnectionService = hubConnectionService;
         this.userService = userService;
+        this.temporaryTacticService = temporaryTacticService;
         this.tactics = mongoDatabase.GetCollection<Tactic>("Tactics");
 
         connections.Add(
@@ -195,6 +199,7 @@ public class TacticExplorerService : ITacticExplorerService
             return;
         }
 
+        isTemporaryTactic = false;
         CurrentTactic = tactic;
         CurrentFolder = CurrentTactic.Folders[0];
         CurrentSlide = CurrentFolder.Slides[0];
@@ -207,6 +212,7 @@ public class TacticExplorerService : ITacticExplorerService
 
     public async Task LoadTemporaryTactic(Tactic tactic)
     {
+        isTemporaryTactic = true;
         CurrentTactic = tactic;
         CurrentFolder = CurrentTactic.Folders[0];
         CurrentSlide = CurrentFolder.Slides[0];
@@ -227,10 +233,13 @@ public class TacticExplorerService : ITacticExplorerService
             return;
         }
 
-        var nav = GetNavigation(CurrentTactic, CurrentFolder.Id, CurrentSlide.Id);
-        var update = Builders<Tactic>.Update
-            .Set(t => t.Folders[nav.FolderIndex!.Value].Slides[nav.SlideIndex!.Value].MapPath, mapPath);
-        await tactics.UpdateOneAsync(CreateFilter(CurrentTactic), update);
+        if (!isTemporaryTactic)
+        {
+            var nav = GetNavigation(CurrentTactic, CurrentFolder.Id, CurrentSlide.Id);
+            var update = Builders<Tactic>.Update
+                .Set(t => t.Folders[nav.FolderIndex!.Value].Slides[nav.SlideIndex!.Value].MapPath, mapPath);
+            await tactics.UpdateOneAsync(CreateFilter(CurrentTactic), update);
+        }
 
         if (OnTacticChanged != null)
         {
@@ -245,10 +254,13 @@ public class TacticExplorerService : ITacticExplorerService
             return;
         }
 
-        var nav = GetNavigation(CurrentTactic, CurrentFolder.Id, CurrentSlide.Id);
-        var update = Builders<Tactic>.Update
-            .Set(t => t.Folders[nav.FolderIndex!.Value].Slides[nav.SlideIndex!.Value].Entities, entities);
-        await tactics.UpdateOneAsync(CreateFilter(CurrentTactic), update);
+        if (!isTemporaryTactic)
+        {
+            var nav = GetNavigation(CurrentTactic, CurrentFolder.Id, CurrentSlide.Id);
+            var update = Builders<Tactic>.Update
+                .Set(t => t.Folders[nav.FolderIndex!.Value].Slides[nav.SlideIndex!.Value].Entities, entities);
+            await tactics.UpdateOneAsync(CreateFilter(CurrentTactic), update);
+        }
     }
 
     public Folder? GetFolder(Tactic tactic, string folderId)
@@ -263,10 +275,13 @@ public class TacticExplorerService : ITacticExplorerService
             return;
         }
 
-        var nav = GetNavigation(tactic, folderId);
-        var update = Builders<Tactic>.Update
-            .Set(t => t.Folders[nav.FolderIndex!.Value].Name, newName);
-        await tactics.UpdateOneAsync(CreateFilter(tactic), update);
+        if (!isTemporaryTactic)
+        {
+            var nav = GetNavigation(tactic, folderId);
+            var update = Builders<Tactic>.Update
+                .Set(t => t.Folders[nav.FolderIndex!.Value].Name, newName);
+            await tactics.UpdateOneAsync(CreateFilter(tactic), update);
+        }
     }
 
     public Slide? GetSlide(Tactic tactic, string folderId, string slideId)
@@ -283,10 +298,13 @@ public class TacticExplorerService : ITacticExplorerService
             return;
         }
 
-        var nav = GetNavigation(tactic, folderId, slideId);
-        var update = Builders<Tactic>.Update
-            .Set(t => t.Folders[nav.FolderIndex!.Value].Slides[nav.SlideIndex!.Value].Name, newName);
-        await tactics.UpdateOneAsync(CreateFilter(tactic), update);
+        if (!isTemporaryTactic)
+        {
+            var nav = GetNavigation(tactic, folderId, slideId);
+            var update = Builders<Tactic>.Update
+                .Set(t => t.Folders[nav.FolderIndex!.Value].Slides[nav.SlideIndex!.Value].Name, newName);
+            await tactics.UpdateOneAsync(CreateFilter(tactic), update);
+        }
     }
 
     public async Task<Slide?> CreateSlide(Tactic tactic, string folderId)
@@ -304,11 +322,15 @@ public class TacticExplorerService : ITacticExplorerService
             Entities = [],
         };
 
-        var nav = GetNavigation(tactic, folderId);
-        var filter = CreateFilter(tactic)
-            & Builders<Tactic>.Filter.ElemMatch(t => t.Folders, f => f.Id == folderId);
-        var update = Builders<Tactic>.Update.Push(t => t.Folders[nav.FolderIndex!.Value].Slides, newSlide);
-        await tactics.UpdateOneAsync(filter, update);
+        if (!isTemporaryTactic)
+        {
+            var nav = GetNavigation(tactic, folderId);
+            var filter = CreateFilter(tactic)
+                & Builders<Tactic>.Filter.ElemMatch(t => t.Folders, f => f.Id == folderId);
+            var update = Builders<Tactic>.Update.Push(t => t.Folders[nav.FolderIndex!.Value].Slides, newSlide);
+            await tactics.UpdateOneAsync(filter, update);
+        }
+        
         return newSlide;
     }
 
@@ -319,9 +341,12 @@ public class TacticExplorerService : ITacticExplorerService
             return;
         }
 
-        var nav = GetNavigation(tactic);
-        var update = Builders<Tactic>.Update.Set(t => t.Name, newName);
-        await tactics.UpdateOneAsync(CreateFilter(tactic), update);
+        if (!isTemporaryTactic)
+        {
+            var nav = GetNavigation(tactic);
+            var update = Builders<Tactic>.Update.Set(t => t.Name, newName);
+            await tactics.UpdateOneAsync(CreateFilter(tactic), update);
+        }
     }
 
     public async Task<Folder?> CreateFolder(Tactic tactic)
@@ -338,9 +363,13 @@ public class TacticExplorerService : ITacticExplorerService
             Slides = [],
         };
 
-        var nav = GetNavigation(tactic);
-        var update = Builders<Tactic>.Update.Push(t => t.Folders, newFolder);
-        await tactics.UpdateOneAsync(CreateFilter(tactic), update);
+        if (!isTemporaryTactic)
+        {
+            var nav = GetNavigation(tactic);
+            var update = Builders<Tactic>.Update.Push(t => t.Folders, newFolder);
+            await tactics.UpdateOneAsync(CreateFilter(tactic), update);
+        }
+        
         return newFolder;
     }
 
@@ -366,9 +395,12 @@ public class TacticExplorerService : ITacticExplorerService
 
     public async Task UpdateMemberList(Tactic tactic, List<MemberRole> members)
     {
-        var nav = GetNavigation(tactic);
-        var update = Builders<Tactic>.Update.Set(t => t.Members, members);
-        await tactics.UpdateOneAsync(CreateFilter(tactic), update);
+        if (!isTemporaryTactic)
+        {
+            var nav = GetNavigation(tactic);
+            var update = Builders<Tactic>.Update.Set(t => t.Members, members);
+            await tactics.UpdateOneAsync(CreateFilter(tactic), update);
+        }
     }
 
     private static FilterDefinition<Tactic> CreateFilter(Tactic tactic) =>

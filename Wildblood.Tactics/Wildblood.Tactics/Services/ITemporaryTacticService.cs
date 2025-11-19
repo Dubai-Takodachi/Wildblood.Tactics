@@ -6,6 +6,8 @@ public interface ITemporaryTacticService
 {
     public Tactic? CurrentTemporaryTactic { get; }
     
+    public bool IsTemporary { get; }
+    
     public void SetTemporaryTactic(Tactic tactic);
     
     public void ClearTemporaryTactic();

@@ -7,6 +7,8 @@ public class TemporaryTacticService : ITemporaryTacticService
 {
     public Tactic? CurrentTemporaryTactic { get; private set; }
 
+    public bool IsTemporary => CurrentTemporaryTactic != null;
+
     public void SetTemporaryTactic(Tactic tactic)
     {
         CurrentTemporaryTactic = tactic;
