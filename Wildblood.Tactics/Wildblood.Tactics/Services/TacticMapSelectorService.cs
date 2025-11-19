@@ -4,7 +4,7 @@ public class TacticMapSelectorService : ITacticMapSelectorService
 {
     public event Func<Task>? OnMapChanged;
 
-    public string CurrentMap => tacticExplorerService.CurrentSlide.MapPath ?? string.Empty;
+    public string CurrentMap => tacticExplorerService.CurrentSlide?.MapPath ?? string.Empty;
 
     public List<string> Maps { get; private set; }
 
