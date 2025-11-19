@@ -205,6 +205,18 @@ public class TacticExplorerService : ITacticExplorerService
         }
     }
 
+    public async Task LoadTemporaryTactic(Tactic tactic)
+    {
+        CurrentTactic = tactic;
+        CurrentFolder = CurrentTactic.Folders[0];
+        CurrentSlide = CurrentFolder.Slides[0];
+
+        if (OnTacticChanged != null)
+        {
+            await OnTacticChanged.Invoke();
+        }
+    }
+
     public Tactic? GetTactic(string? id) =>
         tactics.Find(t => t.Id == id).FirstOrDefault();
 

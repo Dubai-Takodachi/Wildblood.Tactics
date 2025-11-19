@@ -1,4 +1,5 @@
 ﻿@page "/tactics/{ID}"
+@page "/tactics/temp"
 
 @namespace Wildblood.Tactics.Components.Pages
 
@@ -6,6 +7,7 @@
 @using Wildblood.Tactics.Services
 
 @inject ITacticExplorerService explorer;
+@inject ITemporaryTacticService tempTacticService;
 
 @rendermode InteractiveServer
 
@@ -33,7 +35,16 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        if (ID != null)
+        if (ID == "temp" || ID == null)
+        {
+            // Load temporary tactic
+            var tempTactic = tempTacticService.CurrentTemporaryTactic;
+            if (tempTactic != null)
+            {
+                await explorer.LoadTemporaryTactic(tempTactic);
+            }
+        }
+        else if (ID != null)
         {
             await explorer.ChangeTactic(ID);
         }

@@ -59,6 +59,7 @@ public class Program
         builder.Services.AddScoped<ITacticMemberListService, TacticMemberListService>();
         builder.Services.AddScoped<ITacticMapSelectorService, TacticMapSelectorService>();
         builder.Services.AddScoped<ITacticCanvasService, TacticCanvasService>();
+        builder.Services.AddScoped<ITemporaryTacticService, TemporaryTacticService>();
         builder.Services.AddHttpLogging(options =>
         {
             options.LoggingFields = HttpLoggingFields.RequestPropertiesAndHeaders;

@@ -18,7 +18,7 @@ public record Tactic
     // TODO kick it out
     [BsonElement("userId")]
     [JsonPropertyName("userId")]
-    public required string UserId { get; set; }
+    public string? UserId { get; set; }
 
     [BsonElement("folder")]
     [JsonPropertyName("folder")]

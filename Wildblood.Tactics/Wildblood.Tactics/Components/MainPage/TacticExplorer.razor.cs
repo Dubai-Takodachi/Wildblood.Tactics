@@ -3,6 +3,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using MudBlazor;
+using System.Text;
 using Wildblood.Tactics.Components.Layout;
 using Wildblood.Tactics.Models;
 using Wildblood.Tactics.Services;
@@ -17,6 +18,9 @@ public partial class TacticExplorer
 
     [Inject]
     private IDialogService DialogService { get; init; } = null!;
+
+    [Inject]
+    private ITemporaryTacticService TemporaryTacticService { get; init; } = default!;
 
     protected override void OnInitialized()
     {
@@ -116,5 +120,24 @@ public partial class TacticExplorer
             await TacticExplorerService.UpdateSlideName(TacticExplorerService.CurrentTactic, folderId, slideId, newName);
             await TacticExplorerService.SendTacticUpdate();
         }
+    }
+
+    private async Task OnDownloadTactic()
+    {
+        var json = TemporaryTacticService.ExportToJson(TacticExplorerService.CurrentTactic);
+        var fileName = $"{TacticExplorerService.CurrentTactic.Name}.json";
+        
+        // Convert JSON string to bytes
+        var bytes = Encoding.UTF8.GetBytes(json);
+        var base64 = Convert.ToBase64String(bytes);
+        
+        // Download file using JavaScript
+        await JS.InvokeVoidAsync("eval", 
+            $"const link = document.createElement('a');" +
+            $"link.download = '{fileName}';" +
+            $"link.href = 'data:application/json;base64,{base64}';" +
+            $"document.body.appendChild(link);" +
+            $"link.click();" +
+            $"document.body.removeChild(link);");
     }
 }

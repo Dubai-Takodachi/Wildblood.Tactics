@@ -46,5 +46,7 @@ public interface ITacticExplorerService
 
     public Task ChangeTactic(string tacticId);
 
+    public Task LoadTemporaryTactic(Tactic tactic);
+
     public Task UpdateMemberList(Tactic tactic, List<MemberRole> members);
 }

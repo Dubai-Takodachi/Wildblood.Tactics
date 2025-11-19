@@ -7,6 +7,7 @@
                     <div style="justify-self: end;">
                         <MudIconButton Icon="@Icons.Material.Filled.Edit" @onclick="@(async (args) => await OnClickTacticRename())" />
                         <MudIconButton Icon="@Icons.Material.Filled.AddBox" @onclick="@(async (args) => await OnAddFolder())" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Download" @onclick="@(async (args) => await OnDownloadTactic())" Title="Download as JSON" />
                     </div>
                 </div>
             </BodyContent>
