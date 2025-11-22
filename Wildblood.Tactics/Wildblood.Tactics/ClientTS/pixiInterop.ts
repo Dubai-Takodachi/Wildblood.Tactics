@@ -359,6 +359,11 @@ namespace PixiInterop {
     }
 
     async function removeEntityOnServer(entityId: string): Promise<void> {
+        entityContainer.removeChild(drawnSpriteByEntityId[entityId]);
+        drawnSpriteByEntityId[entityId].destroy();
+        delete drawnSpriteByEntityId[entityId];
+        delete currentEntities[entityId];
+
         await updateSpecificServerEntities([], [entityId]);
     }
 
