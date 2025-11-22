@@ -2,6 +2,7 @@
 
 using System.Text.Json;
 using Microsoft.AspNetCore.SignalR.Client;
+using Blazored.LocalStorage;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Wildblood.Tactics.Entities;
@@ -25,18 +26,18 @@ public class TacticExplorerService : ITacticExplorerService
     private readonly IUserService userService;
     private readonly IMongoCollection<Tactic> tactics;
     private readonly List<IDisposable> connections = [];
-    private readonly ITemporaryTacticService temporaryTacticService;
+    private readonly ILocalStorageService localStorageService;
     private bool isTemporaryTactic = false;
 
     public TacticExplorerService(
         IMongoDatabase mongoDatabase,
         IHubConnectionService hubConnectionService,
         IUserService userService,
-        ITemporaryTacticService temporaryTacticService)
+        ILocalStorageService localStorageService)
     {
         this.hubConnectionService = hubConnectionService;
         this.userService = userService;
-        this.temporaryTacticService = temporaryTacticService;
+        this.localStorageService = localStorageService;
         this.tactics = mongoDatabase.GetCollection<Tactic>("Tactics");
 
         connections.Add(
@@ -212,10 +213,14 @@ public class TacticExplorerService : ITacticExplorerService
 
     public async Task LoadTemporaryTactic(Tactic tactic)
     {
-        isTemporaryTactic = true;
-        CurrentTactic = tactic;
-        CurrentFolder = CurrentTactic.Folders[0];
-        CurrentSlide = CurrentFolder.Slides[0];
+
+        if (tactic != null)
+        {
+            isTemporaryTactic = true;
+            CurrentTactic = tactic;
+            CurrentFolder = CurrentTactic.Folders[0];
+            CurrentSlide = CurrentFolder.Slides[0];
+        }
 
         if (OnTacticChanged != null)
         {

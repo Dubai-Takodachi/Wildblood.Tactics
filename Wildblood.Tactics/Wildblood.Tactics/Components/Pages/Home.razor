@@ -1,4 +1,4 @@
-﻿@page "/"
+@page "/"
 @inject NavigationManager NavigationManager
 @using Microsoft.AspNetCore.Components.Authorization
 @using MongoDB.Driver;
@@ -79,19 +79,8 @@
 
     private async Task CreateAnonymousTemporaryTactic()
     {
-        var tactic = CreateTacticDocument(null, "Anonymous");
-        // Store in service
-        TemporaryTacticService.SetTemporaryTactic(tactic);
-        NavigationManager.NavigateTo("/tactics/temp");
-    }
-
-    private async Task ImportFromJson()
-    {
-        // Trigger the file input click
-        if (fileInput?.Element != null)
-        {
-            await JSRuntime.InvokeVoidAsync("eval", $"document.querySelector('input[type=file]').click()");
-        }
+        var guid = Guid.CreateVersion7().ToString();
+        NavigationManager.NavigateTo($"/tactics/{guid}?temp=true");
     }
 
     private async Task HandleFileSelected(IBrowserFile file)
@@ -109,8 +98,7 @@
                 if (tactic != null)
                 {
                     // Store in service and navigate
-                    TemporaryTacticService.SetTemporaryTactic(tactic);
-                    NavigationManager.NavigateTo("/tactics/temp");
+                    NavigationManager.NavigateTo($"/tactics/{tactic.Id}?temp=true");
                 }
             }
             catch (Exception ex)

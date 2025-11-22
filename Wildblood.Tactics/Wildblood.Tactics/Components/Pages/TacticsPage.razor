@@ -2,14 +2,19 @@
 
 @namespace Wildblood.Tactics.Components.Pages
 
+@using Blazored.LocalStorage
+@using MongoDB.Bson
 @using Wildblood.Tactics.Components.MainPage
+@using Wildblood.Tactics.Entities
+@using Wildblood.Tactics.Models
 @using Wildblood.Tactics.Services
 
+@inject ILocalStorageService localStorageService
 @inject ITacticExplorerService explorer;
 @inject ITemporaryTacticService tempTacticService;
 @inject NavigationManager NavigationManager
 
-@rendermode InteractiveServer
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 
 <div class="parent">
     <TacticCanvas/>
@@ -28,6 +33,10 @@
     [Parameter]
     public string? ID { get; set; }
 
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "temp")]
+    public bool? IsTemporary { get; set; } = false;
+
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
@@ -35,20 +44,45 @@
 
     protected override async Task OnParametersSetAsync()
     {
-        // Check if this is the temporary tactics route
-        var uri = new Uri(NavigationManager.Uri);
-        if (uri.AbsolutePath == "/tactics/temp")
+        if (IsTemporary == true && ID != null)
         {
-            // Load temporary tactic
-            var tempTactic = tempTacticService.CurrentTemporaryTactic;
-            if (tempTactic != null)
-            {
-                await explorer.LoadTemporaryTactic(tempTactic);
-            }
+            var tactic = CreateTacticDocument(null, "Anonymous");
+            await explorer.LoadTemporaryTactic(tactic);
         }
         else if (ID != null)
         {
             await explorer.ChangeTactic(ID);
         }
+    }
+
+    private Tactic CreateTacticDocument(string? user, string userName)
+    {
+        return new Tactic
+        {
+            Id = ID,
+            Name = "New Tactic",
+            UserId = user,
+            Folders = new List<Folder> {
+                new Folder {
+                    Id = ObjectId.GenerateNewId().ToString(),
+                    Name = "Folder 1",
+                    Slides = new List<Slide> {
+                        new Slide {
+                            Id = ObjectId.GenerateNewId().ToString(),
+                            Name = "Slide 1",
+                            Entities = new List<Entity>(),
+                        }
+                    }
+                }
+            },
+            Members = new List<MemberRole>
+            {
+                new MemberRole
+                {
+                    Name = userName,
+                    Roles = Role.Owner,
+                }
+            },
+        };
     }
 }
