@@ -41,7 +41,7 @@
         <MudTooltip Text="@unit.Name.ToString()">
             <MudPaper Class="ma-1" Style="@style" @onclick="() => SelectUnit(unit)">
                 <div style="position: relative; display: inline-block;">
-                    <img src="@(IconMapping.BlazorBasePath + unit.Path)" height="40" width="40" />
+                    <img src="@(UnitDataSet.BlazorBasePath + unit.Path)" height="40" width="40" />
 
                     <MudIcon Icon="@Icons.Material.Filled.Star"
                              Color="@(IsFavorite(unit.Name) ? Color.Warning : Color.Default)"

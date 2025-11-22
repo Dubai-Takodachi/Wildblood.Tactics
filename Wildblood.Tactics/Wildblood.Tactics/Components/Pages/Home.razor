@@ -11,6 +11,7 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IJSRuntime JSRuntime
 @inject ITemporaryTacticService TemporaryTacticService
+@inject ISnackbar Snackbar
 @rendermode InteractiveServer
 <PageTitle>Home</PageTitle>
 
@@ -27,16 +28,26 @@
                 <h1>Welcome To Wildblood.Tactics!</h1>
                 <p>You are not logged in. Choose how you want to create a tactic:</p>
                 <div style="display: flex; flex-direction: column; gap: 1rem; max-width: 400px;">
-                    <input type="button" class="btn btn-primary" value="Create Tactic and Save" @onclick="CreateAnonymousSavedTactic" />
-                    <input type="button" class="btn btn-secondary" value="Create Tactic Without Saving" @onclick="CreateAnonymousTemporaryTactic" />
-                    <input type="button" class="btn btn-info" value="Import from JSON" @onclick="ImportFromJson" />
+                    <MudButton Variant="Variant.Filled" Color="Color.Default"  @onclick="CreateAnonymousSavedTactic" >
+                        Create Anonymous Saved Tactic
+                    </MudButton>
+                    <MudButton type="button" Variant="Variant.Filled" Color="Color.Secondary" @onclick="CreateAnonymousTemporaryTactic" >
+                        Create Anonymous Temporary Unsaved Tactic
+                    </MudButton>
+                    <MudFileUpload T="IBrowserFile" FilesChanged="HandleFileSelected">
+                        <ActivatorContent>
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.CloudUpload">
+                                Upload Json to Import Tactic
+                            </MudButton>
+                        </ActivatorContent>
+                    </MudFileUpload>
                 </div>
             </div>
         </NotAuthorized>
     </AuthorizeView>
 </article>
-
-<InputFile @ref="fileInput" style="display: none;" OnChange="HandleFileSelected" accept=".json" />
 
 @code {
 
@@ -83,9 +94,8 @@
         }
     }
 
-    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    private async Task HandleFileSelected(IBrowserFile file)
     {
-        var file = e.File;
         if (file != null)
         {
             try
@@ -93,7 +103,7 @@
                 using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024); // 10MB max
                 using var reader = new StreamReader(stream);
                 var json = await reader.ReadToEndAsync();
-                
+
                 // Validate JSON by deserializing
                 var tactic = JsonSerializer.Deserialize<Tactic>(json);
                 if (tactic != null)
@@ -105,7 +115,7 @@
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error loading JSON: {ex.Message}");
+                Snackbar.Add("Failed to import tactic from JSON!", Severity.Warning, c => c.SnackbarVariant = Variant.Filled);
             }
         }
     }

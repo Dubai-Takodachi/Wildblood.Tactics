@@ -618,4 +618,3 @@ function hitTestPixelPerfect(sprite, localPos, app) {
 function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
-//# sourceMappingURL=interaction.js.map
