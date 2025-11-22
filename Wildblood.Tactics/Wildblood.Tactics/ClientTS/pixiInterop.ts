@@ -23,18 +23,7 @@ namespace PixiInterop {
 
     let currentEntities: Record<string, Tools.Entity> = {};
     let drawnSpriteByEntityId: Record<string, PIXI.Sprite> = {};
-    
-    /**
-     * Tracks entities that were added locally but haven't been confirmed by the server yet.
-     * 
-     * Race Condition Prevention:
-     * When an entity is placed locally, it's immediately drawn and added to this set.
-     * SignalR echoes updates back to the same client, which triggers redrawEntities().
-     * Without this tracking, removeOutdatedEntities() would remove the just-placed entity
-     * because it's not yet in the server's entity list (race condition).
-     * 
-     * The entity ID is removed from this set once the server confirms it via SignalR.
-     */
+
     let locallyAddedEntityIds: Set<string> = new Set();
 
     let currentTool: Tools.ToolOptions;
@@ -350,19 +339,6 @@ namespace PixiInterop {
         }
     };
 
-    /**
-     * Adds an entity to the canvas and sends it to the server.
-     * 
-     * Performance Optimization:
-     * - Draws entity locally first for immediate visual feedback (0ms lag)
-     * - Marks entity as "locally added" to prevent premature removal
-     * - Sends to server asynchronously for persistence and SignalR broadcast
-     * - Server-side batching reduces DB writes when placing icons rapidly
-     * 
-     * Error Handling:
-     * - Drawing and server communication are separately caught to prevent one failure from affecting the other
-     * - Errors are logged to console for debugging
-     */
     async function addEntityOnServer(entity: Tools.Entity): Promise<void> {
         try {
             // Mark as locally added to prevent premature removal by SignalR echo
@@ -383,6 +359,11 @@ namespace PixiInterop {
     }
 
     async function removeEntityOnServer(entityId: string): Promise<void> {
+        entityContainer.removeChild(drawnSpriteByEntityId[entityId]);
+        drawnSpriteByEntityId[entityId].destroy();
+        delete drawnSpriteByEntityId[entityId];
+        delete currentEntities[entityId];
+
         await updateSpecificServerEntities([], [entityId]);
     }
 
@@ -390,17 +371,6 @@ namespace PixiInterop {
         await dotNetObjRef.invokeMethodAsync('UpdateServerEntities', entities, removedEntityIds);
     }
 
-    /**
-     * Manages preview entity display during mouse movement.
-     * 
-     * Important: Handles cleanup of previous preview without removing committed entities.
-     * 
-     * Bug Fix:
-     * When placing an icon while moving the mouse, the preview and placed icon share the same ID.
-     * After placement, the next mouse move creates a new preview with a different ID.
-     * Without the locallyAddedEntityIds check, this function would remove the just-placed icon
-     * thinking it was an old preview. Now we skip removal if the entity has been committed.
-     */
     async function setPreviewEntity(entity: Tools.Entity | null): Promise<void> {
         if (temporaryEntity && drawnSpriteByEntityId[temporaryEntity.id]) {
             // Don't remove entities that have been committed (locally added)
@@ -502,30 +472,11 @@ namespace PixiInterop {
         pingContainer.addChild(container);
     }
 
-    /**
-     * Redraws entities when receiving updates from the server (usually via SignalR).
-     * Called by C# RedrawEntities() method.
-     */
     export async function redrawEntities(entities: Tools.Entity[]): Promise<void> {
         await removeOutdatedEntities(entities);
         await updateExistingEntities(entities);
     }
 
-    /**
-     * Removes entities that are no longer in the server's entity list.
-     * 
-     * Race Condition Handling:
-     * When an entity is placed locally, there's a delay before it's confirmed by the server.
-     * This function protects locally-added entities from being removed during this window.
-     * Once the server confirms the entity (it appears in the server list), we clear the flag.
-     * 
-     * This prevents the issue where:
-     * 1. User places icon → drawn locally
-     * 2. SignalR echoes back before batch completes
-     * 3. Server list doesn't include the new icon yet
-     * 4. This function would remove it thinking it's outdated
-     * 5. Icon disappears immediately after placement!
-     */
     async function removeOutdatedEntities(newCurrentEntities: Tools.Entity[]): Promise<void> {
         await setPreviewEntity(null);
         const currentIds = Object.keys(currentEntities);

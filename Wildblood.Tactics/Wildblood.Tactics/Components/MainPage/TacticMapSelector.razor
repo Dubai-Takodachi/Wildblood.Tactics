@@ -1,4 +1,5 @@
-﻿<div id="MapSelectionDiv">
+﻿@rendermode @(new InteractiveServerRenderMode(prerender: false))
+<div id="MapSelectionDiv">
     <MudSelect T="string" Label="Maps" ValueChanged="MapChanged" Value="@selectedMap">
         @foreach (var map in SortedMaps)
         {

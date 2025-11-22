@@ -361,4 +361,3 @@ function getDistance(a, b) {
     let dy = a.y - b.y;
     return Math.sqrt(dx * dx + dy * dy);
 }
-//# sourceMappingURL=draw-entity.js.map

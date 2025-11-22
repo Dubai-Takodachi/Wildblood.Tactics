@@ -497,4 +497,3 @@ var PixiInterop;
     }
 })(PixiInterop || (PixiInterop = {}));
 export default PixiInterop;
-//# sourceMappingURL=pixiInterop.js.map

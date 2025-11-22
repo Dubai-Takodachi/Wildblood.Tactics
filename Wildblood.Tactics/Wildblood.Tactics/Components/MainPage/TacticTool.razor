@@ -1,6 +1,6 @@
 ﻿@using Wildblood.Tactics.Mappings
 @using Wildblood.Tactics.Models.Tools
-
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
 <MudPaper style="grid-area:2/2/span 3/2" Class="mx-2">
     <MudTabs MinimumTabWidth="20px" Position="Position.Left">
         <MudTabPanel Icon="@Icons.Material.Filled.CrisisAlert" @onclick="() => ChangeTool(Models.Tools.ToolType.Ping)" ToolTip="Ping">

@@ -7,6 +7,12 @@ public class UserService(AuthenticationStateProvider authenticationStateProvider
 {
     public async Task<bool> CheckHasEditAcces(Tactic tactic)
     {
+        // Allow editing for anonymous/temporary tactics (UserId is null)
+        if (tactic.UserId == null)
+        {
+            return true;
+        }
+
         var name = await GetCurrentUserName();
         return tactic.Members.Any(m => m.Name == name && (m.Roles == Role.Admin || m.Roles == Role.Owner));
     }

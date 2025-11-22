@@ -1,4 +1,4 @@
-# --- Base für die finale App (Runtime only) ---
+# --- Base fï¿½r die finale App (Runtime only) ---
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 WORKDIR /app
 EXPOSE 8080
@@ -9,7 +9,7 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
-# Node.js installieren (brauchst du für TypeScript Build)
+# Node.js installieren (brauchst du fï¿½r TypeScript Build)
 RUN apt-get update && \
     apt-get install -y curl gnupg && \
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
@@ -23,15 +23,15 @@ RUN dotnet restore "./Wildblood.Tactics/Wildblood.Tactics/Wildblood.Tactics.cspr
 # Gesamtes Projekt kopieren und bauen
 COPY . .
 WORKDIR "/src/Wildblood.Tactics/Wildblood.Tactics"
+RUN npm install
 RUN dotnet build "./Wildblood.Tactics.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # --- Publish-Stage ---
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN npm install
 RUN dotnet publish "./Wildblood.Tactics.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
-# --- Finales Image (nur Runtime + veröffentlichte App) ---
+# --- Finales Image (nur Runtime + verï¿½ffentlichte App) ---
 FROM base AS final
 WORKDIR /app
 

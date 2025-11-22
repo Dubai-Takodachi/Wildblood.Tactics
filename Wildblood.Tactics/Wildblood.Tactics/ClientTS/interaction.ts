@@ -1,17 +1,6 @@
 import * as Tools from './tools-types.js';
 import * as PIXI from 'pixi.js';
 
-/**
- * Interface for tool interaction handlers.
- * 
- * Performance Optimization:
- * The updateOptions() method allows tool options (color, size, etc.) to be updated in-place
- * without recreating the handler or re-registering event listeners. This prevents lag when
- * dragging color pickers or sliders.
- * 
- * Before optimization: Every option change recreated the handler and re-registered all events
- * After optimization: Option changes update in-place; only tool type changes recreate handlers
- */
 export interface IToolHandler {
     onPointerDown?(event: PointerEvent): Promise<void>;
     onPointerMove?(event: PointerEvent): Promise<void>;

@@ -1,5 +1,6 @@
 namespace Wildblood.Tactics;
 
+using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -51,7 +52,7 @@ public class Program
         builder.Services.AddScoped<IdentityRedirectManager>();
         builder.Services.AddScoped<AuthenticationStateProvider, PersistingRevalidatingAuthenticationStateProvider>();
         builder.Services.AddMudServices();
-
+        builder.Services.AddBlazoredLocalStorage();
         builder.Services.AddScoped<IHubConnectionService, HubConnectionService>();
         builder.Services.AddScoped<IUserService, UserService>();
         builder.Services.AddScoped<ITacticToolService, TacticToolService>();
@@ -59,6 +60,7 @@ public class Program
         builder.Services.AddScoped<ITacticMemberListService, TacticMemberListService>();
         builder.Services.AddScoped<ITacticMapSelectorService, TacticMapSelectorService>();
         builder.Services.AddScoped<ITacticCanvasService, TacticCanvasService>();
+        builder.Services.AddSingleton<ITemporaryTacticService, TemporaryTacticService>();
         builder.Services.AddHttpLogging(options =>
         {
             options.LoggingFields = HttpLoggingFields.RequestPropertiesAndHeaders;

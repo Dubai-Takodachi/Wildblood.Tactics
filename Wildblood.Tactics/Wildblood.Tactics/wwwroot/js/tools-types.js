@@ -35,4 +35,3 @@ export var ShapeType;
     ShapeType[ShapeType["Area"] = 3] = "Area";
 })(ShapeType || (ShapeType = {}));
 ;
-//# sourceMappingURL=tools-types.js.map

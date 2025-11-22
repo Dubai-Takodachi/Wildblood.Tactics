@@ -1,14 +1,17 @@
-﻿@page "/"
+@page "/"
 @inject NavigationManager NavigationManager
-@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using MongoDB.Driver;
 @using MongoDB.Bson;
 @using Wildblood.Tactics.Entities
 @using Wildblood.Tactics.Models
-@attribute [Authorize]
+@using Wildblood.Tactics.Services
+@using System.Text.Json
 @inject IMongoDatabase  Database;
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime JSRuntime
+@inject ITemporaryTacticService TemporaryTacticService
+@inject ISnackbar Snackbar
 @rendermode InteractiveServer
 <PageTitle>Home</PageTitle>
 
@@ -20,10 +23,35 @@
                 <input type="button" class="btn btn-primary" value="Create New Tactic" @onclick="CreateNewTactic" />
             </div>
         </Authorized>
+        <NotAuthorized>
+            <div>
+                <h1>Welcome To Wildblood.Tactics!</h1>
+                <p>You are not logged in. Choose how you want to create a tactic:</p>
+                <div style="display: flex; flex-direction: column; gap: 1rem; max-width: 400px;">
+                    <MudButton Variant="Variant.Filled" Color="Color.Default"  @onclick="CreateAnonymousSavedTactic" >
+                        Create Anonymous Saved Tactic
+                    </MudButton>
+                    <MudButton type="button" Variant="Variant.Filled" Color="Color.Secondary" @onclick="CreateAnonymousTemporaryTactic" >
+                        Create Anonymous Temporary Unsaved Tactic
+                    </MudButton>
+                    <MudFileUpload T="IBrowserFile" FilesChanged="HandleFileSelected">
+                        <ActivatorContent>
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.CloudUpload">
+                                Upload Json to Import Tactic
+                            </MudButton>
+                        </ActivatorContent>
+                    </MudFileUpload>
+                </div>
+            </div>
+        </NotAuthorized>
     </AuthorizeView>
 </article>
 
 @code {
+
+    private InputFile? fileInput;
 
     private async Task CreateNewTactic()
     {
@@ -41,7 +69,46 @@
         }
     }
 
-    private Tactic CreateTacticDocument(string user, string userName) {
+    private async Task CreateAnonymousSavedTactic()
+    {
+        var tactic = CreateTacticDocument(null, "Anonymous");
+        var collection = Database.GetCollection<Tactic>("Tactics");
+        collection.InsertOne(tactic);
+        NavigationManager.NavigateTo("/tactics/" + tactic.Id);
+    }
+
+    private async Task CreateAnonymousTemporaryTactic()
+    {
+        var guid = Guid.CreateVersion7().ToString();
+        NavigationManager.NavigateTo($"/tactics/{guid}?temp=true");
+    }
+
+    private async Task HandleFileSelected(IBrowserFile file)
+    {
+        if (file != null)
+        {
+            try
+            {
+                using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024); // 10MB max
+                using var reader = new StreamReader(stream);
+                var json = await reader.ReadToEndAsync();
+
+                // Validate JSON by deserializing
+                var tactic = JsonSerializer.Deserialize<Tactic>(json);
+                if (tactic != null)
+                {
+                    // Store in service and navigate
+                    NavigationManager.NavigateTo($"/tactics/{tactic.Id}?temp=true");
+                }
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add("Failed to import tactic from JSON!", Severity.Warning, c => c.SnackbarVariant = Variant.Filled);
+            }
+        }
+    }
+
+    private Tactic CreateTacticDocument(string? user, string userName) {
         return new Tactic
         {
             Id = ObjectId.GenerateNewId().ToString(),
